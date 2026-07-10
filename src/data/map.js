@@ -81,7 +81,7 @@ export const PORTS = [
 // Undirected adjacency. ⚠ DRAFT — validate every edge (see README).
 export const EDGES = [
   // land–land
-  ['L01','L02'], ['L01','L03'], ['L01','L04'], ['L01','L07'],
+  ['L01','L02'], ['L01','L03'], ['L01','L04'], ['L01','L07'], ['L01','L38'],
   ['L02','L04'], ['L03','L06'], ['L04','L05'], ['L04','L07'],
   ['L06','L08'], ['L07','L08'], ['L07','L09'], ['L08','L10'],
   ['L09','L10'], ['L09','L11'], ['L10','L14'], ['L11','L12'],
