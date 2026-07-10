@@ -40,7 +40,7 @@ export const THEME_ASOIAF = {
     L28: 'Sunspear',          L29: 'The Reach',          L30: 'Highgarden',
     L31: 'Oldtown',           L32: 'Three Towers',       L33: 'The Dornish Marches',
     L34: 'Searoad Marches',   L35: 'The Arbor',          L36: 'Lannisport',
-    L37: 'Pyke',
+    L37: 'Pyke',              L38: 'Castle Black',
     S01: 'Bay of Ice',        S02: 'The Shivering Sea',  S03: 'The Narrow Sea',
     S04: 'Shipbreaker Bay',   S05: 'Sea of Dorne',       S06: 'East Summer Sea',
     S07: 'West Summer Sea',   S08: 'Redwyne Straights',  S09: 'Sunset Sea',

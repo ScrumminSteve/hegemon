@@ -39,7 +39,7 @@ export const THEME_CORE = {
     L28: 'Sunhold',        L29: 'The Heartlands',   L30: 'Verdant Hall',
     L31: 'Old Quay',       L32: 'Threespire',       L33: 'The Marches',
     L34: 'Westmarch',      L35: 'The Vinery',       L36: 'Goldport',
-    L37: 'Reaverhold',
+    L37: 'Reaverhold',      L38: 'Coldwatch',
     S01: 'Frozen Bay',     S02: 'The Pale Sea',     S03: 'The Slender Sea',
     S04: 'Wreckwater Bay', S05: 'The Amber Gulf',   S06: 'The Farwater',
     S07: 'The Verge Sea',  S08: "Vintner's Strait", S09: 'The Sundown Deep',
