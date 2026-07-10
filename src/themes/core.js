@@ -1,0 +1,48 @@
+// Theme pack: CORE — original generic IP. This is the default skin and the
+// template for any future pivot. Everything display-facing lives here.
+
+export const THEME_CORE = {
+  id: 'core',
+  title: 'The Sundered Realm',
+  terms: {
+    faction: 'Faction', factions: 'Factions',
+    leaderCard: 'Leader Card',
+    eventPhase: 'Muster & Omens Phase',
+    invaders: 'The Horde', threatTrack: 'Threat Track', incursion: 'Incursion',
+    trackInitiative: 'Initiative', trackProwess: 'Prowess', trackCommand: 'Command',
+    tokenSovereign: 'Sovereign Token', tokenBlade: "Champion's Blade", tokenCourier: 'Courier Token',
+    authority: 'Authority',
+    orderRally: 'Rally',
+    fort: 'Fort', citadel: 'Citadel',
+    unitInfantry: 'Infantry', unitCavalry: 'Cavalry', unitWarship: 'Warship',
+    unitSiege: 'Siege Engine', unitBehemoth: 'Behemoth',
+    land: 'Land', maritime: 'Sea', port: 'Harbor',
+  },
+  factions: {
+    F1: { name: 'The Boreal Compact', glyph: '❄' },
+    F2: { name: 'The Gilded Order',   glyph: '◆' },
+    F3: { name: 'The Storm Legion',   glyph: '⚡' },
+    F4: { name: 'The Verdant League', glyph: '✿' },
+    F5: { name: 'The Dune Covenant',  glyph: '☀' },
+    F6: { name: 'The Corsair Fleet',  glyph: '⚓' },
+  },
+  regions: {
+    L01: 'Frosthold',      L02: 'The Rimefells',   L03: 'Greyshore',
+    L04: 'Harborgate',     L05: 'Eastcliff',        L06: 'Fenpoint',
+    L07: 'The Causeway',   L08: 'Mirebank',         L09: 'Tollbridge',
+    L10: 'Seawall',        L11: 'The Spurs',        L12: 'Highpass',
+    L13: 'Skyreach',       L14: 'Riverhold',        L15: 'Lakemoor',
+    L16: 'Millford',       L17: 'Rushfields',       L18: 'Thornpoint',
+    L19: 'Crownhaven',     L20: 'Greenwood',        L21: 'Stormgate',
+    L22: 'Emberrock',      L23: 'The Defile',       L24: 'Sandpass',
+    L25: 'Duskfall',       L26: 'Stonevale',        L27: 'Saltmere',
+    L28: 'Sunhold',        L29: 'The Heartlands',   L30: 'Verdant Hall',
+    L31: 'Old Quay',       L32: 'Threespire',       L33: 'The Marches',
+    L34: 'Westmarch',      L35: 'The Vinery',       L36: 'Goldport',
+    L37: 'Reaverhold',
+    S01: 'Frozen Bay',     S02: 'The Pale Sea',     S03: 'The Slender Sea',
+    S04: 'Wreckwater Bay', S05: 'The Amber Gulf',   S06: 'The Farwater',
+    S07: 'The Verge Sea',  S08: "Vintner's Strait", S09: 'The Sundown Deep',
+    S10: 'Gilded Sound',   S11: "Reaver's Bay",     S12: 'Crown Bay',
+  },
+};

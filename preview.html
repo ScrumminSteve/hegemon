@@ -1,0 +1,587 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HEGEMON — Map Viewer (preview build)</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><style>
+/* HEGEMON map viewer — naval chart-room aesthetic.
+   Palette: ink #0B111C · sea #14283C · slate #37424F · brass #C9A84C · bone #D9D2C0 */
+
+:root {
+  --ink: #0B111C;
+  --ink-2: #101a29;
+  --sea: #14283C;
+  --slate: #37424F;
+  --slate-2: #2C3641;
+  --brass: #C9A84C;
+  --bone: #D9D2C0;
+  --bone-dim: #9aa3ad;
+  --hair: rgba(217, 210, 192, 0.14);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--ink);
+  color: var(--bone);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 100vh;
+}
+
+.map-pane { overflow: auto; background: radial-gradient(1200px 900px at 40% 30%, var(--ink-2), var(--ink)); }
+#map { display: block; width: min(100%, 980px); margin: 0 auto; height: auto; }
+
+.side {
+  border-left: 1px solid var(--hair);
+  background: var(--ink-2);
+  padding: 20px 22px;
+  overflow-y: auto;
+}
+
+header h1 {
+  font-family: "Big Shoulders Display", "Arial Narrow", system-ui, sans-serif;
+  font-weight: 700; letter-spacing: 0.12em; font-size: 26px;
+  margin: 0; color: var(--brass); text-transform: uppercase;
+}
+#theme-title { margin: 2px 0 16px; color: var(--bone-dim); font-size: 13px; letter-spacing: 0.06em; }
+
+.field label { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone-dim); margin-bottom: 6px; }
+select {
+  width: 100%; padding: 9px 10px; border-radius: 4px;
+  background: var(--slate-2); color: var(--bone);
+  border: 1px solid var(--hair); font: inherit;
+}
+select:focus-visible, .chip:focus-visible, .region:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+#inspector { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hair); min-height: 220px; }
+.hint { color: var(--bone-dim); font-size: 13.5px; }
+.insp-head h2 { margin: 4px 0 10px; font-family: "Big Shoulders Display", "Arial Narrow", sans-serif; font-size: 24px; letter-spacing: .04em; }
+.idtag-ui, .draft-flag { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; color: var(--brass); letter-spacing: .08em; }
+.draft-flag { color: #c96a2b; text-transform: uppercase; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0 0 14px; font-size: 13.5px; }
+dt { color: var(--bone-dim); }
+dd { margin: 0; }
+#inspector h3 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--bone-dim); margin: 12px 0 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 12px/1 "IBM Plex Mono", ui-monospace, monospace; color: var(--bone);
+  background: var(--slate-2); border: 1px solid var(--hair); border-radius: 999px;
+  padding: 6px 10px; cursor: pointer;
+}
+.chip:hover { border-color: var(--brass); }
+
+#legend { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hair); font-size: 13px; }
+.legend-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.swatch { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+.legend-home { margin-left: auto; color: var(--bone-dim); font-size: 12px; }
+
+/* ---- SVG ---- */
+.graticule line { stroke: var(--hair); stroke-width: 0.5; }
+.edge-land { stroke: rgba(217,210,192,.28); stroke-width: 1.4; }
+.edge-sea  { stroke: rgba(120,170,210,.30); stroke-width: 1.4; stroke-dasharray: 4 5; }
+.edge-hl   { stroke: var(--brass); stroke-width: 2.4; stroke-dasharray: none; }
+
+.region { cursor: pointer; transition: opacity .12s ease; }
+.region.dim { opacity: 0.28; }
+.land-hex { fill: var(--slate); stroke: rgba(217,210,192,.45); stroke-width: 1.6; }
+.sea-outer { fill: var(--sea); stroke: rgba(120,170,210,.5); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.sea-inner { fill: none; stroke: rgba(120,170,210,.28); stroke-width: 1; }
+.port-diamond { fill: var(--ink-2); stroke: var(--brass); stroke-width: 1.4; }
+
+.region.hl .shape, .region.selected .shape { stroke: var(--brass); stroke-width: 3; }
+.region.adj .shape { stroke: #E8DCA8; stroke-width: 2.4; }
+
+.label {
+  fill: var(--bone); text-anchor: middle;
+  font: 600 15px "Big Shoulders Display", "Arial Narrow", sans-serif;
+  letter-spacing: .05em; paint-order: stroke; stroke: var(--ink); stroke-width: 3px;
+}
+.maritime .label { fill: #9CC3DE; font-weight: 500; font-style: italic; }
+.idtag { fill: rgba(217,210,192,.5); text-anchor: middle; font: 10px "IBM Plex Mono", ui-monospace, monospace; }
+.home-glyph { text-anchor: middle; font-size: 14px; }
+.ic-muster { fill: var(--brass); stroke: var(--ink); stroke-width: 1; }
+.ic-supply { fill: #8FA86B; stroke: var(--ink); stroke-width: 1; }
+.ic-coin   { fill: #D9B65C; stroke: var(--ink); stroke-width: 1; }
+
+@media (max-width: 900px) {
+  body { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+  .side { border-left: none; border-top: 1px solid var(--hair); }
+  .map-pane { max-height: 62vh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .region { transition: none; }
+}
+</style></head><body>
+  <main class="map-pane">
+    <svg id="map" aria-label="Campaign map"></svg>
+  </main>
+  <aside class="side">
+    <header>
+      <h1>Hegemon</h1>
+      <p id="theme-title"></p>
+    </header>
+    <div class="field">
+      <label for="theme-select">Theme pack</label>
+      <select id="theme-select">
+        <option value="core" selected>Core — The Sundered Realm</option>
+        <option value="asoiaf">ASOIAF — The War of Five Kings</option>
+      </select>
+    </div>
+    <section id="inspector" aria-live="polite"></section>
+    <section id="legend"></section>
+  </aside>
+<script>
+// HEGEMON base map — IP-NEUTRAL DATA. Display names live in theme packs, keyed by id.
+//
+// ⚠ DRAFT STATUS (M0 exit criteria in README):
+//   1. EDGES (adjacency) are best-effort and MUST be validated against the reference
+//      board using the hover highlighter in the viewer, then corrected here.
+//   2. muster/supply/coin values per region are best-effort DRAFT — audit required.
+//
+// kind: 'land' | 'maritime' | 'port'
+// muster: 0 none, 1 fort, 2 citadel      supply/coin: icon counts
+// home: faction id whose home seat this is
+// x,y: layout coordinates on a 1000 x 1460 canvas (viewer only; engine ignores)
+
+const REGIONS = [
+  // ---- Land ----
+  { id: 'L01', kind: 'land', x: 420, y: 180,  muster: 2, supply: 1, coin: 1, home: 'F1' },
+  { id: 'L02', kind: 'land', x: 630, y: 150,  muster: 0, supply: 0, coin: 1 },
+  { id: 'L03', kind: 'land', x: 265, y: 240,  muster: 0, supply: 1, coin: 0 },
+  { id: 'L04', kind: 'land', x: 565, y: 275,  muster: 1, supply: 0, coin: 0 },
+  { id: 'L05', kind: 'land', x: 715, y: 285,  muster: 0, supply: 1, coin: 0 },
+  { id: 'L06', kind: 'land', x: 245, y: 385,  muster: 1, supply: 0, coin: 0 },
+  { id: 'L07', kind: 'land', x: 460, y: 365,  muster: 1, supply: 0, coin: 0 },
+  { id: 'L08', kind: 'land', x: 350, y: 445,  muster: 0, supply: 1, coin: 0 },
+  { id: 'L09', kind: 'land', x: 530, y: 455,  muster: 0, supply: 0, coin: 1 },
+  { id: 'L10', kind: 'land', x: 425, y: 525,  muster: 1, supply: 1, coin: 0 },
+  { id: 'L11', kind: 'land', x: 705, y: 425,  muster: 0, supply: 1, coin: 0 },
+  { id: 'L12', kind: 'land', x: 645, y: 525,  muster: 0, supply: 1, coin: 0 },
+  { id: 'L13', kind: 'land', x: 720, y: 600,  muster: 1, supply: 0, coin: 1 },
+  { id: 'L14', kind: 'land', x: 405, y: 610,  muster: 2, supply: 1, coin: 1 },
+  { id: 'L15', kind: 'land', x: 545, y: 620,  muster: 1, supply: 0, coin: 1 },
+  { id: 'L16', kind: 'land', x: 430, y: 705,  muster: 0, supply: 0, coin: 1 },
+  { id: 'L17', kind: 'land', x: 525, y: 760,  muster: 0, supply: 2, coin: 0 },
+  { id: 'L18', kind: 'land', x: 675, y: 685,  muster: 1, supply: 0, coin: 0 },
+  { id: 'L19', kind: 'land', x: 635, y: 790,  muster: 2, supply: 0, coin: 2, garrison: 2 },
+  { id: 'L20', kind: 'land', x: 660, y: 890,  muster: 0, supply: 1, coin: 1 },
+  { id: 'L21', kind: 'land', x: 725, y: 975,  muster: 1, supply: 0, coin: 0 },
+  { id: 'L22', kind: 'land', x: 845, y: 705,  muster: 2, supply: 0, coin: 1, home: 'F3', garrison: 2 },
+  { id: 'L23', kind: 'land', x: 645, y: 1065, muster: 1, supply: 0, coin: 0 },
+  { id: 'L24', kind: 'land', x: 520, y: 1105, muster: 0, supply: 1, coin: 1 },
+  { id: 'L25', kind: 'land', x: 405, y: 1225, muster: 1, supply: 1, coin: 0 },
+  { id: 'L26', kind: 'land', x: 585, y: 1185, muster: 1, supply: 0, coin: 0 },
+  { id: 'L27', kind: 'land', x: 665, y: 1290, muster: 0, supply: 1, coin: 0 },
+  { id: 'L28', kind: 'land', x: 790, y: 1245, muster: 2, supply: 1, coin: 1, home: 'F5', garrison: 2 },
+  { id: 'L29', kind: 'land', x: 490, y: 910,  muster: 0, supply: 0, coin: 0 },
+  { id: 'L30', kind: 'land', x: 350, y: 1005, muster: 2, supply: 2, coin: 0, home: 'F4', garrison: 2 },
+  { id: 'L31', kind: 'land', x: 250, y: 1135, muster: 2, supply: 0, coin: 0 },
+  { id: 'L32', kind: 'land', x: 305, y: 1240, muster: 0, supply: 1, coin: 0 },
+  { id: 'L33', kind: 'land', x: 455, y: 1015, muster: 0, supply: 1, coin: 0 },
+  { id: 'L34', kind: 'land', x: 280, y: 900,  muster: 0, supply: 1, coin: 1 },
+  { id: 'L35', kind: 'land', x: 150, y: 1330, muster: 0, supply: 1, coin: 0 },
+  { id: 'L36', kind: 'land', x: 300, y: 770,  muster: 2, supply: 2, coin: 0, home: 'F2', garrison: 2 },
+  { id: 'L37', kind: 'land', x: 225, y: 480,  muster: 2, supply: 1, coin: 1, home: 'F6', garrison: 2 },
+
+  // ---- Maritime ----
+  { id: 'S01', kind: 'maritime', x: 165, y: 130 },
+  { id: 'S02', kind: 'maritime', x: 800, y: 130 },
+  { id: 'S03', kind: 'maritime', x: 845, y: 480 },
+  { id: 'S04', kind: 'maritime', x: 855, y: 890 },
+  { id: 'S05', kind: 'maritime', x: 705, y: 1165 },
+  { id: 'S06', kind: 'maritime', x: 860, y: 1370 },
+  { id: 'S07', kind: 'maritime', x: 380, y: 1400 },
+  { id: 'S08', kind: 'maritime', x: 195, y: 1265 },
+  { id: 'S09', kind: 'maritime', x: 95,  y: 700 },
+  { id: 'S10', kind: 'maritime', x: 170, y: 860 },
+  { id: 'S11', kind: 'maritime', x: 300, y: 555 },
+  { id: 'S12', kind: 'maritime', x: 750, y: 750 },
+];
+
+// Ports: sub-areas joining one land region and one maritime region.
+const PORTS = [
+  { id: 'P01', kind: 'port', landId: 'L01', seaId: 'S01' },
+  { id: 'P02', kind: 'port', landId: 'L04', seaId: 'S03' },
+  { id: 'P03', kind: 'port', landId: 'L37', seaId: 'S11' },
+  { id: 'P04', kind: 'port', landId: 'L36', seaId: 'S10' },
+  { id: 'P05', kind: 'port', landId: 'L31', seaId: 'S08' },
+  { id: 'P06', kind: 'port', landId: 'L28', seaId: 'S05' },
+  { id: 'P07', kind: 'port', landId: 'L21', seaId: 'S04' },
+  { id: 'P08', kind: 'port', landId: 'L22', seaId: 'S04' },
+];
+
+// Undirected adjacency. ⚠ DRAFT — validate every edge (see README).
+const EDGES = [
+  // land–land
+  ['L01','L02'], ['L01','L03'], ['L01','L04'], ['L01','L07'],
+  ['L02','L04'], ['L03','L06'], ['L04','L05'], ['L04','L07'],
+  ['L06','L08'], ['L07','L08'], ['L07','L09'], ['L08','L10'],
+  ['L09','L10'], ['L09','L11'], ['L10','L14'], ['L11','L12'],
+  ['L12','L13'], ['L12','L15'], ['L13','L18'], ['L14','L15'],
+  ['L14','L16'], ['L14','L36'], ['L15','L16'], ['L15','L17'],
+  ['L15','L18'], ['L16','L17'], ['L16','L36'], ['L17','L19'],
+  ['L17','L29'], ['L18','L19'], ['L19','L20'], ['L19','L29'],
+  ['L20','L21'], ['L21','L23'], ['L23','L24'], ['L23','L26'],
+  ['L24','L25'], ['L24','L26'], ['L24','L33'], ['L25','L26'],
+  ['L25','L32'], ['L26','L27'], ['L26','L28'], ['L27','L28'],
+  ['L29','L30'], ['L29','L33'], ['L29','L34'], ['L30','L31'],
+  ['L30','L33'], ['L30','L34'], ['L31','L32'], ['L31','L33'],
+  ['L34','L36'],
+  // land–maritime (coastlines)
+  ['S01','L01'], ['S01','L03'],
+  ['S02','L02'], ['S02','L05'],
+  ['S03','L04'], ['S03','L05'], ['S03','L11'], ['S03','L13'], ['S03','L18'],
+  ['S04','L20'], ['S04','L21'], ['S04','L22'],
+  ['S05','L21'], ['S05','L26'], ['S05','L27'], ['S05','L28'],
+  ['S06','L27'], ['S06','L28'],
+  ['S07','L25'], ['S07','L32'],
+  ['S08','L31'], ['S08','L32'], ['S08','L35'],
+  ['S09','L03'], ['S09','L06'], ['S09','L34'],
+  ['S10','L34'], ['S10','L36'],
+  ['S11','L06'], ['S11','L08'], ['S11','L10'], ['S11','L37'],
+  ['S12','L18'], ['S12','L19'], ['S12','L20'], ['S12','L22'],
+  // maritime–maritime
+  ['S01','S09'], ['S02','S03'], ['S03','S04'], ['S04','S06'],
+  ['S04','S12'], ['S05','S06'], ['S06','S07'], ['S07','S08'],
+  ['S07','S09'], ['S08','S09'], ['S09','S10'], ['S09','S11'],
+  ['S10','S11'],
+];
+
+function buildAdjacency() {
+  const adj = {};
+  for (const r of [...REGIONS, ...PORTS]) adj[r.id] = new Set();
+  for (const [a, b] of EDGES) { adj[a].add(b); adj[b].add(a); }
+  for (const p of PORTS) { adj[p.id].add(p.landId); adj[p.id].add(p.seaId); }
+  return adj;
+}
+
+// HEGEMON factions — IP-NEUTRAL. Names/sigils come from the active theme pack.
+// seatCount: minimum player count at which the faction enters play (base game values, DRAFT).
+// F7/F8 are reserved for expansion content (extended east map / high mountain seat).
+
+const FACTIONS = [
+  { id: 'F1', homeRegionId: 'L01', color: '#8FA8B8', seatCount: 3 },
+  { id: 'F2', homeRegionId: 'L36', color: '#C9A227', seatCount: 3 },
+  { id: 'F3', homeRegionId: 'L22', color: '#E3C34C', seatCount: 3 },
+  { id: 'F4', homeRegionId: 'L30', color: '#6FA05C', seatCount: 5 },
+  { id: 'F5', homeRegionId: 'L28', color: '#C96A2B', seatCount: 6 },
+  { id: 'F6', homeRegionId: 'L37', color: '#4E7A74', seatCount: 4 },
+];
+
+// Theme pack: CORE — original generic IP. This is the default skin and the
+// template for any future pivot. Everything display-facing lives here.
+
+const THEME_CORE = {
+  id: 'core',
+  title: 'The Sundered Realm',
+  terms: {
+    faction: 'Faction', factions: 'Factions',
+    leaderCard: 'Leader Card',
+    eventPhase: 'Muster & Omens Phase',
+    invaders: 'The Horde', threatTrack: 'Threat Track', incursion: 'Incursion',
+    trackInitiative: 'Initiative', trackProwess: 'Prowess', trackCommand: 'Command',
+    tokenSovereign: 'Sovereign Token', tokenBlade: "Champion's Blade", tokenCourier: 'Courier Token',
+    authority: 'Authority',
+    orderRally: 'Rally',
+    fort: 'Fort', citadel: 'Citadel',
+    unitInfantry: 'Infantry', unitCavalry: 'Cavalry', unitWarship: 'Warship',
+    unitSiege: 'Siege Engine', unitBehemoth: 'Behemoth',
+    land: 'Land', maritime: 'Sea', port: 'Harbor',
+  },
+  factions: {
+    F1: { name: 'The Boreal Compact', glyph: '❄' },
+    F2: { name: 'The Gilded Order',   glyph: '◆' },
+    F3: { name: 'The Storm Legion',   glyph: '⚡' },
+    F4: { name: 'The Verdant League', glyph: '✿' },
+    F5: { name: 'The Dune Covenant',  glyph: '☀' },
+    F6: { name: 'The Corsair Fleet',  glyph: '⚓' },
+  },
+  regions: {
+    L01: 'Frosthold',      L02: 'The Rimefells',   L03: 'Greyshore',
+    L04: 'Harborgate',     L05: 'Eastcliff',        L06: 'Fenpoint',
+    L07: 'The Causeway',   L08: 'Mirebank',         L09: 'Tollbridge',
+    L10: 'Seawall',        L11: 'The Spurs',        L12: 'Highpass',
+    L13: 'Skyreach',       L14: 'Riverhold',        L15: 'Lakemoor',
+    L16: 'Millford',       L17: 'Rushfields',       L18: 'Thornpoint',
+    L19: 'Crownhaven',     L20: 'Greenwood',        L21: 'Stormgate',
+    L22: 'Emberrock',      L23: 'The Defile',       L24: 'Sandpass',
+    L25: 'Duskfall',       L26: 'Stonevale',        L27: 'Saltmere',
+    L28: 'Sunhold',        L29: 'The Heartlands',   L30: 'Verdant Hall',
+    L31: 'Old Quay',       L32: 'Threespire',       L33: 'The Marches',
+    L34: 'Westmarch',      L35: 'The Vinery',       L36: 'Goldport',
+    L37: 'Reaverhold',
+    S01: 'Frozen Bay',     S02: 'The Pale Sea',     S03: 'The Slender Sea',
+    S04: 'Wreckwater Bay', S05: 'The Amber Gulf',   S06: 'The Farwater',
+    S07: 'The Verge Sea',  S08: "Vintner's Strait", S09: 'The Sundown Deep',
+    S10: 'Gilded Sound',   S11: "Reaver's Bay",     S12: 'Crown Bay',
+  },
+};
+
+// Theme pack: ASOIAF — fan theme. The ONLY file in the codebase permitted to
+// contain A Song of Ice and Fire names. Deleting this file must leave a fully
+// functional product under the core theme.
+
+const THEME_ASOIAF = {
+  id: 'asoiaf',
+  title: 'The War of Five Kings',
+  terms: {
+    faction: 'House', factions: 'Houses',
+    leaderCard: 'House Card',
+    eventPhase: 'Westeros Phase',
+    invaders: 'Wildlings', threatTrack: 'Wildling Track', incursion: 'Wildling Attack',
+    trackInitiative: 'Iron Throne', trackProwess: 'Fiefdoms', trackCommand: "King's Court",
+    tokenSovereign: 'Iron Throne Token', tokenBlade: 'Valyrian Steel Blade', tokenCourier: 'Messenger Raven',
+    authority: 'Power',
+    orderRally: 'Consolidate Power',
+    fort: 'Castle', citadel: 'Stronghold',
+    unitInfantry: 'Footman', unitCavalry: 'Knight', unitWarship: 'Ship',
+    unitSiege: 'Siege Engine', unitBehemoth: 'Dragon',
+    land: 'Land', maritime: 'Sea', port: 'Port',
+  },
+  factions: {
+    F1: { name: 'House Stark',     glyph: '🐺' },
+    F2: { name: 'House Lannister', glyph: '🦁' },
+    F3: { name: 'House Baratheon', glyph: '🦌' },
+    F4: { name: 'House Tyrell',    glyph: '🌹' },
+    F5: { name: 'House Martell',   glyph: '☀' },
+    F6: { name: 'House Greyjoy',   glyph: '🦑' },
+  },
+  regions: {
+    L01: 'Winterfell',        L02: 'Karhold',            L03: 'The Stony Shore',
+    L04: 'White Harbor',      L05: "Widow's Watch",      L06: "Flint's Finger",
+    L07: 'Moat Cailin',       L08: 'Greywater Watch',    L09: 'The Twins',
+    L10: 'Seagard',           L11: 'The Fingers',        L12: 'The Mountains of the Moon',
+    L13: 'The Eyrie',         L14: 'Riverrun',           L15: 'Harrenhal',
+    L16: 'Stoney Sept',       L17: 'Blackwater',         L18: 'Crackclaw Point',
+    L19: "King's Landing",    L20: 'The Kingswood',      L21: "Storm's End",
+    L22: 'Dragonstone',       L23: 'The Boneway',        L24: "Prince's Pass",
+    L25: 'Starfall',          L26: 'Yronwood',           L27: 'Salt Shore',
+    L28: 'Sunspear',          L29: 'The Reach',          L30: 'Highgarden',
+    L31: 'Oldtown',           L32: 'Three Towers',       L33: 'The Dornish Marches',
+    L34: 'Searoad Marches',   L35: 'The Arbor',          L36: 'Lannisport',
+    L37: 'Pyke',
+    S01: 'Bay of Ice',        S02: 'The Shivering Sea',  S03: 'The Narrow Sea',
+    S04: 'Shipbreaker Bay',   S05: 'Sea of Dorne',       S06: 'East Summer Sea',
+    S07: 'West Summer Sea',   S08: 'Redwyne Straights',  S09: 'Sunset Sea',
+    S10: 'The Golden Sound',  S11: "Ironman's Bay",      S12: 'Blackwater Bay',
+  },
+};
+
+const { renderMap, markSelected } = (() => {
+// Map renderer. Pure presentation: reads structure from data, names from theme.
+
+
+const W = 1000, H = 1460;
+const ADJ = buildAdjacency();
+const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
+
+const svgEl = (tag, attrs = {}) => {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+};
+
+function hexPath(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6;
+    pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+function iconRow(g, region, cx, cy) {
+  const marks = [];
+  for (let i = 0; i < region.muster; i++) marks.push('muster');
+  for (let i = 0; i < (region.supply || 0); i++) marks.push('supply');
+  for (let i = 0; i < (region.coin || 0); i++) marks.push('coin');
+  const total = marks.length;
+  if (!total) return;
+  const step = 16, x0 = cx - ((total - 1) * step) / 2;
+  marks.forEach((m, i) => {
+    const x = x0 + i * step;
+    if (m === 'muster') g.appendChild(svgEl('rect', { x: x - 5.5, y: cy - 5.5, width: 11, height: 11, class: 'ic-muster' }));
+    else if (m === 'supply') g.appendChild(svgEl('rect', { x: x - 5, y: cy - 6, width: 10, height: 12, rx: 3, class: 'ic-supply' }));
+    else g.appendChild(svgEl('circle', { cx: x, cy, r: 5.5, class: 'ic-coin' }));
+  });
+}
+
+function renderMap(svg, theme, { onSelect } = {}) {
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const pos = Object.fromEntries(REGIONS.map(r => [r.id, r]));
+
+  // chart graticule
+  const grid = svgEl('g', { class: 'graticule' });
+  for (let x = 100; x < W; x += 100) grid.appendChild(svgEl('line', { x1: x, y1: 0, x2: x, y2: H }));
+  for (let y = 100; y < H; y += 100) grid.appendChild(svgEl('line', { x1: 0, y1: y, x2: W, y2: y }));
+  svg.appendChild(grid);
+
+  // edges
+  const edges = svgEl('g', { class: 'edges' });
+  for (const [a, b] of EDGES) {
+    const A = pos[a], B = pos[b];
+    if (!A || !B) continue;
+    const sea = a.startsWith('S') || b.startsWith('S');
+    edges.appendChild(svgEl('line', {
+      x1: A.x, y1: A.y, x2: B.x, y2: B.y,
+      class: sea ? 'edge edge-sea' : 'edge edge-land',
+      'data-a': a, 'data-b': b,
+    }));
+  }
+  svg.appendChild(edges);
+
+  const nodes = svgEl('g', { class: 'nodes' });
+  svg.appendChild(nodes);
+
+  for (const r of REGIONS) {
+    const g = svgEl('g', { class: `region ${r.kind}`, 'data-id': r.id, tabindex: 0, role: 'button' });
+    const name = theme.regions[r.id] || r.id;
+
+    if (r.kind === 'maritime') {
+      g.appendChild(svgEl('circle', { cx: r.x, cy: r.y, r: 42, class: 'shape sea-outer' }));
+      g.appendChild(svgEl('circle', { cx: r.x, cy: r.y, r: 32, class: 'shape sea-inner' }));
+    } else {
+      const home = r.home ? factionById[r.home] : null;
+      const poly = svgEl('polygon', { points: hexPath(r.x, r.y, 46), class: 'shape land-hex' });
+      if (home) poly.style.stroke = home.color;
+      g.appendChild(poly);
+      if (home) {
+        g.appendChild(svgEl('circle', { cx: r.x, cy: r.y - 16, r: 13, class: 'home-seal', style: `fill:${home.color}` }));
+        const glyph = svgEl('text', { x: r.x, y: r.y - 11.5, class: 'home-glyph' });
+        glyph.textContent = theme.factions[r.home]?.glyph || '●';
+        g.appendChild(glyph);
+      }
+      iconRow(g, r, r.x, r.y + (home ? 14 : 2));
+    }
+
+    const label = svgEl('text', { x: r.x, y: r.y + (r.kind === 'maritime' ? 58 : 66), class: 'label' });
+    label.textContent = name;
+    g.appendChild(label);
+
+    const idTag = svgEl('text', { x: r.x, y: r.y + (r.kind === 'maritime' ? 4 : (r.home ? 34 : 24)), class: 'idtag' });
+    idTag.textContent = r.id;
+    g.appendChild(idTag);
+
+    g.addEventListener('click', () => onSelect?.(r.id));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(r.id); } });
+    g.addEventListener('mouseenter', () => highlight(svg, r.id, true));
+    g.addEventListener('mouseleave', () => highlight(svg, r.id, false));
+    g.addEventListener('focus', () => highlight(svg, r.id, true));
+    g.addEventListener('blur', () => highlight(svg, r.id, false));
+    nodes.appendChild(g);
+  }
+
+  // ports as diamonds on the land↔sea midpoint
+  for (const p of PORTS) {
+    const A = pos[p.landId], B = pos[p.seaId];
+    const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+    const g = svgEl('g', { class: 'region port', 'data-id': p.id, tabindex: 0, role: 'button' });
+    g.appendChild(svgEl('rect', { x: mx - 9, y: my - 9, width: 18, height: 18, class: 'shape port-diamond', transform: `rotate(45 ${mx} ${my})` }));
+    g.addEventListener('click', () => onSelect?.(p.id));
+    g.addEventListener('mouseenter', () => highlight(svg, p.id, true));
+    g.addEventListener('mouseleave', () => highlight(svg, p.id, false));
+    nodes.appendChild(g);
+  }
+}
+
+function markSelected(svg, id) {
+  svg.querySelectorAll('.region.selected').forEach(el => el.classList.remove('selected'));
+  if (id) svg.querySelector(`.region[data-id="${id}"]`)?.classList.add('selected');
+}
+
+function highlight(svg, id, on) {
+  const neighbors = ADJ[id] || new Set();
+  svg.querySelectorAll('.region').forEach(el => {
+    const rid = el.dataset.id;
+    el.classList.toggle('hl', on && rid === id);
+    el.classList.toggle('adj', on && neighbors.has(rid));
+    el.classList.toggle('dim', on && rid !== id && !neighbors.has(rid));
+  });
+  svg.querySelectorAll('.edge').forEach(el => {
+    el.classList.toggle('edge-hl', on && (el.dataset.a === id || el.dataset.b === id));
+  });
+}
+return { renderMap, markSelected }; })();
+(() => {
+
+const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF };
+const ADJ = buildAdjacency();
+const byId = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r]));
+
+let theme = THEME_CORE;
+let selectedId = null;
+
+const $ = s => document.querySelector(s);
+const svg = $('#map');
+
+function portName(p) {
+  return `${theme.terms.port} of ${theme.regions[p.landId]}`;
+}
+function regionName(id) {
+  const r = byId[id];
+  return r.kind === 'port' ? portName(r) : (theme.regions[id] || id);
+}
+
+function renderInspector() {
+  const box = $('#inspector');
+  if (!selectedId) {
+    box.innerHTML = `<p class="hint">Select a region to inspect it. Hovering highlights its neighbors — use this to validate adjacency against the reference board.</p>`;
+    return;
+  }
+  const r = byId[selectedId];
+  const t = theme.terms;
+  const rows = [];
+  const kindLabel = r.kind === 'land' ? t.land : r.kind === 'maritime' ? t.maritime : t.port;
+  rows.push(['Kind', kindLabel]);
+  if (r.kind === 'land') {
+    rows.push(['Muster', r.muster === 2 ? t.citadel : r.muster === 1 ? t.fort : '—']);
+    rows.push(['Supply', r.supply || 0]);
+    rows.push(['Coin', r.coin || 0]);
+    if (r.home) rows.push([t.faction, `${theme.factions[r.home].glyph} ${theme.factions[r.home].name}`]);
+    if (r.garrison) rows.push(['Garrison', r.garrison]);
+  }
+  if (r.kind === 'port') {
+    rows.push(['Attached to', `${regionName(r.landId)} / ${regionName(r.seaId)}`]);
+  }
+  const neighbors = [...(ADJ[selectedId] || [])].sort().map(id =>
+    `<button class="chip" data-goto="${id}">${id} · ${regionName(id)}</button>`).join('');
+  box.innerHTML = `
+    <div class="insp-head"><span class="idtag-ui">${r.id}</span><h2>${regionName(r.id)}</h2></div>
+    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+    <h3>Adjacent <span class="draft-flag">draft — verify</span></h3>
+    <div class="chips">${neighbors || '<em>none</em>'}</div>`;
+  box.querySelectorAll('[data-goto]').forEach(b =>
+    b.addEventListener('click', () => select(b.dataset.goto)));
+}
+
+function renderLegend() {
+  $('#legend').innerHTML = FACTIONS.map(f => {
+    const tf = theme.factions[f.id];
+    return `<div class="legend-row"><span class="swatch" style="background:${f.color}"></span>
+      <span class="legend-glyph">${tf.glyph}</span> ${tf.name}
+      <span class="legend-home">${regionName(f.homeRegionId)}</span></div>`;
+  }).join('');
+}
+
+function renderAll() {
+  document.title = `HEGEMON — ${theme.title}`;
+  $('#theme-title').textContent = theme.title;
+  renderMap(svg, theme, { onSelect: select });
+  markSelected(svg, selectedId);
+  renderInspector();
+  renderLegend();
+}
+
+function select(id) {
+  selectedId = id === selectedId ? null : id;
+  markSelected(svg, selectedId);
+  renderInspector();
+}
+
+$('#theme-select').addEventListener('change', e => {
+  theme = THEMES[e.target.value];
+  renderAll();
+});
+
+renderAll();
+})();
+</script></body></html>

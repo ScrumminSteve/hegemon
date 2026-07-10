@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HegemonFactions",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "homeRegionId", "color", "seatCount"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^F[0-9]+$" },
+      "homeRegionId": { "type": "string" },
+      "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+      "seatCount": { "type": "integer", "minimum": 3, "maximum": 8 }
+    }
+  }
+}

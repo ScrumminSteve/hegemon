@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HegemonThemePack",
+  "description": "The ONLY place display names may live. A theme must cover every region id, every faction id, and every term key.",
+  "type": "object",
+  "required": ["id", "title", "terms", "factions", "regions"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "terms": { "type": "object", "additionalProperties": { "type": "string" } },
+    "factions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "type": "string" }, "glyph": { "type": "string" } }
+      }
+    },
+    "regions": { "type": "object", "additionalProperties": { "type": "string" } }
+  }
+}

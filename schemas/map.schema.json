@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HegemonMap",
+  "description": "Region graph. IDs only; display names are theme-pack concerns.",
+  "type": "object",
+  "required": ["regions", "ports", "edges"],
+  "properties": {
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[LS][0-9]{2}$" },
+          "kind": { "enum": ["land", "maritime"] },
+          "muster": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "supply": { "type": "integer", "minimum": 0 },
+          "coin": { "type": "integer", "minimum": 0 },
+          "home": { "type": "string", "pattern": "^F[0-9]+$" },
+          "garrison": { "type": "integer", "minimum": 0 },
+          "x": { "type": "number" }, "y": { "type": "number" }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "landId", "seaId"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^P[0-9]{2}$" },
+          "landId": { "type": "string" }, "seaId": { "type": "string" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string" } }
+    }
+  }
+}

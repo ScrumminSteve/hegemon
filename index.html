@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEGEMON — Map Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="map-pane">
+    <svg id="map" aria-label="Campaign map"></svg>
+  </main>
+  <aside class="side">
+    <header>
+      <h1>Hegemon</h1>
+      <p id="theme-title"></p>
+    </header>
+    <div class="field">
+      <label for="theme-select">Theme pack</label>
+      <select id="theme-select">
+        <option value="core" selected>Core — The Sundered Realm</option>
+        <option value="asoiaf">ASOIAF — The War of Five Kings</option>
+      </select>
+    </div>
+    <section id="inspector" aria-live="polite"></section>
+    <section id="legend"></section>
+  </aside>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
