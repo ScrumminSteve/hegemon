@@ -30,10 +30,10 @@ export const REGIONS = [
   { id: 'L16', kind: 'land', x: 430, y: 705,  muster: 0, supply: 0, coin: 1 },
   { id: 'L17', kind: 'land', x: 525, y: 760,  muster: 0, supply: 2, coin: 0 },
   { id: 'L18', kind: 'land', x: 675, y: 685,  muster: 1, supply: 0, coin: 0 },
-  { id: 'L19', kind: 'land', x: 635, y: 790,  muster: 2, supply: 0, coin: 2, garrison: 2 },
+  { id: 'L19', kind: 'land', x: 635, y: 790,  muster: 2, supply: 0, coin: 2 },
   { id: 'L20', kind: 'land', x: 660, y: 890,  muster: 0, supply: 1, coin: 1 },
   { id: 'L21', kind: 'land', x: 725, y: 975,  muster: 1, supply: 0, coin: 0 },
-  { id: 'L22', kind: 'land', x: 845, y: 705,  muster: 2, supply: 0, coin: 1, home: 'F3', garrison: 2 },
+  { id: 'L22', kind: 'land', x: 845, y: 705,  muster: 2, supply: 1, coin: 1, home: 'F3', garrison: 2 },
   { id: 'L23', kind: 'land', x: 645, y: 1065, muster: 1, supply: 0, coin: 0 },
   { id: 'L24', kind: 'land', x: 520, y: 1105, muster: 0, supply: 1, coin: 1 },
   { id: 'L25', kind: 'land', x: 405, y: 1225, muster: 1, supply: 1, coin: 0 },
@@ -49,6 +49,7 @@ export const REGIONS = [
   { id: 'L35', kind: 'land', x: 150, y: 1330, muster: 0, supply: 1, coin: 0 },
   { id: 'L36', kind: 'land', x: 300, y: 770,  muster: 2, supply: 2, coin: 0, home: 'F2', garrison: 2 },
   { id: 'L37', kind: 'land', x: 225, y: 480,  muster: 2, supply: 1, coin: 1, home: 'F6', garrison: 2 },
+  { id: 'L38', kind: 'land', x: 505, y: 75,   muster: 0, supply: 0, coin: 1 },
 
   // ---- Maritime ----
   { id: 'S01', kind: 'maritime', x: 165, y: 130 },
@@ -94,9 +95,11 @@ export const EDGES = [
   ['L29','L30'], ['L29','L33'], ['L29','L34'], ['L30','L31'],
   ['L30','L33'], ['L30','L34'], ['L31','L32'], ['L31','L33'],
   ['L34','L36'],
+  ['L38','L01'], ['L38','L02'],
   // land–maritime (coastlines)
+  ['S01','L38'], ['S02','L38'],
   ['S01','L01'], ['S01','L03'],
-  ['S02','L02'], ['S02','L05'], ['S02','L01'],
+  ['S02','L02'], ['S02','L05'],
   ['S03','L04'], ['S03','L05'], ['S03','L11'], ['S03','L13'], ['S03','L18'],
   ['S04','L20'], ['S04','L21'], ['S04','L22'],
   ['S05','L21'], ['S05','L26'], ['S05','L27'], ['S05','L28'],
