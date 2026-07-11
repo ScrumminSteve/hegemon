@@ -89,8 +89,15 @@ Designed for editing via GitHub web UI (mobile-friendly): small files, one conce
 file, data changes never require touching renderer code. Enable GitHub Pages on `main`
 and the viewer is live at the repo's Pages URL.
 
+## Testing
+
+`npm test` (no dependencies) runs the golden suite in `tests/`. Every rule the
+engine implements gets a test whose name cites the reference rulebook page or
+the owner-verified source. The suite must pass before any zip ships.
+
 ## Milestones
 
-M0 map & theming foundation (this) → M1 engine core (orders, movement, combat) →
+M0 map & theming foundation ✅ (owner-audited) → **M1 engine core (in progress:
+M1.a state model/setup/views ✅)** →
 M2 full base game hot-seat → M3 AI factions → M4 expansion systems (8th faction,
 extended map, vassals, loans, behemoths) → M5 mobile port.
