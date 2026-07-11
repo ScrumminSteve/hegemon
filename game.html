@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HEGEMON — Map Viewer</title>
+<title>HEGEMON — Table Mode</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="game-body">
   <main class="map-pane">
     <svg id="map" aria-label="Campaign map"></svg>
   </main>
   <aside class="side">
     <header>
       <h1>Hegemon</h1>
-      <p id="theme-title"></p>
+      <p id="status-line"></p>
     </header>
     <div class="field">
       <label for="theme-select">Theme pack</label>
@@ -24,12 +24,23 @@
         <option value="asoiaf">ASOIAF — The War of Five Kings</option>
       </select>
     </div>
-    <div class="field field-toggle">
-      <label class="toggle-label"><input type="checkbox" id="setup-toggle"> Show starting setup (6 seats)</label>
+    <section id="turn-panel"></section>
+    <section id="log-panel">
+      <h3>Chronicle</h3>
+      <div id="log"></div>
+    </section>
+    <div class="toolbar">
+      <button id="btn-new">New game</button>
+      <button id="btn-undo">Undo</button>
+      <button id="btn-save">Save</button>
+      <button id="btn-load">Load</button>
     </div>
-    <section id="inspector" aria-live="polite"></section>
-    <section id="legend"></section>
+    <div id="load-box" class="hidden">
+      <textarea id="load-text" rows="4" placeholder="Paste a saved game here…"></textarea>
+      <button id="btn-load-confirm">Restore</button>
+    </div>
+    <p class="footnote"><a href="index.html">Map atlas & setup reference →</a></p>
   </aside>
-  <script type="module" src="src/app.js"></script>
+  <script type="module" src="src/game/app.js"></script>
 </body>
 </html>

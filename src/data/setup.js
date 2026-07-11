@@ -16,6 +16,19 @@ export const SETUP = {
   maxRounds: 10,
   victoryTarget: 7,               // seats (fort/citadel areas) controlled
 
+  // Army-size limits per supply position (board supply chart). Each entry is
+  // the multiset of maximum army sizes a faction may field at that position.
+  // ⚠ DRAFT — transcribed from board photo small print; verify vs the board.
+  supplyLimits: {
+    0: [2, 2],
+    1: [3, 2, 2],
+    2: [3, 2, 2, 2],
+    3: [3, 3, 2, 2],
+    4: [3, 3, 2, 2, 2],
+    5: [4, 3, 2, 2, 2],
+    6: [4, 3, 3, 2, 2],
+  },
+
   // Per-faction unit pool limits (Rules p.2 component list)
   unitPool: { infantry: 10, cavalry: 5, warship: 6, siege_engine: 2 },
 

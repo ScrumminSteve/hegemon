@@ -51,7 +51,8 @@ not in code or data.
 
 ```
 hegemon/
-  index.html            Map viewer (M0 deliverable) — GitHub Pages entry point
+  index.html            Map atlas / setup reference — GitHub Pages entry point
+  game.html             TABLE MODE — the playable game (one operator, all factions)
   styles.css
   src/
     app.js               UI bootstrap, theme switching, info panel
@@ -98,6 +99,6 @@ the owner-verified source. The suite must pass before any zip ships.
 ## Milestones
 
 M0 map & theming foundation ✅ (owner-audited) → **M1 engine core (in progress:
-M1.a state model/setup/views ✅)** →
+M1.a state/setup/views ✅ · M1.b planning ✅ · M1.c action phase ✅ · M1.d combat ✅ · M1.e table-mode UI ✅)** →
 M2 full base game hot-seat → M3 AI factions → M4 expansion systems (8th faction,
 extended map, vassals, loans, behemoths) → M5 mobile port.

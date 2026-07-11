@@ -100,6 +100,7 @@ export function createGame(seatCount = 6, opts = {}) {
       courier: tracks.command[0],
     },
     threat: SETUP.threatTrackStart,   // (Rules p.4 step 2)
+    roundFlags: { bladeUsed: false }, // once-per-round token uses (Rules p.11)
     ordersByRegion: {},               // Planning Phase: { regionId: { faction, type, starred } }
     pendingQueries: [],               // decision stack (drives UI and, later, AI)
     log: [],

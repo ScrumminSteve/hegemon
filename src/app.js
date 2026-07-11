@@ -3,6 +3,7 @@ import { FACTIONS } from './data/factions.js';
 import { THEME_CORE } from './themes/core.js';
 import { THEME_ASOIAF } from './themes/asoiaf.js';
 import { renderMap, markSelected } from './map-view.js';
+import { SETUP } from './data/setup.js';
 
 const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF };
 const ADJ = buildAdjacency();
@@ -63,6 +64,56 @@ function renderLegend() {
   }).join('');
 }
 
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs) => {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+};
+const posOf = (id) => {
+  const r = byId[id];
+  if (r.kind !== 'port') return { x: r.x, y: r.y };
+  const a = byId[r.landId], b = byId[r.seaId];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+};
+
+function unitGlyph(type, x, y, color) {
+  const common = { fill: color, stroke: 'var(--ink)', 'stroke-width': 1 };
+  if (type === 'cavalry')  return el('polygon', { ...common, points: `${x},${y-6} ${x-6},${y+5} ${x+6},${y+5}` });
+  if (type === 'warship')  return el('rect', { ...common, x: x-8, y: y-3.5, width: 16, height: 7, rx: 3 });
+  if (type === 'siege_engine') return el('rect', { ...common, x: x-5, y: y-5, width: 10, height: 10, transform: `rotate(45 ${x} ${y})` });
+  return el('circle', { ...common, cx: x, cy: y, r: 5 }); // infantry
+}
+
+function renderSetupOverlay() {
+  svg.querySelector('.setup-overlay')?.remove();
+  if (!$('#setup-toggle')?.checked) return;
+  const g = el('g', { class: 'setup-overlay' });
+
+  for (const [fid, fs] of Object.entries(SETUP.factions)) {
+    const color = FACTIONS.find(f => f.id === fid).color;
+    for (const [rid, types] of Object.entries(fs.deploy)) {
+      const { x, y } = posOf(rid);
+      const step = 16, x0 = x - ((types.length - 1) * step) / 2;
+      types.forEach((t, i) => g.appendChild(unitGlyph(t, x0 + i * step, y - 32, color)));
+    }
+    for (const [rid, strength] of Object.entries(fs.garrison)) {
+      const { x, y } = posOf(rid);
+      g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 10, class: 'ov-garrison', style: `stroke:${color}` }));
+      const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' });
+      t.textContent = strength; g.appendChild(t);
+    }
+  }
+  const nset = SETUP.seatVariants[6].neutralSet;
+  for (const n of (nset ? SETUP.neutralForces[nset] : [])) {
+    const { x, y } = posOf(n.region);
+    g.appendChild(el('circle', { cx: x, cy: y - 32, r: 11, class: 'ov-neutral' }));
+    const t = el('text', { x, y: y - 27.5, class: 'ov-num' });
+    t.textContent = n.strength ?? '?'; g.appendChild(t);
+  }
+  svg.appendChild(g);
+}
+
 function renderAll() {
   document.title = `HEGEMON — ${theme.title}`;
   $('#theme-title').textContent = theme.title;
@@ -70,6 +121,7 @@ function renderAll() {
   markSelected(svg, selectedId);
   renderInspector();
   renderLegend();
+  renderSetupOverlay();
 }
 
 function select(id) {
@@ -77,6 +129,8 @@ function select(id) {
   markSelected(svg, selectedId);
   renderInspector();
 }
+
+$('#setup-toggle').addEventListener('change', renderSetupOverlay);
 
 $('#theme-select').addEventListener('change', e => {
   theme = THEMES[e.target.value];

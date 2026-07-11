@@ -1,7 +1,10 @@
 // Minimal golden-test runner. Usage: npm test  (or: node tests/run.js)
 import { tests as setupTests } from './setup.test.js';
+import { tests as planningTests } from './planning.test.js';
+import { tests as actionTests } from './action.test.js';
+import { tests as combatTests } from './combat.test.js';
 
-const suites = [['setup', setupTests]];
+const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests]];
 let pass = 0, fail = 0;
 for (const [suite, tests] of suites) {
   for (const t of tests) {
