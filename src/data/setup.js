@@ -40,7 +40,7 @@ export const SETUP = {
     },
     F4: { // rose sigil screen
       deploy: { L30: ['cavalry', 'infantry'], L33: ['infantry'], S08: ['warship'] },
-      tracks: { initiative: 6, prowess: 2, command: 6 },
+      tracks: { initiative: 6, prowess: 2, command: 5 },
       supply: 2,
       garrison: { L30: 2 },
     },
@@ -52,7 +52,7 @@ export const SETUP = {
     },
     F6: { // kraken sigil screen
       deploy: { L37: ['cavalry', 'infantry'], L08: ['infantry'], S11: ['warship'], P03: ['warship'] },
-      tracks: { initiative: 5, prowess: 1, command: 5 },
+      tracks: { initiative: 5, prowess: 1, command: 6 },
       supply: 2,
       garrison: { L37: 2 },
     },
