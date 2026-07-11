@@ -64,13 +64,16 @@ export const SETUP = {
     3: { excluded: ['F5', 'F4', 'F6'], neutralSet: 'three' },
     4: { excluded: ['F5', 'F4'],       neutralSet: 'four' },
     5: { excluded: ['F5'],             neutralSet: 'five' },
-    6: { excluded: [],                 neutralSet: null },
+    6: { excluded: [],                 neutralSet: 'six' },
   },
 
   // Neutral force tokens (Rules p.26, p.28). strength null = illegible in
   // photos, needs transcription from tokens. insurmountable = the "~" tokens
   // (area cannot be entered). ⚠ ALL entries verified:false pending audit.
   neutralForces: {
+    six: [ // the "4-6" range token(s) — present even at full seats
+      { region: 'L13', strength: 6, verified: true },   // owner-verified vs board
+    ],
     five: [ // tokens marked "4-6" and "4-5"
       { region: 'L28', strength: 5, verified: false },   // excluded home seat
       { region: 'L13', strength: 6, verified: false },

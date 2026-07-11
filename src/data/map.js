@@ -73,7 +73,7 @@ export const PORTS = [
   { id: 'P03', kind: 'port', landId: 'L37', seaId: 'S11' },
   { id: 'P04', kind: 'port', landId: 'L36', seaId: 'S10' },
   { id: 'P05', kind: 'port', landId: 'L31', seaId: 'S08' },
-  { id: 'P06', kind: 'port', landId: 'L28', seaId: 'S05' },
+  { id: 'P06', kind: 'port', landId: 'L28', seaId: 'S06' },
   { id: 'P07', kind: 'port', landId: 'L21', seaId: 'S04' },
   { id: 'P08', kind: 'port', landId: 'L22', seaId: 'S04' },
 ];
@@ -97,7 +97,7 @@ export const EDGES = [
   ['L29','L30'], ['L29','L33'], ['L29','L34'], ['L30','L31'],
   ['L30','L33'], ['L30','L34'], ['L31','L32'], ['L31','L33'], ['L32','L33'],
   ['L34','L36'],
-  ['L38','L01'], ['L38','L02'],
+  ['L38','L02'],
   // land–maritime (coastlines)
   ['S01','L38'], ['S02','L38'],
   ['S01','L01'], ['S01','L03'], ['S01','L06'], ['S01','L08'],
