@@ -40,6 +40,28 @@ const NO_CARDS = { leaderCards: false };
 
 export const tests = [
 
+  { name: 'a defeated fleet may retreat into its own harbor, capacity permitting (Rules p.25)', fn() {
+    const s0 = stage({
+      plants: {
+        S10: [['F2', 'warship']],
+        S09: [['F6', 'warship'], ['F6', 'warship']],
+      },
+      orders: { F6: { S09: M(0) } },
+      ruleset: NO_CARDS,
+    });
+    let s = act(s0, { type: 'resolveMarch', faction: 'F6', region: 'S09',
+      moves: [{ to: 'S10', units: { warship: 2 } }] });
+    s = act(s, { type: 'useBlade', faction: 'F6', use: false });
+    const rq = s.pendingQueries.find(x => x.type === 'retreat');
+    ok(rq, 'defender retreats');
+    ok(rq.options.includes('P04'), 'the home harbor is a legal shelter');
+    s = act(s, { type: 'retreat', faction: 'F2', to: 'P04' });
+    const inPort = (s.unitsByRegion['P04'] || []).filter(u => u.faction === 'F2');
+    eq(inPort.length, 2, 'errata ship + refugee');
+    ok(inPort.every(u => u.type === 'warship'));
+  }},
+
+
   { name: 'errata: F2 begins with a warship in its home harbor (FAQ v2.0 setup errata)', fn() {
     const g = createGame(6);
     const port = (g.unitsByRegion['P04'] || []).filter(u => u.faction === 'F2' && u.type === 'warship');

@@ -7,6 +7,7 @@ import { region, regionProps, adjacency, controllerOf, seatsControlled } from '.
 import { REGIONS, PORTS } from '../data/map.js';
 import { SETUP } from '../data/setup.js';
 import { beginPlanning } from './planning.js';
+import { beginEventPhase } from './eventPhase.js';
 import { initiateCombat } from './combat.js';
 
 const ADJ = adjacency();
@@ -351,8 +352,7 @@ function cleanUp(state) {
   }
   state.round += 1;
   // Event Phase (Rules p.7) lands in M2; until then rounds go straight to planning.
-  state.log.push({ round: state.round, event: 'eventPhasePending', note: 'M2' });
-  beginPlanning(state);
+  beginEventPhase(state); // Event Phase precedes planning from round 2 (Rules p.7)
 }
 
 function landAreasControlled(state, fid) {

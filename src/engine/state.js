@@ -6,6 +6,8 @@ import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
 import { SETUP } from '../data/setup.js';
 import { HAND_BY_FACTION } from '../data/leaderCards.js';
+import { EVENT_DECK_SETS, INVADER_SETS } from '../data/registry.js';
+import { shuffle } from './rng.js';
 import { Phase } from './types.js';
 
 export const ENGINE_VERSION = 1;
@@ -98,7 +100,7 @@ export function createGame(seatCount = 6, opts = {}) {
     command: trackOrder('command'),
   };
 
-  return {
+  const state = {
     version: ENGINE_VERSION,
     ruleset: { ...DEFAULT_RULESET, ...(opts.ruleset || {}), seatCount },
     seed: opts.seed ?? 42,
@@ -124,10 +126,27 @@ export function createGame(seatCount = 6, opts = {}) {
                 victory: 'seats', maxRounds: SETUP.maxRounds }, // composition root (expansion seam)
     leaderHands: Object.fromEntries(active.map(f => [f, HAND_BY_FACTION[f].slice()])),
     leaderDiscards: Object.fromEntries(active.map(f => [f, []])),
+    eventDecks: null,    // filled below (seeded shuffle)
+    invaderDeck: null,
     ordersByRegion: {},               // Planning Phase: { regionId: { faction, type, starred } }
     pendingQueries: [],               // decision stack (drives UI and, later, AI)
     log: [],
   };
+
+  // Seeded event decks + invader deck (M2.a). The whole game's card order is
+  // determined here; replays and the Courier's peek come for free.
+  const deckSet = EVENT_DECK_SETS[state.scenario.eventDeckSet || 'base'];
+  state.eventDecks = {};
+  for (const deckId of state.scenario.eventDecks) {
+    const ids = deckSet[deckId].flatMap(c => Array(c.count).fill(c.id));
+    const r = shuffle(state.seed, ids);
+    state.seed = r.seed;
+    state.eventDecks[deckId] = { draw: r.value, discard: [] };
+  }
+  const inv = shuffle(state.seed, Object.keys(INVADER_SETS[state.scenario.invaderSet || 'base']));
+  state.seed = inv.seed;
+  state.invaderDeck = inv.value;
+  return state;
 }
 
 /** Which faction controls a region right now (units > control marker > printed home). */

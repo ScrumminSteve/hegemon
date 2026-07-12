@@ -6,8 +6,9 @@ import { tests as combatTests } from './combat.test.js';
 import { tests as cardsTests } from './cards.test.js';
 import { tests as abilityTests } from './abilities.test.js';
 import { tests as faqTests } from './faq.test.js';
+import { tests as eventTests } from './events.test.js';
 
-const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests]];
+const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests]];
 let pass = 0, fail = 0;
 for (const [suite, tests] of suites) {
   for (const t of tests) {

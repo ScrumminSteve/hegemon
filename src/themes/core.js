@@ -5,6 +5,7 @@ export const THEME_CORE = {
   id: 'core',
   title: 'The Sundered Realm',
   terms: {
+    threat: 'Invader Threat',
     leaderCard: 'Leader Card',
     faction: 'Faction', factions: 'Factions',
     leaderCard: 'Leader Card',

@@ -190,7 +190,9 @@ function qLabel(q) {
     ? q.step : ({ submitOrders: 'orders', courierDecision: 'courier', resolveOrder: q.step,
       declareSupport: 'support', useBlade: 'blade', retreat: 'retreat', replacePortShips: 'port',
       chooseLeaderCard: 'leader card', chooseCasualties: 'casualties',
-      useCardAbility: 'card ability', cardTarget: 'card target' }[q.type]);
+      useCardAbility: 'card ability', cardTarget: 'card target',
+      eventChoice: 'event decree', reconcileSupply: 'supply losses',
+      threatPeekPlacement: 'deck peek' }[q.type]);
 }
 
 function header(q, title) {
@@ -212,6 +214,48 @@ function cardChip(id, { withText = true } = {}) {
     (withText && c.text ? `<div class="card-text">${esc(cardText(id))}${c.implemented === false ? ' <em>(ability lands in M1.5b)</em>' : ''}</div>` : '');
 }
 
+function eventCardName(id) { return theme.eventCards?.[id] ?? id; }
+
+const EVENT_OPTION_LABELS = {
+  muster: () => `everyone recruits (${(theme.terms.rally || 'rally')} the banners)`,
+  supplyUpdate: () => 'everyone updates supply and reconciles armies',
+  bidTracks: () => 'everyone bids on the three tracks',
+  collectAuthority: () => `everyone collects ${theme.terms.authority || 'authority'}`,
+  nothing: () => 'no effect',
+};
+function eventOptionLabel(opt) {
+  if (opt.startsWith('banOrder:')) {
+    const cls = opt.split(':')[1];
+    return cls === 'marchPlusOne' ? 'forbid +1 march orders this round' : `forbid ${cls} orders this round`;
+  }
+  return (EVENT_OPTION_LABELS[opt] || (() => opt))();
+}
+
+function eventChoiceForm(q) {
+  return header(q, `${eventCardName(q.card)} — decree`) +
+    q.options.map(o => `<button class="opt" data-opt="${esc(o)}">${esc(eventOptionLabel(o))}</button>`).join('') +
+    `<div class="hint">The ${q.deck ? 'Deck ' + q.deck + ' ' : ''}card grants its holder the decision.</div>`;
+}
+
+function reconcileForm(q) {
+  const rows = q.regions.map(rid => {
+    const units = (game.unitsByRegion[rid] || []).filter(u => u.faction === q.faction);
+    const types = [...new Set(units.map(u => u.type))];
+    return `<div class="stepper-row"><b>${esc(rName(rid))}</b> (${units.length} units): ` +
+      types.map(t => `<button class="opt" data-region="${rid}" data-unit="${t}">destroy ${esc(theme.terms[t] || t)}</button>`).join(' ') +
+      `</div>`;
+  }).join('');
+  return header(q, 'supply exceeded — choose losses') + rows +
+    `<div class="hint">Destroy one unit at a time until your armies fit your supply.</div>`;
+}
+
+function peekForm(q) {
+  const known = q.card ? `<div class="card-text">Top of the threat deck: <b>${esc(eventCardName(q.card))}</b></div>` : '';
+  return header(q, `${theme.terms.tokenCourier} — deck peek`) + known +
+    `<button class="opt" data-opt="top">leave it on top</button>` +
+    `<button class="opt" data-opt="bottom">bury it at the bottom</button>`;
+}
+
 function formFor(q) {
   if (q.type === 'submitOrders') return planningForm(q);
   if (q.type === 'courierDecision') return courierForm(q);
@@ -226,6 +270,9 @@ function formFor(q) {
   if (q.type === 'chooseCasualties') return casualtyForm(q);
   if (q.type === 'useCardAbility') return abilityForm(q);
   if (q.type === 'cardTarget') return targetForm(q);
+  if (q.type === 'eventChoice') return eventChoiceForm(q);
+  if (q.type === 'reconcileSupply') return reconcileForm(q);
+  if (q.type === 'threatPeekPlacement') return peekForm(q);
   return `<pre>${esc(JSON.stringify(q))}</pre>`;
 }
 
@@ -460,6 +507,22 @@ function portForm(q) {
 
 // ---------- form bindings ----------
 function bindForm(panel, q) {
+  if (q.type === 'eventChoice') {
+    panel.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'eventChoice', faction: q.faction, option: b.dataset.opt })));
+    return;
+  }
+  if (q.type === 'threatPeekPlacement') {
+    panel.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'threatPeekPlacement', faction: q.faction, placement: b.dataset.opt })));
+    return;
+  }
+  if (q.type === 'reconcileSupply') {
+    panel.querySelectorAll('[data-region]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'reconcileSupply', faction: q.faction, region: b.dataset.region, unitType: b.dataset.unit })));
+    return;
+  }
+
   panel.querySelector('#do-submit')?.addEventListener('click', () =>
     dispatch({ type: 'submitOrders', faction: q.faction, orders: ui.assignments }));
 
@@ -551,6 +614,23 @@ function logLine(e) {
   const F = fid => `${fGlyph(fid)} ${esc(fName(fid))}`;
   switch (e.event) {
     case 'planningBegan': return `— Round ${e.round}: ${esc(theme.terms.factions)} plan in secret —`;
+    case 'eventPhaseBegan': return `— Round ${e.round}: the ${esc(theme.terms.eventPhase || 'Event Phase')} —`;
+    case 'eventCardRevealed': return `Deck ${e.deck}: <b>${esc(eventCardName(e.card))}</b>.`;
+    case 'eventDeckReshuffled': return `Deck ${e.deck} was shuffled anew, discards and all.`;
+    case 'threatAdvanced': return `The ${esc(theme.terms.threat || 'threat')} grows: ${e.threat} of 12.`;
+    case 'eventNothing': return `${esc(eventCardName(e.card))}: nothing happens.`;
+    case 'ordersBanned': return `${esc(eventCardName(e.card))}: ${e.order === 'marchPlusOne' ? '+1 march' : esc(e.order)} orders are forbidden this round.`;
+    case 'eventChoiceMade': return `${F(e.faction)} decreed: ${esc(e.option.startsWith('banOrder:') ? 'forbid ' + e.option.split(':')[1] + ' orders' : e.option)}.`;
+    case 'supplyAdjusted': return `${F(e.faction)} supply ${e.from} → ${e.to}.`;
+    case 'destroyedForSupply': return e.chosen
+      ? `${F(e.faction)} disbanded a ${esc(theme.terms[e.unit] || e.unit)} at ${esc(rName(e.region))} to meet supply.`
+      : `${F(e.faction)} lost units to supply at ${esc(rName(e.region))}.`;
+    case 'authorityCollected': return `${F(e.faction)} collected ${e.amount} ${esc(theme.terms.authority)}.`;
+    case 'courierPeeked': return `${F(e.faction)} peeked at the threat deck.`;
+    case 'threatPeekPlaced': return `${F(e.faction)} ${e.placement === 'bottom' ? 'buried the card' : 'left the card on top'}.`;
+    case 'musteringPending': return `<em>${esc(eventCardName(e.card))} — recruitment arrives in M2.b.</em>`;
+    case 'bidPending': return `<em>${esc(eventCardName(e.card))} — track bidding arrives in M2.c.</em>`;
+    case 'incursionPending': return `<em>${e.trigger === 'threatMax' ? 'The threat breaks!' : esc(eventCardName(e.card || ''))} — incursions arrive in M2.d.</em>`;
     case 'ordersSubmitted': return `${F(e.faction)} committed orders.`;
     case 'ordersRevealed': return `All orders revealed.`;
     case 'courierSwapped': return `${F(e.faction)} used the ${esc(theme.terms.tokenCourier)} at ${esc(rName(e.region))}.`;
@@ -615,8 +695,8 @@ function render() {
   overlayState(svg);
   renderTurnPanel();
   renderLog();
-  const phaseNames = { planning: 'Planning', action: 'Action', gameOver: 'Game over' };
-  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ` +
+  const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
+  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
     game.factions.map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
 }
 

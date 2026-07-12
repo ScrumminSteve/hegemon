@@ -63,6 +63,14 @@ export function starLimit(state, faction) {
  * Throws with a rule citation on the first violation.
  */
 export function validateOrders(state, faction, orders) {
+  // Event-phase restrictions (Rules p.22 ban-class cards; classes, not raw types).
+  const banned = state.roundFlags.bannedOrders || [];
+  if (banned.length) {
+    for (const [rid, o] of Object.entries(orders)) {
+      const hit = orderClasses(o).find(c => banned.includes(c));
+      if (hit) throw new Error(`${o.type}${o.starred ? '★' : ''} at ${rid}: ${hit} orders are forbidden this round (event card)`);
+    }
+  }
   const eligible = orderableRegions(state, faction);
   const keys = Object.keys(orders).sort();
 
@@ -135,6 +143,18 @@ function revealOrders(state) {
 }
 
 /** Courier token decision (Rules p.11, p.12 step 3). */
+export function threatPeekPlacement(state, faction, placement) {
+  const qi = state.pendingQueries.findIndex(q => q.type === 'threatPeekPlacement' && q.faction === faction);
+  if (qi === -1) throw new Error(`${faction} has no pending threat peek`);
+  if (!['top', 'bottom'].includes(placement)) throw new Error(`placement must be top or bottom`);
+  state.pendingQueries.splice(qi, 1);
+  if (placement === 'bottom') {
+    state.invaderDeck.push(state.invaderDeck.shift());
+  }
+  // Placement itself is public; the card identity stays with the holder.
+  state.log.push({ round: state.round, event: 'threatPeekPlaced', faction, placement });
+}
+
 export function courierDecision(state, faction, decision, swap) {
   const qi = state.pendingQueries.findIndex(q => q.type === 'courierDecision' && q.faction === faction);
   if (qi === -1) throw new Error(`${faction} does not hold a pending courier decision`);
@@ -155,8 +175,16 @@ export function courierDecision(state, faction, decision, swap) {
     state.ordersByRegion[region] = { faction, ...newOrder, revealed: true };
     state.log.push({ round: state.round, event: 'courierSwapped', faction, region });
   } else if (decision === 'peekThreatDeck') {
-    // Threat deck arrives with the Event Phase (M2); until then this is a no-op.
-    state.log.push({ round: state.round, event: 'courierPeekUnavailable', note: 'threat deck lands in M2' });
+    // Peek at the top card of the invader deck; the holder may leave it on
+    // top or move it to the bottom (Rules p.11). Card identity is holder-only
+    // information — viewFor masks it from other factions.
+    state.pendingQueries.push({
+      type: 'threatPeekPlacement', faction,
+      card: state.invaderDeck[0],
+      options: ['top', 'bottom'],
+    });
+    state.log.push({ round: state.round, event: 'courierPeeked', faction });
+    return; // action phase begins after placement
   } else if (decision === 'pass') {
     state.log.push({ round: state.round, event: 'courierPassed', faction });
   } else {

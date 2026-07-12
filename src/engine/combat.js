@@ -610,6 +610,16 @@ export function legalRetreats(state, fid, from, attackOrigin) {
       }
     }
   }
+  if (naval) {
+    for (const pdef of PORTS) {
+      if (pdef.seaId !== from) continue;
+      if (controllerOf(state, pdef.landId) !== fid) continue;   // must own the harbor
+      const occupants = state.unitsByRegion[pdef.id] || [];
+      if (occupants.some(u => u.faction !== fid)) continue;
+      if (occupants.length >= PORT_CAPACITY) continue;          // 3-ship cap (Rules p.25)
+      out.push(pdef.id);
+    }
+  }
   for (const rid of candidates) {
     if (rid === attackOrigin) continue;                       // never toward the attack
     const r = region(rid);

@@ -28,6 +28,20 @@ export function viewFor(state, factionId) {
     }
   }
 
+  // Deck order is hidden information: lengths are public (piles are visible
+  // on the table), contents are not. Discard piles are face-up and public.
+  if (v.eventDecks) {
+    for (const deck of Object.values(v.eventDecks)) {
+      deck.draw = deck.draw.map(() => 'hidden');
+    }
+  }
+  if (v.invaderDeck) v.invaderDeck = v.invaderDeck.map(() => 'hidden');
+
+  // A Courier peek reveals the card to the holder alone.
+  for (const q of v.pendingQueries) {
+    if (q.type === 'threatPeekPlacement' && q.faction !== factionId) delete q.card;
+  }
+
   // The seed is engine-internal; a peeking client could predict shuffles.
   delete v.seed;
   return v;

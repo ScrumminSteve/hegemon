@@ -150,3 +150,5 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
   unit destruction on default, Braavos cost token; sea-order domain validation
   (sea/port only, swept from land after the Courier step).
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
+
+- **M2.a** complete (see above).

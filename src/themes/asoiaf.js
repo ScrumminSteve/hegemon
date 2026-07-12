@@ -6,6 +6,7 @@ export const THEME_ASOIAF = {
   id: 'asoiaf',
   title: 'The War of Five Kings',
   terms: {
+    threat: 'Wildling Threat',
     leaderCard: 'House Card',
     faction: 'House', factions: 'Houses',
     leaderCard: 'House Card',

@@ -142,11 +142,20 @@ export const tests = [
     throws(() => applyAction(s, { type: 'courierDecision', faction: 'F1', decision: 'pass' }));
   }},
 
-  { name: 'threat-deck peek is a logged no-op until M2', fn() {
-    const s = submitAll(freshPlanning());
-    const { state, events } = applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'peekThreatDeck' });
-    ok(events.some(e => e.event === 'courierPeekUnavailable'));
-    eq(state.phase, 'action');
+  { name: 'the Courier may peek at the top invader card and bury or keep it (Rules p.11)', fn() {
+    let s = submitAll(freshPlanning());
+    const top = s.invaderDeck[0];
+    s = applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'peekThreatDeck' }).state;
+    const q = s.pendingQueries.find(x => x.type === 'threatPeekPlacement' && x.faction === 'F2');
+    ok(q, 'placement query pends for the Courier holder');
+    eq(q.card, top);
+    // Hidden information: other seats must not see the card identity.
+    const spy = viewFor(s, 'F5');
+    const sq = spy.pendingQueries.find(x => x.type === 'threatPeekPlacement');
+    ok(sq && sq.card === undefined, 'card masked from non-holders');
+    s = applyAction(s, { type: 'threatPeekPlacement', faction: 'F2', placement: 'bottom' }).state;
+    eq(s.invaderDeck[s.invaderDeck.length - 1], top, 'buried to the bottom');
+    eq(s.phase, 'action', 'action phase opens after placement');
   }},
 
   { name: 'legalActions describes the decision space for the querying faction only', fn() {

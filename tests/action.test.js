@@ -69,6 +69,7 @@ export const tests = [
     const s2 = toAction({
       F6: { L37: D(1), L08: SU(0), S11: R(), P03: SU(0) },
       F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
+      F4: { L30: D(1), L33: SU(0), S08: R() }, // unresolved raid holds round 1 open
     });
     const r = applyAction(s2, { type: 'resolveRaid', faction: 'F6', region: 'S11', target: 'S10' });
     eq(r.state.authority.F6, 6, 'raider gains 1:');
@@ -160,7 +161,8 @@ export const tests = [
   }},
 
   { name: 'no friendly ship, no transport (Rules p.23)', fn() {
-    const s = toAction({ F3: { L22: D(1), L20: M(0), S04: SU(0) } });
+    const s = toAction({ F3: { L22: D(1), L20: M(0), S04: SU(0) },
+      F4: { L30: M(0), L33: SU(0), S08: SU(0) } }); // later-initiative march holds round 1 open
     // F3 ships sit in S04; L20 -> L38 has no bridge.
     ok(!transportReachable(s, 'F3', 'L20', 'L38'));
     throws(() => applyAction(s, { type: 'resolveMarch', faction: 'F3', region: 'L20',
@@ -194,7 +196,8 @@ export const tests = [
   }},
 
   { name: 'vacating a non-home land area may leave a control marker for 1 authority (Rules p.24)', fn() {
-    const s = toAction({ F3: { L22: D(1), L20: M(0), S04: SU(0) } });
+    const s = toAction({ F3: { L22: D(1), L20: M(0), S04: SU(0) },
+      F4: { L30: M(0), L33: SU(0), S08: SU(0) } }); // later-initiative march holds round 1 open
     const r = applyAction(s, { type: 'resolveMarch', faction: 'F3', region: 'L20',
       moves: [{ to: 'L21', units: { infantry: 1 } }], leaveControl: true });
     eq(r.state.controlMarkers['L20'], 'F3');
@@ -226,10 +229,12 @@ export const tests = [
   }},
 
   { name: 'rally collects 1 + coin icons on land; nothing at sea (Rules p.13, p.16)', fn() {
-    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0), P04: D(1) } });
+    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
     const r = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16' });
     eq(r.state.authority.F2, 7, 'Millford/Stoney Sept: 1 + 1 coin:');
-    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) } });
+    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
     const r2 = applyAction(s2, { type: 'resolveRally', faction: 'F2', region: 'S10' });
     eq(r2.state.authority.F2, 5, 'sea rally collects nothing:');
   }},
@@ -252,14 +257,21 @@ export const tests = [
     eq(q(s).regions, ['L20']);
   }},
 
-  { name: 'a resolved action phase cleans up and opens round 2 planning (Rules p.16; event phase pending M2)', fn() {
+  { name: 'a resolved action phase cleans up into the round-2 Event Phase, then planning (Rules p.7, p.16)', fn() {
     let s = toAction({}); // defaults: no raid/march/rally orders at all
-    // With nothing to resolve, the phase should have advanced straight through.
+    // With nothing to resolve, cleanup fires and the Event Phase reveals its cards.
     eq(s.round, 2);
+    ok(s.log.some(e => e.event === 'eventPhaseBegan'));
+    eq(s.log.filter(e => e.event === 'eventCardRevealed').length, 3, 'one card per deck:');
+    // Drain any holder choices with the safe option; reconcile nothing (no armies moved).
+    for (let i = 0; i < 6 && s.pendingQueries.some(x => x.type === 'eventChoice'); i++) {
+      const q = s.pendingQueries.find(x => x.type === 'eventChoice');
+      const opt = q.options.includes('nothing') ? 'nothing' : q.options[0];
+      s = applyAction(s, { type: 'eventChoice', faction: q.faction, option: opt }).state;
+    }
     eq(s.phase, 'planning');
     eq(s.ordersByRegion, {});
     eq(s.pendingQueries.filter(x => x.type === 'submitOrders').length, 6);
-    ok(s.log.some(e => e.event === 'eventPhasePending'));
   }},
 
 ];

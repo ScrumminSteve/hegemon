@@ -2,7 +2,8 @@
 // applyAction(state, action) -> { state, events }: pure with respect to its
 // inputs (the incoming state is never mutated), deterministic, serializable.
 
-import { beginPlanning, submitOrders, courierDecision, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
+import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
+import { eventChoice, reconcileSupply } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
 import { chooseLeaderCard } from './cards.js';
@@ -15,7 +16,20 @@ const HANDLERS = {
   },
   courierDecision(state, action) {
     courierDecision(state, action.faction, action.decision, action.swap);
-    beginActionPhase(state); // planning hands off to the action phase
+    // A deck peek pauses the handoff until the holder places the card.
+    if (!state.pendingQueries.some(q => q.type === 'threatPeekPlacement')) {
+      beginActionPhase(state); // planning hands off to the action phase
+    }
+  },
+  threatPeekPlacement(state, action) {
+    threatPeekPlacement(state, action.faction, action.placement);
+    beginActionPhase(state);
+  },
+  eventChoice(state, action) {
+    eventChoice(state, action.faction, action.option);
+  },
+  reconcileSupply(state, action) {
+    reconcileSupply(state, action.faction, action.region, action.unitType);
   },
   resolveRaid(state, action) {
     resolveRaid(state, action.faction, action.region, action.target ?? null);
@@ -81,6 +95,12 @@ export function legalActions(state, faction) {
       });
     } else if (q.type === 'courierDecision') {
       out.push({ type: 'courierDecision', options: q.options });
+    } else if (q.type === 'threatPeekPlacement') {
+      out.push({ type: 'threatPeekPlacement', options: q.options });
+    } else if (q.type === 'eventChoice') {
+      out.push({ type: 'eventChoice', card: q.card, options: q.options });
+    } else if (q.type === 'reconcileSupply') {
+      out.push({ type: 'reconcileSupply', regions: q.regions });
     } else if (q.type === 'resolveOrder') {
       out.push({ type: 'resolve' + q.step[0].toUpperCase() + q.step.slice(1), regions: q.regions });
     } else if (q.type === 'declareSupport') {
