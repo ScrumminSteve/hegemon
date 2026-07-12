@@ -9,7 +9,7 @@ import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { renderMap } from '../map-view.js';
-import { createGame, serialize, deserialize, region, seatsControlled } from '../engine/state.js';
+import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE } from '../engine/state.js';
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 
@@ -700,11 +700,31 @@ function renderLog() {
 }
 
 // ---------- top-level render ----------
+function renderTracks() {
+  const el = $('#tracks-panel');
+  if (!el) return;
+  const rows = [
+    ['initiative', theme.terms.trackInitiative, 'sovereign', theme.terms.tokenSovereign],
+    ['prowess',    theme.terms.trackProwess,    'blade',     theme.terms.tokenBlade],
+    ['command',    theme.terms.trackCommand,    'courier',   theme.terms.tokenCourier],
+  ];
+  const stars = STAR_ALLOWANCE[game.ruleset.seatCount] || [];
+  el.innerHTML = rows.map(([track, label, token, tokenName]) => {
+    const seats = game.tracks[track].map((f, i) => {
+      const star = track === 'command' && stars[i] ? `<sup>${'★'.repeat(stars[i])}</sup>` : '';
+      const holder = i === 0 ? `<span class="tok-dot" title="${esc(tokenName)}">●</span>` : '';
+      return `<span class="track-seat" style="border-color:${fColor(f)}" title="${esc(fName(f))} — position ${i + 1}">${fGlyph(f)}${star}${holder}</span>`;
+    }).join('');
+    return `<div class="track-row"><span class="track-name" title="${esc(tokenName)} to the leader">${esc(label)}</span>${seats}</div>`;
+  }).join('');
+}
+
 function render() {
   const svg = $('#map');
   renderMap(svg, theme, { onSelect: handleRegionTap });
   overlayState(svg);
   renderTurnPanel();
+  renderTracks();
   renderLog();
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
   $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
