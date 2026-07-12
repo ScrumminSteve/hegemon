@@ -142,6 +142,16 @@ export const tests = [
     throws(() => applyAction(s, { type: 'courierDecision', faction: 'F1', decision: 'pass' }));
   }},
 
+  { name: 'the Courier decision is swap OR peek, never both (Rules p.11)', fn() {
+    let s = submitAll(freshPlanning());
+    s = applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'peekThreatDeck' }).state;
+    throws(() => applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'swapOrder',
+      swap: { region: 'L36', newOrder: { type: 'march', mod: 0, starred: false } } }),
+      'swap after peek');
+    throws(() => applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'peekThreatDeck' }),
+      'double peek');
+  }},
+
   { name: 'the Courier may peek at the top invader card and bury or keep it (Rules p.11)', fn() {
     let s = submitAll(freshPlanning());
     const top = s.invaderDeck[0];

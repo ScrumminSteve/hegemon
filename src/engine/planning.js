@@ -177,7 +177,9 @@ export function courierDecision(state, faction, decision, swap) {
   } else if (decision === 'peekThreatDeck') {
     // Peek at the top card of the invader deck; the holder may leave it on
     // top or move it to the bottom (Rules p.11). Card identity is holder-only
-    // information — viewFor masks it from other factions.
+    // information — viewFor masks it from other factions. The peek CONSUMES
+    // the courier decision: it is swap OR peek, never both (Rules p.11).
+    state.pendingQueries.splice(qi, 1);
     state.pendingQueries.push({
       type: 'threatPeekPlacement', faction,
       card: state.invaderDeck[0],

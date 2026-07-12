@@ -4,6 +4,7 @@
 
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
+import { INVADER_CARDS } from '../data/invaderCards.js';
 import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
@@ -249,8 +250,14 @@ function reconcileForm(q) {
     `<div class="hint">Destroy one unit at a time until your armies fit your supply.</div>`;
 }
 
+function invaderText(t) {
+  return (t || '').replace(/\{(\w+)\}/g, (_, k) => theme.terms[k] ?? k);
+}
 function peekForm(q) {
-  const known = q.card ? `<div class="card-text">Top of the threat deck: <b>${esc(eventCardName(q.card))}</b></div>` : '';
+  const c = q.card ? INVADER_CARDS[q.card] : null;
+  const known = q.card ? `<div class="card-text">Top of the threat deck: <b>${esc(eventCardName(q.card))}</b>
+    <div class="hint">${esc(invaderText(c?.winText))}</div>
+    <div class="hint">${esc(invaderText(c?.lossText))}</div></div>` : '';
   return header(q, `${theme.terms.tokenCourier} — deck peek`) + known +
     `<button class="opt" data-opt="top">leave it on top</button>` +
     `<button class="opt" data-opt="bottom">bury it at the bottom</button>`;
@@ -330,12 +337,16 @@ function planningForm(q) {
     for (const rid of orderableRegions(game, q.faction)) ui.assignments[rid] = null;
   }
   const limit = starLimit(game, q.faction);
+  // The row being re-picked returns its token to the pool (mirrors the
+  // click handler exactly — index parity is what makes picks WYSIWYG).
+  const poolBasis = Object.entries(ui.assignments)
+    .filter(([r, o]) => o && r !== ui.awaitTokenFor).map(([, o]) => o);
   const used = Object.values(ui.assignments).filter(Boolean);
-  const stars = used.filter(o => o.starred).length;
-  const remaining = remainingTokens(used);
+  const stars = poolBasis.filter(o => o.starred).length;
+  const remaining = remainingTokens(poolBasis);
 
   let html = header(q, 'assign orders');
-  html += `<div class="star-budget">★ ${stars}/${limit}</div><div class="order-rows">`;
+  html += `<div class="star-budget">★ ${used.filter(o => o.starred).length}/${limit}</div><div class="order-rows">`;
   for (const [rid, o] of Object.entries(ui.assignments)) {
     html += `<button class="order-row ${ui.awaitTokenFor === rid ? 'picking' : ''}" data-row="${rid}">
       <span>${esc(rName(rid))}</span><span class="tok">${o ? esc(tokenLabel(o)) : '—'}</span></button>`;
@@ -343,7 +354,7 @@ function planningForm(q) {
   html += `</div>`;
   if (ui.awaitTokenFor) {
     html += `<div class="token-grid">` + remaining.map((t, i) =>
-      `<button class="token" data-tok="${i}" ${t.starred && stars >= limit && !(ui.assignments[ui.awaitTokenFor]?.starred) ? 'disabled' : ''}>
+      `<button class="token" data-tok="${i}" ${t.starred && stars >= limit ? 'disabled' : ''}>
         ${esc(tokenLabel(t))}</button>`).join('') + `</div>`;
   }
   const complete = Object.values(ui.assignments).every(Boolean);
@@ -530,9 +541,9 @@ function bindForm(panel, q) {
     ui.awaitTokenFor = b.dataset.row; renderTurnPanel();
   }));
   panel.querySelectorAll('[data-tok]').forEach(b => b.addEventListener('click', () => {
-    const used = Object.values(ui.assignments).filter(Boolean).filter((_, k, arr) => true);
-    const usedMinus = Object.entries(ui.assignments).filter(([r, o]) => o && r !== ui.awaitTokenFor).map(([, o]) => o);
-    const t = remainingTokens(usedMinus)[+b.dataset.tok];
+    const poolBasis = Object.entries(ui.assignments)
+      .filter(([r, o]) => o && r !== ui.awaitTokenFor).map(([, o]) => o);
+    const t = remainingTokens(poolBasis)[+b.dataset.tok];
     ui.assignments[ui.awaitTokenFor] = { type: t.type, mod: t.mod, starred: t.starred };
     delete ui.awaitTokenFor;
     renderTurnPanel();
