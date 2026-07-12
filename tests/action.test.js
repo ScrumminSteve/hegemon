@@ -13,11 +13,11 @@ const CP = (starred = false) => ({ type: 'rally', mod: 0, starred });
 
 // Reach the action phase with chosen orders per faction.
 function toAction(orderSets, seed = 21) {
-  let s = createGame(6, { seed });
+  let s = createGame(6, { seed, ruleset: { leaderCards: false } });
   beginPlanning(s);
   const defaults = {
     F1: { L01: D(1), L04: D(1), S02: SU(0) },
-    F2: { L36: D(1), L16: SU(0), S10: SU(0) },
+    F2: { L36: D(1), L16: SU(0), S10: SU(0), P04: D(1) },
     F3: { L22: D(1), L20: SU(0), S04: SU(0) },
     F4: { L30: D(1), L33: SU(0), S08: SU(0) },
     F5: { L28: D(1), L27: SU(0), S05: SU(0) },
@@ -52,7 +52,7 @@ export const tests = [
 
   { name: 'a raid removes an adjacent enemy support order; both orders leave the board (Rules p.14)', fn() {
     // F2 raids from Gilded Sound (S10) against F6's support in Reaver's Bay (S11) — adjacent seas.
-    const s = toAction({ F2: { L36: D(1), L16: SU(0), S10: R() } });
+    const s = toAction({ F2: { L36: D(1), L16: SU(0), S10: R(), P04: D(1) } });
     const r = applyAction(s, { type: 'resolveRaid', faction: 'F2', region: 'S10', target: 'S11' });
     ok(r.state.ordersByRegion['S11'] === undefined, 'target removed');
     ok(r.state.ordersByRegion['S10'] === undefined, 'raid removed');
@@ -60,7 +60,7 @@ export const tests = [
 
   { name: 'raiding a rally order pillages one authority (Rules p.14)', fn() {
     const s = toAction({
-      F2: { L36: D(1), L16: SU(0), S10: R() },
+      F2: { L36: D(1), L16: SU(0), S10: R(), P04: D(1) },
       F4: { L30: D(1), L33: SU(0), S08: SU(0), }, // F4 keeps defaults except:
     });
     // Give F4 a rally at L34? F4 has no unit at L34. Move the pillage test to sea:
@@ -68,7 +68,7 @@ export const tests = [
     // Real adjacency: F6 raid at S11 vs F2 rally at S10 (S10–S11 seas adjacent).
     const s2 = toAction({
       F6: { L37: D(1), L08: SU(0), S11: R(), P03: SU(0) },
-      F2: { L36: D(1), L16: SU(0), S10: CP() },
+      F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
     });
     const r = applyAction(s2, { type: 'resolveRaid', faction: 'F6', region: 'S11', target: 'S10' });
     eq(r.state.authority.F6, 6, 'raider gains 1:');
@@ -88,24 +88,24 @@ export const tests = [
   { name: 'only a starred raid removes a defense order (Rules p.22)', fn() {
     const base = {
       F6: { L37: D(1), L08: D(1), S11: SU(0), P03: SU(0) },
-      F2: { L36: D(1), L16: SU(0), S10: SU(0) },
+      F2: { L36: D(1), L16: SU(0), S10: SU(0), P04: D(1) },
     };
     const plain = toAction({ ...base, F6: { ...base.F6, S11: R(false) } });
     throws(() => applyAction(plain, { type: 'resolveRaid', faction: 'F6', region: 'S11', target: 'L37' }), 'own order');
     // Target an enemy defense: F6 raid S11 -> F2 has no adjacent defense; use F1 raid vs F6 defense:
     // S02 not adjacent S11. Keep it direct with the starred case on a legal pair:
     const starred = toAction({
-      F2: { L36: D(1), L16: SU(0), S10: R(true) },
+      F2: { L36: D(1), L16: SU(0), S10: R(true), P04: D(1) },
       F6: { L37: D(1), L08: D(1), S11: SU(0), P03: SU(0) },
     });
     // S10 adj S11 (sea–sea): starred raid vs support is legal; vs defense needs star — S11 holds support.
     // Direct defense test: F6's L08? S10 not adjacent L08. Validate the rule at validation level:
     throws(() => applyAction(toAction({
-      F2: { L36: D(1), L16: SU(0), S10: R(false) },
+      F2: { L36: D(1), L16: SU(0), S10: R(false), P04: D(1) },
       F6: { L37: D(1), L08: SU(0), S11: D(1), P03: SU(0) },
     }), { type: 'resolveRaid', faction: 'F2', region: 'S10', target: 'S11' }), 'plain raid vs defense');
     const okCase = applyAction(toAction({
-      F2: { L36: D(1), L16: SU(0), S10: R(true) },
+      F2: { L36: D(1), L16: SU(0), S10: R(true), P04: D(1) },
       F6: { L37: D(1), L08: SU(0), S11: D(1), P03: SU(0) },
     }), { type: 'resolveRaid', faction: 'F2', region: 'S10', target: 'S11' });
     ok(okCase.state.ordersByRegion['S11'] === undefined, 'starred raid removed defense');
@@ -226,16 +226,16 @@ export const tests = [
   }},
 
   { name: 'rally collects 1 + coin icons on land; nothing at sea (Rules p.13, p.16)', fn() {
-    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0) } });
+    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0), P04: D(1) } });
     const r = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16' });
     eq(r.state.authority.F2, 7, 'Millford/Stoney Sept: 1 + 1 coin:');
-    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP() } });
+    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) } });
     const r2 = applyAction(s2, { type: 'resolveRally', faction: 'F2', region: 'S10' });
     eq(r2.state.authority.F2, 5, 'sea rally collects nothing:');
   }},
 
   { name: 'rally-mustering is guarded until M2 (Rules p.22)', fn() {
-    const s = toAction({ F2: { L36: CP(true), L16: SU(0), S10: SU(0) } });
+    const s = toAction({ F2: { L36: CP(true), L16: SU(0), S10: SU(0), P04: D(1) } });
     throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L36', muster: true }));
   }},
 

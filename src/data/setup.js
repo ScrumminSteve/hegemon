@@ -19,14 +19,16 @@ export const SETUP = {
   // Army-size limits per supply position (board supply chart). Each entry is
   // the multiset of maximum army sizes a faction may field at that position.
   // ⚠ DRAFT — transcribed from board photo small print; verify vs the board.
+  // Supply track — OWNER-VERIFIED against the board photo (Jul 2026).
+  // Position N: sorted list of maximum army sizes.
   supplyLimits: {
     0: [2, 2],
-    1: [3, 2, 2],
-    2: [3, 2, 2, 2],
-    3: [3, 3, 2, 2],
-    4: [3, 3, 2, 2, 2],
-    5: [4, 3, 2, 2, 2],
-    6: [4, 3, 3, 2, 2],
+    1: [3, 2],
+    2: [3, 2, 2],
+    3: [3, 2, 2, 2],
+    4: [3, 3, 2, 2],
+    5: [4, 3, 2, 2],
+    6: [4, 3, 2, 2, 2],
   },
 
   // Per-faction unit pool limits (Rules p.2 component list)
@@ -40,7 +42,8 @@ export const SETUP = {
       garrison: { L01: 2 },
     },
     F2: { // lion sigil screen
-      deploy: { L36: ['cavalry', 'infantry'], L16: ['infantry'], S10: ['warship'] },
+      // FAQ v2.0 errata: +1 warship in the harbor at the F2 seat (P04).
+      deploy: { L36: ['cavalry', 'infantry'], L16: ['infantry'], S10: ['warship'], P04: ['warship'] },
       tracks: { initiative: 2, prowess: 6, command: 1 },
       supply: 2,
       garrison: { L36: 2 },

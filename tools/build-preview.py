@@ -5,9 +5,11 @@ import base64, os, re, sys
 
 FILES = [
   'src/data/map.js', 'src/data/factions.js', 'src/data/setup.js',
+    'src/data/leaderCards.js',
   'src/themes/core.js', 'src/themes/asoiaf.js',
   'src/engine/types.js', 'src/engine/rng.js', 'src/engine/state.js',
-  'src/engine/planning.js', 'src/engine/actionPhase.js', 'src/engine/combat.js',
+  'src/engine/planning.js', 'src/engine/actionPhase.js', 'src/engine/cards.js',
+    'src/engine/combat.js',
   'src/engine/engine.js', 'src/engine/views.js',
   'src/map-view.js', 'src/game/app.js',
 ]

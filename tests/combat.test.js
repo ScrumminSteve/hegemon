@@ -15,7 +15,7 @@ const CP = (starred = false) => ({ type: 'rally', mod: 0, starred });
 // raid-free, march-free token preference so only the scenario's marches queue.
 const FILL = [CP(), CP(), D(1), D(1), SU(0), SU(0), M(-1), M(0)];
 function stage({ plants = {}, strip = [], orders = {} }, seed = 5) {
-  let s = createGame(6, { seed });
+  let s = createGame(6, { seed, ruleset: { leaderCards: false } });
   for (const rid of strip) delete s.unitsByRegion[rid];
   for (const [rid, units] of Object.entries(plants)) {
     s.unitsByRegion[rid] = units.map(([faction, type]) => ({ faction, type, routed: false }));

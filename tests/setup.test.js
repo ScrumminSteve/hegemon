@@ -18,10 +18,10 @@ export const tests = [
     }
   }},
 
-  { name: 'starting unit count is 26 across all factions (screens: 4+4+5+4+4+5)', fn() {
+  { name: 'starting unit count is 27 across all factions (screens + FAQ v2.0 Lannister port ship)', fn() {
     const g = createGame(6);
     const total = Object.values(g.unitsByRegion).flat().length;
-    eq(total, 26, 'total units:');
+    eq(total, 27, 'total units:');
   }},
 
   { name: 'influence tracks match screen positions; F3/F6/F2 hold the tokens (Rules p.11)', fn() {

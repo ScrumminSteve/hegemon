@@ -4,7 +4,8 @@
 
 import { beginPlanning, submitOrders, courierDecision, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
-import { declareSupport, useBlade, retreat, replacePortShips } from './combat.js';
+import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
+import { chooseLeaderCard } from './cards.js';
 
 export { beginPlanning, beginActionPhase, orderableRegions, starLimit, ORDER_TOKENS };
 
@@ -36,6 +37,19 @@ const HANDLERS = {
   },
   replacePortShips(state, action) {
     replacePortShips(state, action.faction, action.count);
+  },
+  chooseLeaderCard(state, action) {
+    chooseLeaderCard(state, action.faction, action.card);
+    progressCombat(state);
+  },
+  chooseCasualties(state, action) {
+    chooseCasualties(state, action.faction, action.units);
+  },
+  useCardAbility(state, action) {
+    useCardAbility(state, action.faction, action.use);
+  },
+  cardTarget(state, action) {
+    cardTarget(state, action.faction, action.target);
   },
 };
 
@@ -77,6 +91,14 @@ export function legalActions(state, faction) {
       out.push({ type: 'retreat', options: q.options });
     } else if (q.type === 'replacePortShips') {
       out.push({ type: 'replacePortShips', port: q.port, max: q.max });
+    } else if (q.type === 'chooseLeaderCard') {
+      out.push({ type: 'chooseLeaderCard', hand: q.hand });
+    } else if (q.type === 'chooseCasualties') {
+      out.push({ type: 'chooseCasualties', count: q.count, available: q.available });
+    } else if (q.type === 'useCardAbility') {
+      out.push({ type: 'useCardAbility', ability: q.ability, options: [true, false] });
+    } else if (q.type === 'cardTarget') {
+      out.push({ type: 'cardTarget', ability: q.ability, options: q.skippable ? [...q.options, 'skip'] : q.options });
     }
   }
   return out;

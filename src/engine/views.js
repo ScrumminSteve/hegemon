@@ -21,6 +21,13 @@ export function viewFor(state, factionId) {
   }
   v.ordersByRegion = masked;
 
+  // Unrevealed leader-card picks are hidden from the other side (Rules p.19).
+  if (v.combat?.cards && !v.combat.cardsRevealed) {
+    for (const [fid, id] of Object.entries(v.combat.cards)) {
+      if (fid !== factionId && id) v.combat.cards[fid] = { hidden: true };
+    }
+  }
+
   // The seed is engine-internal; a peeking client could predict shuffles.
   delete v.seed;
   return v;

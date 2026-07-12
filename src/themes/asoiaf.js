@@ -6,6 +6,7 @@ export const THEME_ASOIAF = {
   id: 'asoiaf',
   title: 'The War of Five Kings',
   terms: {
+    leaderCard: 'House Card',
     faction: 'House', factions: 'Houses',
     leaderCard: 'House Card',
     eventPhase: 'Westeros Phase',
@@ -26,6 +27,25 @@ export const THEME_ASOIAF = {
     F4: { name: 'House Tyrell',    glyph: '🌹' },
     F5: { name: 'House Martell',   glyph: '☀' },
     F6: { name: 'House Greyjoy',   glyph: '🦑' },
+  },
+  eventCards: {
+    "E1-muster": "Mustering", "E1-supply": "Supply", "E1-choice": "A Throne of Blades",
+    "E1-nothing": "Last Days of Summer", "E1-shuffle": "Winter Is Coming", "E2-bid": "Clash of Kings",
+    "E2-collect": "Game of Thrones", "E2-choice": "Dark Wings, Dark Words", "E2-nothing": "Last Days of Summer",
+    "E2-shuffle": "Winter Is Coming", "E3-incursion": "Wildlings Attack", "E3-banMarchUp": "Rains of Autumn",
+    "E3-banDefend": "Storm of Swords", "E3-banRaid": "Sea of Storms", "E3-banRally": "Feast for Crows",
+    "E3-banSupport": "Web of Lies", "E3-choice": "Put to the Sword", "W-silence": "Silence at the Wall",
+    "W-kingBeyond": "A King Beyond the Wall", "W-mammoth": "Mammoth Riders", "W-massing": "Massing on the Milkwater",
+    "W-horde": "The Horde Descends", "W-rattleshirt": "Rattleshirt's Raiders", "W-preemptive": "Preemptive Raid",
+    "W-crowKillers": "Crow Killers", "W-skinchanger": "Skinchanger Scout",
+  },
+  cards: {
+    "F1-4": "Eddard Stark", "F1-3": "Robb Stark", "F1-2a": "Roose Bolton", "F1-2b": "Greatjon Umber", "F1-1a": "Ser Rodrik Cassel", "F1-1b": "The Blackfish", "F1-0": "Catelyn Stark",
+    "F2-4": "Tywin Lannister", "F2-3": "Ser Gregor Clegane", "F2-2a": "Ser Jaime Lannister", "F2-2b": "The Hound", "F2-1a": "Tyrion Lannister", "F2-1b": "Ser Kevan Lannister", "F2-0": "Cersei Lannister",
+    "F3-4": "Stannis Baratheon", "F3-3": "Renly Baratheon", "F3-2a": "Brienne of Tarth", "F3-2b": "Ser Davos Seaworth", "F3-1a": "Salladhor Saan", "F3-1b": "Melisandre", "F3-0": "Patchface",
+    "F4-4": "Mace Tyrell", "F4-3": "Ser Loras Tyrell", "F4-2a": "Ser Garlan Tyrell", "F4-2b": "Randyll Tarly", "F4-1a": "Alester Florent", "F4-1b": "Margaery Tyrell", "F4-0": "Queen of Thorns",
+    "F5-4": "The Red Viper", "F5-3": "Areo Hotah", "F5-2a": "Darkstar", "F5-2b": "Obara Sand", "F5-1a": "Nymeria Sand", "F5-1b": "Arianne Martell", "F5-0": "Doran Martell",
+    "F6-4": "Euron Crow's Eye", "F6-3": "Victarion Greyjoy", "F6-2a": "Theon Greyjoy", "F6-2b": "Balon Greyjoy", "F6-1a": "Asha Greyjoy", "F6-1b": "Dagmar Cleftjaw", "F6-0": "Aeron Damphair",
   },
   regions: {
     L01: 'Winterfell',        L02: 'Karhold',            L03: 'The Stony Shore',

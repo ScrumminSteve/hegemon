@@ -4,6 +4,7 @@
 
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
+import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { renderMap } from '../map-view.js';
@@ -187,13 +188,28 @@ function qLabel(q) {
     resolveOrder: q => q.step, declareSupport: 'support', useBlade: theme.terms.tokenBlade,
     retreat: 'retreat', replacePortShips: theme.terms.port }[q.type] instanceof Function
     ? q.step : ({ submitOrders: 'orders', courierDecision: 'courier', resolveOrder: q.step,
-      declareSupport: 'support', useBlade: 'blade', retreat: 'retreat', replacePortShips: 'port' }[q.type]);
+      declareSupport: 'support', useBlade: 'blade', retreat: 'retreat', replacePortShips: 'port',
+      chooseLeaderCard: 'leader card', chooseCasualties: 'casualties',
+      useCardAbility: 'card ability', cardTarget: 'card target' }[q.type]);
 }
 
 function header(q, title) {
   return `<div class="form-head" style="border-color:${fColor(q.faction)}">
     <span class="fchip" style="background:${fColor(q.faction)}"></span>
     <b>${fGlyph(q.faction)} ${esc(fName(q.faction))}</b> — ${esc(title)}</div>`;
+}
+
+function cardText(id) {
+  const c = LEADER_CARDS[id];
+  if (!c?.text) return '';
+  return c.text.replace(/\{(\w+)\}/g, (_, k) => theme.terms[k] ?? k);
+}
+function cardChip(id, { withText = true } = {}) {
+  const c = LEADER_CARDS[id];
+  const icons = '⚔'.repeat(c.swords) + '🛡'.repeat(c.forts);
+  const nm = theme.cards?.[id] ?? id;
+  return `<span class="card-chip"><b>${c.strength}</b> ${esc(nm)}${icons ? ' ' + icons : ''}</span>` +
+    (withText && c.text ? `<div class="card-text">${esc(cardText(id))}${c.implemented === false ? ' <em>(ability lands in M1.5b)</em>' : ''}</div>` : '');
 }
 
 function formFor(q) {
@@ -206,7 +222,58 @@ function formFor(q) {
   if (q.type === 'useBlade') return bladeForm(q);
   if (q.type === 'retreat') return retreatForm(q);
   if (q.type === 'replacePortShips') return portForm(q);
+  if (q.type === 'chooseLeaderCard') return leaderCardForm(q);
+  if (q.type === 'chooseCasualties') return casualtyForm(q);
+  if (q.type === 'useCardAbility') return abilityForm(q);
+  if (q.type === 'cardTarget') return targetForm(q);
   return `<pre>${esc(JSON.stringify(q))}</pre>`;
+}
+
+// --- leader cards (M1.5a) ---
+function leaderCardForm(q) {
+  const rows = q.hand.map(id =>
+    `<button class="opt card-opt" data-lcard="${id}">${cardChip(id)}</button>`).join('');
+  return `<p>${fGlyph(q.faction)} choose a ${esc(theme.terms.leaderCard)} — face-down until both sides commit.</p>
+    <div class="card-list">${rows}</div>`;
+}
+
+function casualtyForm(q) {
+  if (ui.mode !== 'casualties') ui = { activeQuery: ui.activeQuery, mode: 'casualties', pick: {} };
+  const chosen = Object.values(ui.pick).reduce((a, b) => a + b, 0);
+  const rows = Object.entries(q.available).map(([t, max]) => {
+    const n = ui.pick[t] || 0;
+    return `<div class="stepper-row">${esc(unitName(t))} (${max} in the field)
+      <span class="stepper"><button data-cdec="${t}">−</button><b>${n}</b><button data-cinc="${t}" data-max="${max}">+</button></span></div>`;
+  }).join('');
+  return `<p>${fGlyph(q.faction)} the swords fall: choose <b>${q.count}</b> casualt${q.count === 1 ? 'y' : 'ies'}.</p>
+    ${rows}<button class="go" id="do-casualties" ${chosen === q.count ? '' : 'disabled'}>Accept losses</button>`;
+}
+
+function abilityForm(q) {
+  const cost = q.cost ? ` (costs ${q.cost} ${esc(theme.terms.authority)})` : '';
+  return `<p>${fGlyph(q.faction)} ${cardChip(q.card)}</p>
+    <p>Invoke the ability${esc(cost)}?</p>
+    <div class="btn-col">
+      <button data-ability="1">Use it</button>
+      <button data-ability="0" class="ghost">Let it pass</button>
+    </div>`;
+}
+
+function targetLabel(q, t) {
+  if (t === 'embattled') return `The embattled area — ${rName(game.combat.region)}`;
+  if (['initiative', 'prowess', 'command'].includes(t)) {
+    return theme.terms['track' + t[0].toUpperCase() + t.slice(1)] ?? t;
+  }
+  if (LEADER_CARDS[t]) return `${LEADER_CARDS[t].strength} · ${theme.cards?.[t] ?? t}`;
+  return rName(t);
+}
+
+function targetForm(q) {
+  const rows = q.options.map(t =>
+    `<button data-ctarget="${t}">${esc(targetLabel(q, t))}</button>`).join('');
+  return `<p>${fGlyph(q.faction)} ${cardChip(q.card)}</p>
+    <p>Choose a target:</p><div class="btn-col">${rows}
+    ${q.skippable ? '<button data-ctarget="skip" class="ghost">Decline</button>' : ''}</div>`;
 }
 
 // --- planning ---
@@ -352,7 +419,17 @@ function battleBanner() {
     <div class="battle-side" style="border-color:${fColor(c.attacker)}">${fGlyph(c.attacker)} ${esc(fName(c.attacker))}<b>${s.attacker}</b></div>
     <div class="battle-vs">⚔ ${esc(rName(c.region))}</div>
     <div class="battle-side" style="border-color:${fColor(c.defender)}">${fGlyph(c.defender)} ${esc(fName(c.defender))}<b>${s.defender}</b></div>
-  </div>`;
+  </div>` + battleCards(c);
+}
+
+function battleCards(c) {
+  if (!c.cards) return '';
+  const cell = fid => {
+    const id = c.cards[fid];
+    if (!id) return c.cardsRevealed ? '<span class="card-chip ghost">no card</span>' : '<span class="card-chip ghost">choosing…</span>';
+    return c.cardsRevealed ? cardChip(id) : '<span class="card-chip ghost">🂠 face-down</span>';
+  };
+  return `<div class="battle-cards"><div>${cell(c.attacker)}</div><div>${cell(c.defender)}</div></div>`;
 }
 
 function supportForm(q) {
@@ -436,6 +513,24 @@ function bindForm(panel, q) {
   panel.querySelectorAll('[data-retreat]').forEach(b => b.addEventListener('click', () =>
     dispatch({ type: 'retreat', faction: q.faction, to: b.dataset.retreat })));
 
+  panel.querySelectorAll('[data-lcard]').forEach(b => b.addEventListener('click', () =>
+    dispatch({ type: 'chooseLeaderCard', faction: q.faction, card: b.dataset.lcard })));
+  panel.querySelectorAll('[data-cinc]').forEach(b => b.addEventListener('click', () => {
+    const t = b.dataset.cinc;
+    ui.pick[t] = Math.min(+b.dataset.max, (ui.pick[t] || 0) + 1); renderTurnPanel();
+  }));
+  panel.querySelectorAll('[data-cdec]').forEach(b => b.addEventListener('click', () => {
+    const t = b.dataset.cdec;
+    ui.pick[t] = Math.max(0, (ui.pick[t] || 0) - 1); renderTurnPanel();
+  }));
+  panel.querySelectorAll('[data-ability]').forEach(b => b.addEventListener('click', () =>
+    dispatch({ type: 'useCardAbility', faction: q.faction, use: b.dataset.ability === '1' })));
+  panel.querySelectorAll('[data-ctarget]').forEach(b => b.addEventListener('click', () =>
+    dispatch({ type: 'cardTarget', faction: q.faction, target: b.dataset.ctarget })));
+
+  panel.querySelector('#do-casualties')?.addEventListener('click', () =>
+    dispatch({ type: 'chooseCasualties', faction: q.faction, units: Object.fromEntries(Object.entries(ui.pick).filter(([, n]) => n > 0)) }));
+
   panel.querySelector('[data-pinc]')?.addEventListener('click', () => { ui.count = Math.min(q.max, ui.count + 1); renderTurnPanel(); });
   panel.querySelector('[data-pdec]')?.addEventListener('click', () => { ui.count = Math.max(0, ui.count - 1); renderTurnPanel(); });
   panel.querySelector('[data-port]')?.addEventListener('click', () =>
@@ -482,6 +577,22 @@ function logLine(e) {
     case 'portShipsRemoved': return `Enemy ${esc(theme.terms.unitWarship)}s burned at ${esc(rName(e.port))}.`;
     case 'portShipsReplaced': return `${F(e.faction)} refits ${e.count} ${esc(theme.terms.unitWarship)}(s) at ${esc(rName(e.port))}.`;
     case 'rallied': return `${F(e.faction)} gains ${e.gain} ${esc(theme.terms.authority)} at ${esc(rName(e.region))}.`;
+    case 'leaderCardChosen': return `${F(e.faction)} slides a ${esc(theme.terms.leaderCard)} face-down.`;
+    case 'leaderCardRevealed': return `${F(e.faction)} reveals ${esc(theme.cards?.[e.card] ?? e.card)}.`;
+    case 'cardCanceled': return `${esc(theme.cards?.[e.by] ?? e.by)} cancels ${F(e.faction)}'s ${esc(theme.cards?.[e.card] ?? e.card)} — it returns to hand.`;
+    case 'foughtCardless': return `${F(e.faction)} must fight without a ${esc(theme.terms.leaderCard)}.`;
+    case 'cardSwapped': return `${F(e.faction)} pays ${e.cost} ${esc(theme.terms.authority)} to set aside ${esc(theme.cards?.[e.card] ?? e.card)}.`;
+    case 'cardUnitDestroyed': return `${esc(theme.cards?.[e.by] ?? e.by)} strikes down a ${esc(unitName(e.unit))} of ${F(e.faction)}.`;
+    case 'orderRemovedByCard': return `${esc(theme.cards?.[e.by] ?? e.by)} sweeps ${F(e.faction)}'s order off ${esc(rName(e.region))}.`;
+    case 'trackDemoted': return `${esc(theme.cards?.[e.by] ?? e.by)} casts ${F(e.faction)} to the bottom of the ${esc(theme.terms['track' + e.track[0].toUpperCase() + e.track.slice(1)] ?? e.track)} track.`;
+    case 'authorityFromCard': return `${esc(theme.cards?.[e.by] ?? e.by)} claims ${e.amount} ${esc(theme.terms.authority)} in victory.`;
+    case 'discardRecovered': return `${esc(theme.cards?.[e.by] ?? e.by)} gathers ${F(e.faction)}'s spent leaders back to hand.`;
+    case 'cardUnitUpgraded': return `${esc(theme.cards?.[e.by] ?? e.by)} knights a ${esc(unitName('infantry'))} at ${esc(rName(e.region))} — it fights on as ${esc(unitName('cavalry'))}.`;
+    case 'cardMarchMoved': return `${esc(theme.cards?.[e.by] ?? e.by)} carries the march order into ${esc(rName(e.region))} — it may sound again.`;
+    case 'advanceBlocked': return `${esc(theme.cards?.[e.by] ?? e.by)} bars the gates: ${F(e.faction)} may not advance into ${esc(rName(e.region))}.`;
+    case 'cardDiscardedByCard': return `${esc(theme.cards?.[e.by] ?? e.by)} plucks ${esc(theme.cards?.[e.card] ?? e.card)} from ${F(e.faction)}'s hand.`;
+    case 'casualtiesTaken': return `${F(e.faction)} loses ${esc(Object.entries(e.units).map(([t, n]) => `${n} ${unitName(t)}`).join(', '))} to the swords.`;
+    case 'leaderHandRecycled': return `${F(e.faction)}'s leaders return to the fold — the hand is fresh.`;
     case 'combatEnded': return null;
     case 'cleanUp': return `— Round ${e.round} ends —`;
     case 'eventPhasePending': return `(${esc(theme.terms.eventPhase)} arrives in M2 — straight to planning.)`;

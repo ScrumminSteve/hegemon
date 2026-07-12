@@ -3,7 +3,8 @@
 // time cycling in initiative order; then clean-up and the next round.
 // Combat initiation (marching onto enemy units or garrisons) lands in M1.d.
 
-import { region, adjacency, controllerOf, seatsControlled } from './state.js';
+import { region, regionProps, adjacency, controllerOf, seatsControlled } from './state.js';
+import { REGIONS, PORTS } from '../data/map.js';
 import { SETUP } from '../data/setup.js';
 import { beginPlanning } from './planning.js';
 import { initiateCombat } from './combat.js';
@@ -227,7 +228,7 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
     if (neutral) {
       hostile += 1;
       if (neutral.insurmountable) throw new Error(`${mv.to} cannot be entered (Rules p.4 "~" token)`);
-      const fortified = region(mv.to).muster > 0;
+      const fortified = regionProps(state, mv.to).muster > 0;
       let strength = order.mod;
       for (const [t, n] of Object.entries(mv.units)) {
         strength += unitStrength({ type: t }, { fortified }) * n;
@@ -279,6 +280,20 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
     state.log.push({ round: state.round, event: 'controlEstablished', faction: fid, region: rid });
   }
 
+  if (vacated) {
+    // Ships in a port whose connected land became uncontrolled are destroyed;
+    // if the land is an enemy home, control reverts to that enemy (FAQ v2.0).
+    const port = PORTS.find(pp => pp.landId === rid);
+    if (port) {
+      const owner = controllerOf(state, rid); // after any control marker above
+      const shipsHere = (state.unitsByRegion[port.id] || []).filter(u => u.faction === fid);
+      if (shipsHere.length && owner !== fid) {
+        state.unitsByRegion[port.id] = (state.unitsByRegion[port.id] || []).filter(u => u.faction !== fid);
+        state.log.push({ round: state.round, event: 'portShipsLost', port: port.id, faction: fid, count: shipsHere.length, revertedTo: owner || null });
+      }
+    }
+  }
+
   state.log.push({ round: state.round, event: 'marched', faction: fid, from: rid, moves });
   delete state.ordersByRegion[rid];
 
@@ -307,7 +322,7 @@ export function resolveRally(state, fid, rid, { muster = false } = {}) {
   const r = region(rid);
   let gain = 0;
   if (r.kind === 'land') {
-    gain = 1 + (r.coin || 0);
+    gain = 1 + regionProps(state, rid).coin;
   } else if (r.kind === 'port') {
     const enemyShips = (state.unitsByRegion[r.seaId] || []).some(u => u.faction !== fid && u.type === 'warship');
     gain = enemyShips ? 0 : 1; // removed without effect if the sea is enemy-held (Rules p.25)
@@ -340,12 +355,21 @@ function cleanUp(state) {
   beginPlanning(state);
 }
 
+function landAreasControlled(state, fid) {
+  let n = 0;
+  for (const r of REGIONS) {
+    if (r.kind === 'land' && controllerOf(state, r.id) === fid) n++;
+  }
+  return n;
+}
+
 function endGame(state) {
-  // Victory: seats, then supply, then authority, then initiative (Rules p.16).
+  // Victory: seats; ties by total land areas, then Supply, then the
+  // Initiative track (FAQ v2.0 errata, superseding Rules p.16).
   const ranked = state.factions.slice().sort((a, b) =>
     (seatsControlled(state, b) - seatsControlled(state, a)) ||
+    (landAreasControlled(state, b) - landAreasControlled(state, a)) ||
     (state.supply[b] - state.supply[a]) ||
-    (state.authority[b] - state.authority[a]) ||
     (state.tracks.initiative.indexOf(a) - state.tracks.initiative.indexOf(b)));
   state.phase = 'gameOver';
   state.winner = ranked[0];

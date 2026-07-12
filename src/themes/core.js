@@ -5,6 +5,7 @@ export const THEME_CORE = {
   id: 'core',
   title: 'The Sundered Realm',
   terms: {
+    leaderCard: 'Leader Card',
     faction: 'Faction', factions: 'Factions',
     leaderCard: 'Leader Card',
     eventPhase: 'Muster & Omens Phase',
@@ -25,6 +26,25 @@ export const THEME_CORE = {
     F4: { name: 'The Verdant League', glyph: '✿' },
     F5: { name: 'The Dune Covenant',  glyph: '☀' },
     F6: { name: 'The Corsair Fleet',  glyph: '⚓' },
+  },
+  eventCards: {
+    "E1-muster": "Call to Banners", "E1-supply": "The Harvest", "E1-choice": "The Sovereign Decrees",
+    "E1-nothing": "Quiet Season", "E1-shuffle": "The Turning Year", "E2-bid": "Contest of Crowns",
+    "E2-collect": "Tithe and Tribute", "E2-choice": "Word from the Couriers", "E2-nothing": "Quiet Season",
+    "E2-shuffle": "The Turning Year", "E3-incursion": "The Horde Attacks", "E3-banMarchUp": "Mired Roads",
+    "E3-banDefend": "Broken Walls", "E3-banRaid": "Storm-Tossed Seas", "E3-banRally": "Lean Times",
+    "E3-banSupport": "Seeds of Distrust", "E3-choice": "The Champion Decrees", "W-silence": "The Long Silence",
+    "W-kingBeyond": "A Warlord Crowned", "W-mammoth": "Beast Riders", "W-massing": "Gathering at the Fords",
+    "W-horde": "The Horde Descends", "W-rattleshirt": "Bone-Rattle Raiders", "W-preemptive": "The First Strike",
+    "W-crowKillers": "Slayers of Sentinels", "W-skinchanger": "The Shape-Taker",
+  },
+  cards: {
+    "F1-4": "Warden Kaelric", "F1-3": "Ashka Wolfsworn", "F1-2a": "Lord Vexley", "F1-2b": "Torvald the Vast", "F1-1a": "Castellan Bram", "F1-1b": "The Greyheron", "F1-0": "Lady Maren",
+    "F2-4": "Chancellor Auric", "F2-3": "The Gravemaker", "F2-2a": "Ser Lucen Gold", "F2-2b": "The Mastiff", "F2-1a": "Vintas the Small", "F2-1b": "Marshal Corben", "F2-0": "Queen Sabelle",
+    "F3-4": "Lord Commander Sturm", "F3-3": "Prince Rovan", "F3-2a": "Dame Berrick", "F3-2b": "Pilot Corwin", "F3-1a": "Zafir the Freesail", "F3-1b": "The Red Oracle", "F3-0": "Motley the Fool",
+    "F4-4": "Lord Petrarch", "F4-3": "Ser Lorello", "F4-2a": "Ser Gavric", "F4-2b": "Marshal Thane", "F4-1a": "Lord Aldwyn", "F4-1b": "Lady Maribel", "F4-0": "The Thorned Dowager",
+    "F5-4": "The Crimson Asp", "F5-3": "Captain Ottone", "F5-2a": "Nightblade Vex", "F5-2b": "Sera the Spear", "F5-1a": "Nyra of the Dunes", "F5-1b": "Princess Aveline", "F5-0": "Prince Corvus",
+    "F6-4": "Storm-Eye Vane", "F6-3": "Admiral Vayric", "F6-2a": "Tavin Reaverborn", "F6-2b": "King Morrec", "F6-1a": "Asha Stormdaughter", "F6-1b": "Cleft Hagar", "F6-0": "The Drowned Priest",
   },
   regions: {
     L01: 'Frosthold',      L02: 'The Rimefells',   L03: 'Greyshore',

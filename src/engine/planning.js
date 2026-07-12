@@ -7,6 +7,19 @@ import { STAR_ALLOWANCE } from './state.js';
 
 // The 15-token order inventory every faction owns (Rules p.12: 10 regular +
 // 5 special "starred" tokens). mod = printed combat modifier.
+/**
+ * Order classification for restriction effects (ban-class event cards) and,
+ * later, dual-mode expansion tokens. Ban cards must test classes through
+ * here — never raw type equality. A token may carry several classes
+ * (e.g. a raid/support dual token is both).
+ */
+export function orderClasses(order) {
+  const cls = [order.type];
+  if (order.type === 'march' && order.mod === 1) cls.push('marchPlusOne');
+  if (order.modes) cls.push(...order.modes); // expansion dual-mode tokens
+  return cls;
+}
+
 export const ORDER_TOKENS = Object.freeze([
   { type: 'march',   mod: -1, starred: false },
   { type: 'march',   mod:  0, starred: false },

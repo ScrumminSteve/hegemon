@@ -20,7 +20,7 @@ function freshPlanning() {
 // A legal full submission for each faction's starting position.
 const SUBMISSIONS = {
   F1: { L01: M(0), L04: D(1), S02: SU(0) },
-  F2: { L36: M(0), L16: CP(false), S10: SU(0) },
+  F2: { L36: M(0), L16: CP(false), S10: SU(0), P04: D(1) },
   F3: { L22: D(1), L20: M(0), S04: SU(0) },
   F4: { L30: M(0), L33: R(false), S08: SU(0) },
   F5: { L28: D(1), L27: M(0), S05: SU(0) },

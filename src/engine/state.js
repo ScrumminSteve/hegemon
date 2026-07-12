@@ -5,6 +5,7 @@
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
 import { SETUP } from '../data/setup.js';
+import { HAND_BY_FACTION } from '../data/leaderCards.js';
 import { Phase } from './types.js';
 
 export const ENGINE_VERSION = 1;
@@ -18,6 +19,7 @@ export const STAR_ALLOWANCE = {
 
 export const DEFAULT_RULESET = Object.freeze({
   id: 'strict',
+  leaderCards: true,   // engine-internal: combat-core tests disable to isolate M1.d math
   // Named house-rule/ambiguity flags are minted here as they arise (M1 charter).
 });
 
@@ -25,6 +27,22 @@ const regionById = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r])
 const ADJ = buildAdjacency();
 
 export function adjacency() { return ADJ; }
+/**
+ * Effective region properties: printed icons merged with any improvement or
+ * degradation modifiers in play (MoD-class expansions). ALL rules code that
+ * cares about muster/supply/coin values must read through this accessor —
+ * never the printed data directly.
+ */
+export function regionProps(state, id) {
+  const r = region(id);
+  const mod = state.areaMods?.[id] || {};
+  return {
+    muster: Math.max(0, (r.muster || 0) + (mod.muster || 0)),
+    supply: Math.max(0, (r.supply || 0) + (mod.supply || 0)),
+    coin:   Math.max(0, (r.coin   || 0) + (mod.coin   || 0)),
+  };
+}
+
 export function region(id) { return regionById[id]; }
 
 /**
@@ -101,6 +119,11 @@ export function createGame(seatCount = 6, opts = {}) {
     },
     threat: SETUP.threatTrackStart,   // (Rules p.4 step 2)
     roundFlags: { bladeUsed: false }, // once-per-round token uses (Rules p.11)
+    areaMods: {},        // improvement/degradation deltas per region (expansion seam)
+    scenario: { id: 'base', cardSet: 'base', eventDecks: ['I', 'II', 'III'],
+                victory: 'seats', maxRounds: SETUP.maxRounds }, // composition root (expansion seam)
+    leaderHands: Object.fromEntries(active.map(f => [f, HAND_BY_FACTION[f].slice()])),
+    leaderDiscards: Object.fromEntries(active.map(f => [f, []])),
     ordersByRegion: {},               // Planning Phase: { regionId: { faction, type, starred } }
     pendingQueries: [],               // decision stack (drives UI and, later, AI)
     log: [],
