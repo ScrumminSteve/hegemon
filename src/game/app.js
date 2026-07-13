@@ -8,12 +8,13 @@ import { INVADER_CARDS } from '../data/invaderCards.js';
 import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
+import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap } from '../map-view.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE } from '../engine/state.js';
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 
-const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF };
+const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
 const byId = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r]));
 const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
