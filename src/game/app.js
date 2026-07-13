@@ -41,11 +41,10 @@ const tokenLabel = o => `${orderName(o.type)}${o.mod ? (o.mod > 0 ? ` +${o.mod}`
 const unitName = t => ({ infantry: theme.terms.unitInfantry, cavalry: theme.terms.unitCavalry, warship: theme.terms.unitWarship, siege_engine: theme.terms.unitSiege }[t]);
 
 // ---------- lifecycle ----------
-function newGame() {
+function newGame(seed) {
   resetTelemetry();
-  const raw = prompt('Seed (blank = random) — seeds make games and bug reports reproducible:');
-  if (raw !== null && raw.trim() !== '' && Number.isFinite(+raw)) {
-    game = createGame(6, { seed: Math.floor(+raw) });
+  if (Number.isFinite(seed)) {
+    game = createGame(6, { seed: Math.floor(seed) });
     beginPlanning(game);
     history = [serialize(game)];
     ui = {};
@@ -175,7 +174,8 @@ function overlayHighlights(g) {
     }
     for (const rid of held) {
       const { x, y } = posOf(rid);
-      g.appendChild(el('circle', { cx: x, cy: y, r: 52, class: 'ov-focus', style: `stroke:${fColor(focus)}` }));
+      g.appendChild(el('circle', { cx: x, cy: y, r: 52, class: 'ov-focus',
+        style: `stroke:${fColor(focus)}; fill:${fColor(focus)}` }));
     }
   }
   // #3 — while composing a march, ring the possible destinations; red = battle.
@@ -248,7 +248,7 @@ function handleRegionTap(rid) {
 
 // ---------- turn panel ----------
 function renderTurnPanel() {
-  queueMicrotask(() => overlayState($('#map')));
+  overlayState($('#map'));
   const panel = $('#turn-panel');
   if (!game) { panel.innerHTML = ''; return; }
 
@@ -890,15 +890,21 @@ function render() {
   renderHouses();
   renderTracks();
   renderLog();
+  const sl = $('#seed-line');
+  if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
-  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · seed ${game.config?.seed ?? '—'} · ` +
+  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
     game.factions.map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
 }
 
 // ---------- chrome ----------
 function init() {
   $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value]; render(); });
-  $('#btn-new').addEventListener('click', newGame);
+  $('#btn-new').addEventListener('click', () => newGame());
+  $('#seed-line').addEventListener('click', () => {
+    const raw = prompt('Start a new game with a specific seed (blank cancels):');
+    if (raw && Number.isFinite(+raw)) newGame(+raw);
+  });
   $('#btn-undo').addEventListener('click', undo);
   $('#btn-save').addEventListener('click', () => {
     const blob = new Blob([serialize(game)], { type: 'application/json' });

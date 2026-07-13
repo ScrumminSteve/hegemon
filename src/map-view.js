@@ -3,7 +3,7 @@
 import { REGIONS, PORTS, EDGES, buildAdjacency } from './data/map.js';
 import { FACTIONS } from './data/factions.js';
 
-const W = 1000, H = 1460;
+const W = 1100, H = 1610;
 const ADJ = buildAdjacency();
 const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
 
