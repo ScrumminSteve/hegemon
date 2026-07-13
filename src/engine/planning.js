@@ -148,10 +148,14 @@ export function threatPeekPlacement(state, faction, placement) {
   if (qi === -1) throw new Error(`${faction} has no pending threat peek`);
   if (!['top', 'bottom'].includes(placement)) throw new Error(`placement must be top or bottom`);
   state.pendingQueries.splice(qi, 1);
+  const card = state.invaderDeck[0];
   if (placement === 'bottom') {
     state.invaderDeck.push(state.invaderDeck.shift());
   }
-  // Placement itself is public; the card identity stays with the holder.
+  // Placement itself is public; the card identity stays with the holder — and
+  // persists as earned knowledge so views (human or AI) can recall it later.
+  // M2.d must clear these entries whenever the invader deck is drawn or shuffled.
+  state.privateKnowledge[faction].threatDeck = { card, placement, round: state.round };
   state.log.push({ round: state.round, event: 'threatPeekPlaced', faction, placement });
 }
 

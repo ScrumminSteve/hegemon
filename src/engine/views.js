@@ -42,6 +42,17 @@ export function viewFor(state, factionId) {
     if (q.type === 'threatPeekPlacement' && q.faction !== factionId) delete q.card;
   }
 
+  // The transcript replays hidden decisions verbatim (sealed orders, bids) —
+  // engine-internal, like the seed. Learning consumes it server-side only.
+  delete v.actionLog;
+  delete v.config;
+
+  // Earned secrets travel only in their owner's view (M3 AI parity contract:
+  // an AI's whole world is viewFor + legalActions — nothing else).
+  if (v.privateKnowledge) {
+    v.privateKnowledge = { [factionId]: v.privateKnowledge[factionId] || {} };
+  }
+
   // The seed is engine-internal; a peeking client could predict shuffles.
   delete v.seed;
   return v;

@@ -152,3 +152,81 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
 - **M2.a** complete (see above).
+
+
+## M3 information-access contract (banked Jul 2026)
+
+An AI seat's entire world is `viewFor(state, fid)` + `legalActions(state, fid)` —
+never raw state. Parity with a remote human player is the invariant:
+
+1. **No omniscience.** Deck order, unrevealed orders, others' pre-reveal picks and
+   bids are masked by the same code path that protects human hidden info; every
+   masking test doubles as an anti-cheat test.
+2. **No amnesia.** Earned secrets persist in `state.privateKnowledge[fid]`, merged
+   into that faction's view only (first client: the Courier's deck peek). Anything
+   a human would remember, the view must carry. M2.c bids and any future
+   spy/peek effects write here. M2.d must invalidate `threatDeck` entries on any
+   invader-deck draw or shuffle.
+3. **One lens.** UI panels and AI reasoning read the same derived helpers
+   (`seatsControlled`, `starLimit`, `regionProps`, track arrays) so what the
+   player sees and what the robot knows can never drift apart.
+4. **Table mode is the exception, not the API.** The single-operator UI renders
+   full state by design; AI seats in mixed games are constructed on views.
+
+
+## Telemetry doctrine (monitor positioning, banked Jul 2026)
+
+The engine is deterministic, so the recording question is always: *what is lost
+forever if not captured at the source?* Three tiers, three homes:
+
+1. **Engine state — replayable facts only.** `config` + `actionLog`. Anything
+   derivable by replay (legal alternatives, views, board situations, deck states)
+   is deliberately NOT logged: replay reconstructs it losslessly, and keeping
+   wall-clock or device data out of engine state protects the determinism hash.
+2. **UI sidecar — non-reconstructable observations.** Decision latency per action
+   (`timings`, aligned to transcript indices, popped on Undo to stay aligned),
+   undo retractions, and rejected actions with their errors. Lives outside engine
+   state; exported as `episode.telemetry`; optional (self-play episodes won't have it).
+3. **Episode provenance.** Engine version + integrity hash + `meta.seatControllers`
+   (every seat self-declares human or policy id — today's corpus is explicitly
+   all-human, so it can never be confused with robot play later).
+
+## M3.L — Learning module (design banked; substrate live as of M2.a)
+
+**Episode schema (`hegemon-episode/1`):** `{schema, engine, meta{title,notes,tags},
+hash, config{seatCount,seed,ruleset,scenario}, actions[+_round/_phase stamps], outcome}`.
+Recording workflow for opener scripts: play the scripted moves in `game.html` (Undo
+erases missteps from the transcript too — recorded transcripts stay clean), then
+**Episode** exports a labeled JSON. Validate and slice with
+`node tools/check-episode.mjs episode.json --rounds 3` — replays against the current
+engine, verifies the integrity hash (mismatch ⇒ engine behavior changed since recording
+⇒ episode is stale for training and must be quarantined), and prints the per-faction
+opener digest. Raw Save files also work as unsealed episodes.
+
+**Substrate (implemented now):** the engine is deterministic under a seeded RNG, so a
+complete game is `(state.config, state.actionLog)` — a few KB that replays byte-identically
+via `replayGame(config, actions)` (golden-tested). `episodeRecord(state)` flattens a game
+into `{config, actions, outcome}` with per-faction terminal metrics. Transcripts contain
+sealed information (orders, future bids) and are engine-private: stripped from `viewFor`
+alongside the seed.
+
+**Learning design (M3.L, after the M3 baseline policies exist):**
+1. **Policy interface** — `decide(view, legalActions) → action`. Every seat, human or
+   robot, is a policy; the parity contract above is the AI's entire sensory world.
+   Policy-0 is uniform-random-legal: the "infancy" player.
+2. **Self-play harness** — a Node script pits policy mixes across seeded seats
+   (`tools/selfplay.js`), emitting JSONL episode files. Deterministic seeds make every
+   training game reproducible and every regression bisectable; CI can farm games.
+3. **Learning loop, staged by ambition:**
+   a. *Tunable heuristics* — an evaluation function over view-derived features (seats,
+      supply headroom, track positions, threat exposure, army dispersion) with weights
+      optimized by self-play tournaments (hill-climbing/SPSA). Cheap, legible, strong.
+   b. *Statistics tables* — opening order-placement frequencies and bid distributions
+      conditioned on seat/position, mined from winning episodes.
+   c. *Policy models* — optional later: small nets (tf.js) trained on
+      (view-features, action, credit) tuples from the same episode corpus.
+4. **Credit assignment** — terminal outcome (win/rank) plus shaped intermediate signals
+   already captured per round in the log (seat count deltas, supply, authority).
+5. **Hygiene** — training data is views-plus-transcripts only; a learned policy can never
+   memorize information a player couldn't see. Episode `config.seed` keeps train/eval
+   splits honest (no seed leakage between them).

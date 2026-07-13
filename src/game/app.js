@@ -10,7 +10,7 @@ import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { renderMap } from '../map-view.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE } from '../engine/state.js';
-import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS } from '../engine/engine.js';
+import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 
 const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF };
@@ -40,6 +40,7 @@ const unitName = t => ({ infantry: theme.terms.unitInfantry, cavalry: theme.term
 
 // ---------- lifecycle ----------
 function newGame() {
+  resetTelemetry();
   game = createGame(6, { seed: Math.floor(Math.random() * 1e9) });
   beginPlanning(game);
   history = [serialize(game)];
@@ -47,15 +48,26 @@ function newGame() {
   render();
 }
 
+// Observational telemetry — signals the deterministic engine can never
+// reconstruct by replay. Lives strictly OUTSIDE engine state (never hashed,
+// never needed for replay); exported as an episode sidecar.
+let telemetry = { timings: [], undos: [], rejections: [] };
+let lastRenderAt = performance.now();
+function resetTelemetry() { telemetry = { timings: [], undos: [], rejections: [] }; lastRenderAt = performance.now(); }
+
 function dispatch(action) {
+  const thinkMs = Math.round(performance.now() - lastRenderAt);
   try {
     const r = applyAction(game, action);
     game = r.state;
+    // Aligned by transcript index: timings[i] annotates actionLog[i].
+    telemetry.timings.push({ i: game.actionLog.length - 1, type: action.type, faction: action.faction, thinkMs });
     history.push(serialize(game));
     if (history.length > 200) history.shift();
     ui = {};
     render();
   } catch (e) {
+    telemetry.rejections.push({ atAction: game.actionLog.length, type: action.type, faction: action.faction, error: e.message, thinkMs });
     flash(e.message);
   }
 }
@@ -64,6 +76,10 @@ function undo() {
   if (history.length < 2) return;
   history.pop();
   game = deserialize(history[history.length - 1]);
+  // Keep the sidecar aligned with the shrunken transcript — but record the
+  // retraction itself: hesitation is signal even when the move is erased.
+  const undone = telemetry.timings.pop();
+  telemetry.undos.push({ atAction: game.actionLog.length, undone: undone ? { type: undone.type, faction: undone.faction } : null });
   ui = {};
   render();
 }
@@ -720,6 +736,7 @@ function renderTracks() {
 }
 
 function render() {
+  lastRenderAt = performance.now();
   const svg = $('#map');
   renderMap(svg, theme, { onSelect: handleRegionTap });
   overlayState(svg);
@@ -743,6 +760,22 @@ function init() {
     a.download = `hegemon-round${game.round}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
+  });
+  $('#btn-episode').addEventListener('click', () => {
+    const title = prompt('Episode title (e.g. "Stark northern clamp — opener v1"):') || '';
+    const notes = title ? (prompt('Notes (optional):') || '') : '';
+    const ep = episodeRecord(game, {
+      title, notes, recordedAt: new Date().toISOString(),
+      seatControllers: Object.fromEntries(game.factions.map(f => [f, 'human'])), // robots will self-declare (M3)
+    });
+    ep.telemetry = telemetry; // Tier-2 sidecar: latency/undo/rejection observations
+    const blob = new Blob([JSON.stringify(ep, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `episode-${(title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-r${game.round}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Episode exported.');
   });
   $('#btn-load').addEventListener('click', () => $('#load-box').classList.toggle('hidden'));
   $('#btn-load-confirm').addEventListener('click', () => {

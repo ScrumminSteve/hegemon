@@ -166,6 +166,12 @@ export const tests = [
     s = applyAction(s, { type: 'threatPeekPlacement', faction: 'F2', placement: 'bottom' }).state;
     eq(s.invaderDeck[s.invaderDeck.length - 1], top, 'buried to the bottom');
     eq(s.phase, 'action', 'action phase opens after placement');
+    // Earned knowledge persists in the holder's view — and only there (M3 parity).
+    const later = viewFor(s, 'F2');
+    eq(later.privateKnowledge.F2.threatDeck.card, top, 'the holder remembers');
+    eq(later.privateKnowledge.F2.threatDeck.placement, 'bottom');
+    const rival = viewFor(s, 'F5');
+    ok(!rival.privateKnowledge.F2, 'rivals see no trace of the secret');
   }},
 
   { name: 'legalActions describes the decision space for the querying faction only', fn() {

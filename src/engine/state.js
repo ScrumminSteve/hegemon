@@ -102,6 +102,11 @@ export function createGame(seatCount = 6, opts = {}) {
 
   const state = {
     version: ENGINE_VERSION,
+    // Frozen creation parameters: (config, actionLog) is a complete, exact
+    // replay of the game — the substrate for M3.L learning episodes.
+    config: { seatCount, seed: opts.seed ?? 42, ruleset: { ...DEFAULT_RULESET, ...(opts.ruleset || {}) },
+              scenario: 'base' },
+    actionLog: [],
     ruleset: { ...DEFAULT_RULESET, ...(opts.ruleset || {}), seatCount },
     seed: opts.seed ?? 42,
     round: SETUP.firstRound,
@@ -122,6 +127,8 @@ export function createGame(seatCount = 6, opts = {}) {
     threat: SETUP.threatTrackStart,   // (Rules p.4 step 2)
     roundFlags: { bladeUsed: false }, // once-per-round token uses (Rules p.11)
     areaMods: {},        // improvement/degradation deltas per region (expansion seam)
+    privateKnowledge: Object.fromEntries(active.map(f => [f, {}])), // earned secrets,
+                         // merged into that faction's view ONLY (M3 AI parity seam)
     scenario: { id: 'base', cardSet: 'base', eventDecks: ['I', 'II', 'III'],
                 victory: 'seats', maxRounds: SETUP.maxRounds }, // composition root (expansion seam)
     leaderHands: Object.fromEntries(active.map(f => [f, HAND_BY_FACTION[f].slice()])),

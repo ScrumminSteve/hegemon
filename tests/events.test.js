@@ -1,7 +1,8 @@
 // Golden tests — Event Phase, M2.a (Rules p.9–10, p.22; FAQ v2.0).
 
 import { createGame } from '../src/engine/state.js';
-import { applyAction, beginPlanning } from '../src/engine/engine.js';
+import { applyAction, beginPlanning, replayGame, episodeRecord } from '../src/engine/engine.js';
+import { viewFor } from '../src/engine/views.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { EVENT_DECKS } from '../src/data/eventCards.js';
 import { eq, ok, throws } from './assert.js';
@@ -49,6 +50,29 @@ function runRound(s) {
 const act = (s, a) => applyAction(s, a).state;
 
 export const tests = [
+
+  { name: 'a transcript replays to a byte-identical game (M3.L determinism contract)', fn() {
+    let s = createGame(6, { seed: 77 });
+    s = runRound(s);   // full inert round incl. the round-2 Event Phase
+    for (let i = 0; i < 6 && s.pendingQueries.some(x => x.type === 'eventChoice'); i++) {
+      const q = s.pendingQueries.find(x => x.type === 'eventChoice');
+      s = act(s, { type: 'eventChoice', faction: q.faction, option: q.options.includes('nothing') ? 'nothing' : q.options[0] });
+    }
+    ok(s.actionLog.length >= 7, 'transcript captured');
+    const twin = replayGame(s.config, s.actionLog);
+    const strip = g => { const c = structuredClone(g); return c; };
+    eq(JSON.parse(JSON.stringify(strip(twin))), JSON.parse(JSON.stringify(strip(s))), 'byte-identical replay');
+    const ep = episodeRecord(s);
+    ok(ep.outcome.perFaction.F1.seats >= 1 && ep.config.seed === 77);
+  }},
+
+  { name: 'the transcript is engine-private: views carry no replay material', fn() {
+    let s = createGame(6, { seed: 77 });
+    s = runRound(s);
+    const v = viewFor(s, 'F1');
+    ok(v.actionLog === undefined && v.config === undefined && v.seed === undefined);
+  }},
+
 
   { name: 'event decks are seeded at creation: full composition, deterministic order', fn() {
     const g = createGame(6, { seed: 11 });

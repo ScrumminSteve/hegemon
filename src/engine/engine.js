@@ -7,6 +7,7 @@ import { eventChoice, reconcileSupply } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
 import { chooseLeaderCard } from './cards.js';
+import { createGame, seatsControlled, serialize } from './state.js';
 
 export { beginPlanning, beginActionPhase, orderableRegions, starLimit, ORDER_TOKENS };
 
@@ -73,8 +74,49 @@ export function applyAction(state, action) {
 
   const next = structuredClone(state);
   const logStart = next.log.length;
+  const stamp = { _round: next.round, _phase: next.phase }; // when the action was ISSUED
   handler(next, action);
+  next.actionLog.push({ ...action, ...stamp }); // transcript: replayable, sliceable (M3.L)
   return { state: next, events: next.log.slice(logStart) };
+}
+
+/** Reconstruct a game exactly from its transcript (determinism contract). */
+export function replayGame(config, actions) {
+  let s = createGame(config.seatCount, { seed: config.seed, ruleset: config.ruleset });
+  beginPlanning(s);
+  for (const a of actions) s = applyAction(s, a).state;
+  return s;
+}
+
+/** Deterministic digest of a game state (corpus integrity, replay checks). */
+export function stateHash(state) {
+  const str = serialize(state);
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+
+/** Flatten a finished (or in-flight) game into a learning episode record. */
+export function episodeRecord(state, meta = {}) {
+  return {
+    schema: 'hegemon-episode/1',
+    engine: state.version,
+    meta,               // free-form: { title, author, notes, tags: ['opener','F1'] }
+    hash: stateHash(state),   // digest of the final state this transcript reaches
+    config: state.config,
+    actions: state.actionLog,
+    outcome: {
+      winner: state.winner ?? null,
+      round: state.round,
+      phase: state.phase,
+      perFaction: Object.fromEntries(state.factions.map(f => [f, {
+        seats: seatsControlled(state, f),
+        supply: state.supply[f],
+        authority: state.authority[f],
+        initiative: state.tracks.initiative.indexOf(f) + 1,
+      }])),
+    },
+  };
 }
 
 /**
