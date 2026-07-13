@@ -10,9 +10,10 @@ import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap } from '../map-view.js';
-import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE } from '../engine/state.js';
+import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf } from '../engine/state.js';
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
+import { transportReachable } from '../engine/actionPhase.js';
 
 const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
@@ -129,9 +130,72 @@ function unitGlyph(u, x, y) {
   return g;
 }
 
+function marchCandidates(fid, from) {
+  const out = { peaceful: [], battle: [] };
+  const units = (game.unitsByRegion[from] || []).filter(u => u.faction === fid && !u.routed);
+  if (!units.length) return out;
+  const hasLand = units.some(u => u.type !== 'warship');
+  const hasShips = units.some(u => u.type === 'warship');
+  const cand = new Set([...(ADJ[from] || [])]);
+  if (hasLand) {
+    for (const r of REGIONS) {
+      if (r.kind === 'land' && r.id !== from && transportReachable(game, fid, from, r.id)) cand.add(r.id);
+    }
+  }
+  const myPort = PORTS.find(pp => pp.seaId === from);
+  if (hasShips && myPort && controllerOf(game, myPort.landId) === fid) cand.add(myPort.id);
+  for (const rid of cand) {
+    const r = region(rid);
+    if (r.kind === 'land' && !hasLand) continue;
+    if (r.kind === 'maritime' && !hasShips) continue;
+    const n = game.neutrals?.[rid];
+    if (n?.insurmountable) continue;
+    const there = game.unitsByRegion[rid] || [];
+    const enemyUnits = there.some(u => u.faction !== fid);
+    const enemyGarrison = game.garrisons[rid] && game.garrisons[rid].faction !== fid && !there.some(u => u.faction === fid);
+    if (enemyUnits || enemyGarrison || n) out.battle.push(rid);
+    else out.peaceful.push(rid);
+  }
+  return out;
+}
+
+function overlayHighlights(g) {
+  // #1 — spotlight the active decider's owned/occupied territory.
+  const focus = game.pendingQueries[0]?.faction;
+  if (focus) {
+    const held = new Set();
+    for (const [rid, units] of Object.entries(game.unitsByRegion)) {
+      if ((units || []).some(u => u.faction === focus)) held.add(rid);
+    }
+    for (const r of REGIONS) {
+      if (r.kind === 'land' && controllerOf(game, r.id) === focus) held.add(r.id);
+    }
+    for (const rid of held) {
+      const { x, y } = posOf(rid);
+      g.appendChild(el('circle', { cx: x, cy: y, r: 52, class: 'ov-focus', style: `stroke:${fColor(focus)}` }));
+    }
+  }
+  // #3 — while composing a march, ring the possible destinations; red = battle.
+  if (ui.mode === 'march' && ui.region) {
+    const qs = game.pendingQueries;
+    const q = ui.activeQuery != null ? qs[Math.min(ui.activeQuery, qs.length - 1)] : qs[0];
+    if (!q) return;
+    const { peaceful, battle } = marchCandidates(q.faction, ui.region);
+    for (const rid of peaceful) {
+      const { x, y } = posOf(rid);
+      g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-target' }));
+    }
+    for (const rid of battle) {
+      const { x, y } = posOf(rid);
+      g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-battle' }));
+    }
+  }
+}
+
 function overlayState(svg) {
   svg.querySelector('.game-overlay')?.remove();
   const g = el('g', { class: 'game-overlay' });
+  overlayHighlights(g);
 
   for (const [rid, units] of Object.entries(game.unitsByRegion)) {
     const { x, y } = posOf(rid);
@@ -150,6 +214,13 @@ function overlayState(svg) {
     const { x, y } = posOf(rid);
     g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 10, class: 'ov-garrison', style: `stroke:${fColor(gar.faction)}` }));
     const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' }); t.textContent = gar.strength; g.appendChild(t);
+  }
+  for (const [rid, n] of Object.entries(game.neutrals || {})) {
+    const { x, y } = posOf(rid);
+    g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 11, class: 'ov-neutral' }));
+    const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' });
+    t.textContent = n.insurmountable ? '~' : n.strength;
+    g.appendChild(t);
   }
   for (const [rid, n] of Object.entries(game.neutrals)) {
     const { x, y } = posOf(rid);
@@ -180,6 +251,7 @@ function handleRegionTap(rid) {
 
 // ---------- turn panel ----------
 function renderTurnPanel() {
+  queueMicrotask(() => overlayState($('#map')));
   const panel = $('#turn-panel');
   if (!game) { panel.innerHTML = ''; return; }
 
@@ -464,6 +536,7 @@ function raidForm(q) {
     html += `<div class="btn-col">` + q.regions.map(r => `<button data-pick="${r}">${esc(rName(r))}</button>`).join('') + `</div>`;
     return html;
   }
+  html += `<button data-repick>↩ choose a different raid</button>`;
   const targets = [...ADJ[ui.region]].filter(rid => {
     const o = game.ordersByRegion[rid];
     return o && o.faction !== q.faction;
@@ -484,6 +557,7 @@ function marchForm(q) {
     return html;
   }
   const avail = {};
+  if (q.regions.length > 1) html += `<button data-repick>↩ choose a different march</button>`;
   for (const u of game.unitsByRegion[ui.region] || []) {
     if (u.faction === q.faction && !u.routed) avail[u.type] = (avail[u.type] || 0) + 1;
   }
@@ -634,6 +708,10 @@ function bindForm(panel, q) {
   panel.querySelector('[data-swapback]')?.addEventListener('click', () => { ui.mode = null; ui.swapRegion = null; renderTurnPanel(); });
 
   panel.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { ui.region = b.dataset.pick; renderTurnPanel(); }));
+  panel.querySelector('[data-repick]')?.addEventListener('click', () => {
+    ui.region = null; ui.moves = []; ui.leaveControl = false; ui.awaitDest = false;
+    renderTurnPanel();
+  });
   panel.querySelectorAll('[data-target]').forEach(b => b.addEventListener('click', () =>
     dispatch({ type: 'resolveRaid', faction: q.faction, region: ui.region, target: b.dataset.target || null })));
 
