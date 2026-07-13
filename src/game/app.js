@@ -41,6 +41,15 @@ const unitName = t => ({ infantry: theme.terms.unitInfantry, cavalry: theme.term
 // ---------- lifecycle ----------
 function newGame() {
   resetTelemetry();
+  const raw = prompt('Seed (blank = random) — seeds make games and bug reports reproducible:');
+  if (raw !== null && raw.trim() !== '' && Number.isFinite(+raw)) {
+    game = createGame(6, { seed: Math.floor(+raw) });
+    beginPlanning(game);
+    history = [serialize(game)];
+    ui = {};
+    render();
+    return;
+  }
   game = createGame(6, { seed: Math.floor(Math.random() * 1e9) });
   beginPlanning(game);
   history = [serialize(game)];
@@ -209,7 +218,7 @@ function qLabel(q) {
       chooseLeaderCard: 'leader card', chooseCasualties: 'casualties',
       useCardAbility: 'card ability', cardTarget: 'card target',
       eventChoice: 'event decree', reconcileSupply: 'supply losses',
-      threatPeekPlacement: 'deck peek' }[q.type]);
+      threatPeekPlacement: 'deck peek', muster: 'muster' }[q.type]);
 }
 
 function header(q, title) {
@@ -279,6 +288,35 @@ function peekForm(q) {
     `<button class="opt" data-opt="bottom">bury it at the bottom</button>`;
 }
 
+const MUSTER_COSTS_UI = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, upgrade: 1 };
+function musterForm(q) {
+  const staged = ui.musterBuilds || [];
+  const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
+  const left = q.points - spent;
+  const port = PORTS.find(pp => pp.landId === q.region);
+  const seas = [...(ADJ[q.region] || [])].filter(x => region(x).kind === 'maritime');
+  const hasInf = (game.unitsByRegion[q.region] || [])
+    .filter(u => u.faction === q.faction && u.type === 'infantry' && !u.routed).length
+    > staged.filter(b => b.type === 'upgrade').length;
+  const btn = (label, cost, data, on = true) =>
+    `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
+  const stagedRows = staged.map((b, i) =>
+    `<div class="stepper-row">${esc(theme.terms[b.type] || b.type)}${b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
+  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${esc(rName(q.region))} — ${left}/${q.points} points`) +
+    battleless() +
+    btn(`${esc(theme.terms.infantry)}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
+    btn(`${esc(theme.terms.cavalry)}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
+    btn(`${esc(theme.terms.siege_engine)}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region })) +
+    btn(`upgrade ${esc(theme.terms.infantry)} → ${esc(theme.terms.cavalry)}`, 1, JSON.stringify({ type: 'upgrade' }), hasInf) +
+    (port ? btn(`${esc(theme.terms.warship)} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
+    seas.map(sid => btn(`${esc(theme.terms.warship)} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }))).join('') +
+    (stagedRows ? `<div class="hint">Staged:</div>` + stagedRows : '') +
+    `<button class="opt commit" data-mcommit>1 ${staged.length ? 'muster ' + staged.length + ' build(s)' : 'muster nothing (pass)'}</button>`
+      .replace('>1 ', '>') +
+    `<div class="hint">Costs: ${esc(theme.terms.infantry)}/${esc(theme.terms.warship)} 1 · ${esc(theme.terms.cavalry)}/${esc(theme.terms.siege_engine)} 2 · upgrade 1. Supply and pools are enforced on commit.</div>`;
+}
+function battleless() { return ''; }
+
 function formFor(q) {
   if (q.type === 'submitOrders') return planningForm(q);
   if (q.type === 'courierDecision') return courierForm(q);
@@ -295,6 +333,7 @@ function formFor(q) {
   if (q.type === 'cardTarget') return targetForm(q);
   if (q.type === 'eventChoice') return eventChoiceForm(q);
   if (q.type === 'reconcileSupply') return reconcileForm(q);
+  if (q.type === 'muster') return musterForm(q);
   if (q.type === 'threatPeekPlacement') return peekForm(q);
   return `<pre>${esc(JSON.stringify(q))}</pre>`;
 }
@@ -549,6 +588,19 @@ function bindForm(panel, q) {
       dispatch({ type: 'reconcileSupply', faction: q.faction, region: b.dataset.region, unitType: b.dataset.unit })));
     return;
   }
+  if (q.type === 'muster') {
+    panel.querySelectorAll('[data-mbuild]').forEach(b => b.addEventListener('click', () => {
+      (ui.musterBuilds = ui.musterBuilds || []).push(JSON.parse(b.dataset.mbuild));
+      renderTurnPanel();
+    }));
+    panel.querySelectorAll('[data-munstage]').forEach(b => b.addEventListener('click', () => {
+      ui.musterBuilds.splice(+b.dataset.munstage, 1);
+      renderTurnPanel();
+    }));
+    panel.querySelector('[data-mcommit]')?.addEventListener('click', () =>
+      dispatch({ type: 'muster', faction: q.faction, region: q.region, builds: ui.musterBuilds || [] }));
+    return;
+  }
 
   panel.querySelector('#do-submit')?.addEventListener('click', () =>
     dispatch({ type: 'submitOrders', faction: q.faction, orders: ui.assignments }));
@@ -655,7 +707,11 @@ function logLine(e) {
     case 'authorityCollected': return `${F(e.faction)} collected ${e.amount} ${esc(theme.terms.authority)}.`;
     case 'courierPeeked': return `${F(e.faction)} peeked at the threat deck.`;
     case 'threatPeekPlaced': return `${F(e.faction)} ${e.placement === 'bottom' ? 'buried the card' : 'left the card on top'}.`;
-    case 'musteringPending': return `<em>${esc(eventCardName(e.card))} — recruitment arrives in M2.b.</em>`;
+    case 'musteringBegan': return `The banners are called: ${e.sites} strongholds may recruit.`;
+    case 'mustered': return e.builds.length
+      ? `${F(e.faction)} recruited at ${esc(rName(e.region))} (${e.spent} pts).`
+      : `${F(e.faction)} held recruitment at ${esc(rName(e.region))}.`;
+    case 'rallyMusterOpened': return `${F(e.faction)}'s ★ rally raises banners at ${esc(rName(e.region))}.`;
     case 'bidPending': return `<em>${esc(eventCardName(e.card))} — track bidding arrives in M2.c.</em>`;
     case 'incursionPending': return `<em>${e.trigger === 'threatMax' ? 'The threat breaks!' : esc(eventCardName(e.card || ''))} — incursions arrive in M2.d.</em>`;
     case 'ordersSubmitted': return `${F(e.faction)} committed orders.`;
@@ -716,6 +772,19 @@ function renderLog() {
 }
 
 // ---------- top-level render ----------
+function renderHouses() {
+  const el = $('#houses-panel');
+  if (!el) return;
+  const active = new Set(game.pendingQueries.map(q => q.faction));
+  el.innerHTML = game.factions.map(f => `
+    <div class="house-row ${active.has(f) ? 'house-active' : ''}" style="border-left-color:${fColor(f)}">
+      <span class="house-name">${fGlyph(f)} ${esc(fName(f))}</span>
+      <span title="seats (win at 7)">⌂${seatsControlled(game, f)}</span>
+      <span title="supply">⛁${game.supply[f]}</span>
+      <span title="${esc(theme.terms.authority)}">◈${game.authority[f]}</span>
+    </div>`).join('');
+}
+
 function renderTracks() {
   const el = $('#tracks-panel');
   if (!el) return;
@@ -729,7 +798,8 @@ function renderTracks() {
     const seats = game.tracks[track].map((f, i) => {
       const star = track === 'command' && stars[i] ? `<sup>${'★'.repeat(stars[i])}</sup>` : '';
       const holder = i === 0 ? `<span class="tok-dot" title="${esc(tokenName)}">●</span>` : '';
-      return `<span class="track-seat" style="border-color:${fColor(f)}" title="${esc(fName(f))} — position ${i + 1}">${fGlyph(f)}${star}${holder}</span>`;
+      const hot = game.pendingQueries.some(q => q.faction === f) ? ' seat-active' : '';
+      return `<span class="track-seat${hot}" style="border-color:${fColor(f)}" title="${esc(fName(f))} — position ${i + 1}">${fGlyph(f)}${star}${holder}</span>`;
     }).join('');
     return `<div class="track-row"><span class="track-name" title="${esc(tokenName)} to the leader">${esc(label)}</span>${seats}</div>`;
   }).join('');
@@ -741,10 +811,11 @@ function render() {
   renderMap(svg, theme, { onSelect: handleRegionTap });
   overlayState(svg);
   renderTurnPanel();
+  renderHouses();
   renderTracks();
   renderLog();
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
-  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
+  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · seed ${game.config?.seed ?? '—'} · ` +
     game.factions.map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
 }
 

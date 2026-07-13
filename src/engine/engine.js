@@ -3,7 +3,7 @@
 // inputs (the incoming state is never mutated), deterministic, serializable.
 
 import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
-import { eventChoice, reconcileSupply } from './eventPhase.js';
+import { eventChoice, reconcileSupply, muster } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
 import { chooseLeaderCard } from './cards.js';
@@ -31,6 +31,9 @@ const HANDLERS = {
   },
   reconcileSupply(state, action) {
     reconcileSupply(state, action.faction, action.region, action.unitType);
+  },
+  muster(state, action) {
+    muster(state, action.faction, action.region, action.builds || []);
   },
   resolveRaid(state, action) {
     resolveRaid(state, action.faction, action.region, action.target ?? null);

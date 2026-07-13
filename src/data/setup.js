@@ -89,6 +89,7 @@ export const SETUP = {
   neutralForces: {
     six: [ // the "4-6" range token(s) — present even at full seats
       { region: 'L13', strength: 6, verified: true },   // owner-verified vs board
+      { region: 'L19', strength: 5, verified: true },   // owner-verified vs board (P1, Jul 2026)
     ],
     five: [ // tokens marked "4-6" and "4-5"
       { region: 'L28', strength: 5, verified: false },   // excluded home seat

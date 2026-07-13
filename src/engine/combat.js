@@ -571,6 +571,25 @@ function concludeCombat(state) {
       finishAttackerWin(state);
     }
   } else {
+    // Robb-class ability, defender's win: the victor DIRECTS the attacker's
+    // retreat — origin, or any area not controlled by another player, incl.
+    // ship-transport-connected land (FAQ v2.0).
+    if (c.retreatChooser && c.retreatChooser === c.defender) {
+      const attackerNaval = c.attackingUnits.every(u => u.type === 'warship');
+      const opts = new Set(legalRetreats(state, c.attacker, c.region, null, attackerNaval));
+      const originOwner0 = controllerOf(state, c.origin);
+      if (!originOwner0 || originOwner0 === c.attacker) opts.add(c.origin);
+      opts.delete(c.region);
+      if (opts.size === 0) {
+        state.log.push({ round: state.round, event: 'attackersDestroyedNoRetreat', region: c.region, faction: c.attacker, count: c.attackingUnits.length });
+        state.log.push({ round: state.round, event: 'attackerRepelled', region: c.region });
+        endCombat(state);
+        return;
+      }
+      state.pendingQueries.push({ type: 'retreat', faction: c.retreatChooser,
+        retreating: c.attacker, options: [...opts].sort(), attackerBounce: true });
+      return; // resolved by the retreat answer
+    }
     // Defeated attacker: survivors bounce back to the origin, routed (Rules p.21).
     // If the origin is now hostile (e.g. a vacated enemy home whose control
     // reverted), there is no legal retreat: the force is destroyed (FAQ v2.0).
@@ -597,9 +616,11 @@ function concludeCombat(state) {
 
 // ---------- retreats (Rules p.21) ----------
 
-export function legalRetreats(state, fid, from, attackOrigin) {
+export function legalRetreats(state, fid, from, attackOrigin, navalOverride = null) {
   const retreating = (state.unitsByRegion[from] || []).filter(u => u.faction === fid);
-  const naval = retreating.every(u => u.type === 'warship');
+  // Beaten attackers are off-board (held in combat state): callers directing
+  // their retreat must say what is retreating rather than trust the region.
+  const naval = navalOverride ?? (retreating.length > 0 && retreating.every(u => u.type === 'warship'));
   const out = [];
   // Adjacent areas, plus land areas connected by friendly ship transport (FAQ v2.0).
   const candidates = new Set(ADJ[from]);
@@ -636,6 +657,21 @@ export function legalRetreats(state, fid, from, attackOrigin) {
 }
 
 export function retreat(state, fid, to) {
+  {
+    const qb = state.pendingQueries.find(x => x.type === 'retreat' && x.faction === fid && x.attackerBounce);
+    if (qb) {
+      if (!qb.options.includes(to)) throw new Error(`${to} is not among the directed retreat options`);
+      state.pendingQueries.splice(state.pendingQueries.indexOf(qb), 1);
+      const c = state.combat;
+      state.unitsByRegion[to] = state.unitsByRegion[to] || [];
+      for (const u of c.attackingUnits) { u.routed = true; state.unitsByRegion[to].push(u); }
+      state.log.push({ round: state.round, event: 'retreated', faction: c.attacker, from: c.region, to, directedBy: fid, count: c.attackingUnits.length });
+      state.log.push({ round: state.round, event: 'attackerRepelled', region: c.region });
+      destroyForSupply(state, c.attacker, to);
+      endCombat(state);
+      return;
+    }
+  }
   const qi = state.pendingQueries.findIndex(q => q.type === 'retreat' && q.faction === fid);
   if (qi === -1) throw new Error(`${fid} has no pending retreat`);
   const q = state.pendingQueries[qi];

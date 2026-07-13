@@ -11,14 +11,16 @@
 // Logged-but-inert until their own drops: muster (M2.b), bidTracks (M2.c),
 // incursion (M2.d).
 
-import { region, regionProps, controllerOf } from './state.js';
+import { region, regionProps, controllerOf, adjacency } from './state.js';
 import { EVENT_DECK_SETS, INVADER_SETS } from '../data/registry.js';
 import { PORTS, REGIONS as REGION_LIST } from '../data/map.js';
+const ADJ_M2B = adjacency();
 import { shuffle } from './rng.js';
 import { beginPlanning } from './planning.js';
 import { SETUP } from '../data/setup.js';
+import { advanceAction } from './actionPhase.js'; // tolerated ESM cycle (as combat↔actionPhase)
 
-const BLOCKING = ['eventChoice', 'reconcileSupply'];
+const BLOCKING = ['eventChoice', 'reconcileSupply', 'muster'];
 
 function cardDef(state, id) {
   for (const cards of Object.values(EVENT_DECK_SETS[state.scenario.eventDeckSet || 'base'])) {
@@ -124,8 +126,7 @@ function resolveEventCard(state, deckId, cardId, chosen) {
       return false;
     }
     case 'muster':
-      state.log.push({ round: state.round, event: 'musteringPending', card: cardId, note: 'M2.b' });
-      return true;
+      return resolveMusterCard(state, cardId);
     case 'bidTracks':
       state.log.push({ round: state.round, event: 'bidPending', card: cardId, note: 'M2.c' });
       return true;
@@ -150,6 +151,149 @@ export function eventChoice(state, fid, option) {
     ? { type: 'banOrder', order: option.split(':')[1] }
     : { type: option };
   const done = resolveEventCard(state, q.deck, q.card, effect);
+  if (done) {
+    state.eventPhase.step += 1;
+    progressEventPhase(state);
+  }
+}
+
+// ---------- Mustering (Rules p.9, p.25; FAQ v2.0) ----------
+
+export const MUSTER_COSTS = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, upgrade: 1 };
+
+function fortifiedControlled(state, fid) {
+  const out = [];
+  for (const r of REGION_LIST) {
+    if (r.kind !== 'land') continue;
+    const pts = regionProps(state, r.id).muster;
+    if (pts > 0 && controllerOf(state, r.id) === fid) out.push({ region: r.id, points: pts });
+  }
+  return out.sort((a, b) => a.region < b.region ? -1 : 1);
+}
+
+function resolveMusterCard(state, cardId) {
+  if (!state.eventPhase.musterQueue) {
+    state.eventPhase.musterQueue = [];
+    for (const fid of state.tracks.initiative) {
+      for (const site of fortifiedControlled(state, fid)) {
+        state.eventPhase.musterQueue.push({ faction: fid, ...site });
+      }
+    }
+    state.log.push({ round: state.round, event: 'musteringBegan', card: cardId, sites: state.eventPhase.musterQueue.length });
+  }
+  const next = state.eventPhase.musterQueue.shift();
+  if (!next) {
+    delete state.eventPhase.musterQueue;
+    return true;
+  }
+  state.pendingQueries.push({ type: 'muster', faction: next.faction, region: next.region, points: next.points });
+  return false;
+}
+
+function inPlay(state, fid, type) {
+  let n = 0;
+  for (const units of Object.values(state.unitsByRegion)) {
+    for (const u of units) if (u.faction === fid && u.type === type) n++;
+  }
+  return n;
+}
+
+/**
+ * Apply one area's muster. builds: array of
+ *   { type: 'infantry'|'cavalry'|'siege_engine', to: musterRegion }
+ *   { type: 'warship', to: portId | adjacentSeaId }
+ *   { type: 'upgrade', at: musterRegion }   // one infantry → cavalry
+ * An empty array passes. Costs: infantry/warship 1, cavalry/siege 2, upgrade 1.
+ */
+export function muster(state, fid, rid, builds = []) {
+  const qi = state.pendingQueries.findIndex(q => q.type === 'muster' && q.faction === fid && q.region === rid);
+  if (qi === -1) throw new Error(`${fid} has no pending muster at ${rid}`);
+  const q = state.pendingQueries[qi];
+
+  const cost = builds.reduce((a, b) => a + (MUSTER_COSTS[b.type] ?? NaN), 0);
+  if (Number.isNaN(cost)) throw new Error('Unknown build type in muster');
+  if (cost > q.points) throw new Error(`Muster costs ${cost}, but ${rid} provides ${q.points} points (Rules p.9)`);
+
+  // Validate destinations before touching state.
+  const port = PORTS.find(pp => pp.landId === rid);
+  const seas = [...(ADJ_M2B[rid] || [])].filter(x => region(x).kind === 'maritime');
+  const pooled = { infantry: 0, cavalry: 0, warship: 0, siege_engine: 0 };
+  let portAdds = 0;
+  for (const b of builds) {
+    if (b.type === 'upgrade') {
+      const inf = (state.unitsByRegion[rid] || []).filter(u => u.faction === fid && u.type === 'infantry' && !u.routed);
+      const upgrades = builds.filter(x => x.type === 'upgrade').length;
+      if (inf.length < upgrades) throw new Error(`Not enough unrouted infantry at ${rid} to upgrade`);
+      pooled.cavalry += 1; pooled.infantry -= 1;
+      continue;
+    }
+    if (b.type === 'warship') {
+      const toPort = port && b.to === port.id;
+      const toSea = seas.includes(b.to);
+      if (!toPort && !toSea) throw new Error(`Warships muster into ${rid}'s harbor or an adjacent sea (Rules p.25)`);
+      if (toPort) {
+        const occ = state.unitsByRegion[port.id] || [];
+        if (occ.some(u => u.faction !== fid)) throw new Error(`${port.id} is not yours to muster into`);
+        portAdds += 1;
+        if (occ.length + portAdds > 3) throw new Error(`${port.id} holds at most 3 ships (Rules p.25)`);
+        // NOTE: mustering into the harbor is legal even under an enemy blockade
+        // of the connected sea — the defining power of harbors (Rules p.25).
+      } else {
+        const units = state.unitsByRegion[b.to] || [];
+        if (units.some(u => u.faction !== fid)) throw new Error(`${b.to} is enemy-held; warships must muster into the harbor instead (Rules p.25)`);
+      }
+      pooled.warship += 1;
+      continue;
+    }
+    if (b.to !== rid) throw new Error(`Land units muster in ${rid} itself (Rules p.9)`);
+    pooled[b.type] += 1;
+  }
+  for (const [t, add] of Object.entries(pooled)) {
+    if (add > 0 && inPlay(state, fid, t) + add > SETUP.unitPool[t]) {
+      throw new Error(`Unit pool exhausted for ${t} (${SETUP.unitPool[t]} total)`);
+    }
+  }
+
+  // Apply.
+  state.pendingQueries.splice(qi, 1);
+  const applied = [];
+  for (const b of builds) {
+    if (b.type === 'upgrade') {
+      const u = (state.unitsByRegion[rid] || []).find(x => x.faction === fid && x.type === 'infantry' && !x.routed);
+      u.type = 'cavalry';
+      applied.push({ upgrade: rid });
+    } else {
+      state.unitsByRegion[b.to] = state.unitsByRegion[b.to] || [];
+      state.unitsByRegion[b.to].push({ faction: fid, type: b.type, routed: false });
+      applied.push({ [b.type]: b.to });
+    }
+  }
+
+  // Supply is a hard ceiling during mustering (Rules p.9).
+  const bad = supplyViolations(state, fid);
+  if (bad.length) {
+    // Roll back: rebuild is simpler than partial undo — reject atomically.
+    for (const b of builds.slice().reverse()) {
+      if (b.type === 'upgrade') {
+        const u = (state.unitsByRegion[rid] || []).find(x => x.faction === fid && x.type === 'cavalry' && !x.routed);
+        if (u) u.type = 'infantry';
+      } else {
+        const arr = state.unitsByRegion[b.to] || [];
+        const i = arr.findIndex(x => x.faction === fid && x.type === b.type);
+        if (i !== -1) arr.splice(i, 1);
+      }
+    }
+    state.pendingQueries.splice(qi, 0, q);
+    throw new Error(`Muster would break supply at ${bad.join(', ')} (Rules p.9)`);
+  }
+
+  state.log.push({ round: state.round, event: 'mustered', faction: fid, region: rid, builds: applied, spent: cost });
+
+  if (q.source === 'rally') {
+    advanceAction(state); // starred-rally muster hands back to the action cycler
+    return;
+  }
+  const done = resolveMusterCard(state, null);
   if (done) {
     state.eventPhase.step += 1;
     progressEventPhase(state);

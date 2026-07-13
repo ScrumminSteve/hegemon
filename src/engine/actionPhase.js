@@ -317,7 +317,12 @@ export function resolveRally(state, fid, rid, { muster = false } = {}) {
 
   if (muster) {
     if (!order.starred) throw new Error('Only the starred rally may muster (Rules p.22)');
-    throw new Error('Rally-mustering shares the Event Phase muster machinery — lands in M2');
+    const pts = region(rid).kind === 'land' ? regionProps(state, rid).muster : 0;
+    if (pts <= 0) throw new Error(`No fort at ${rid}: the starred rally can only collect here (Rules p.22, FAQ)`);
+    delete state.ordersByRegion[rid];
+    state.log.push({ round: state.round, event: 'rallyMusterOpened', faction: fid, region: rid, points: pts });
+    state.pendingQueries.push({ type: 'muster', faction: fid, region: rid, points: pts, source: 'rally' });
+    return; // the muster answer advances the cycler
   }
 
   const r = region(rid);

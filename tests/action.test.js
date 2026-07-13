@@ -239,9 +239,25 @@ export const tests = [
     eq(r2.state.authority.F2, 5, 'sea rally collects nothing:');
   }},
 
-  { name: 'rally-mustering is guarded until M2 (Rules p.22)', fn() {
-    const s = toAction({ F2: { L36: CP(true), L16: SU(0), S10: SU(0), P04: D(1) } });
-    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L36', muster: true }));
+  { name: 'the starred rally may muster in its own fortified area (Rules p.22)', fn() {
+    let s = toAction({ F2: { L36: CP(true), L16: SU(0), S10: SU(0), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
+    s = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L36', muster: true }).state;
+    const q = s.pendingQueries.find(x => x.type === 'muster' && x.faction === 'F2');
+    ok(q && q.region === 'L36' && q.points === 2 && q.source === 'rally', 'citadel offers 2 points');
+    s = applyAction(s, { type: 'muster', faction: 'F2', region: 'L36',
+      builds: [{ type: 'warship', to: 'P04' }] }).state;
+    eq((s.unitsByRegion['P04'] || []).filter(u => u.faction === 'F2').length, 2, 'harbor ship joined the errata ship');
+    ok(!s.pendingQueries.some(x => x.type === 'muster'), 'cycler resumes');
+  }},
+
+  { name: 'unstarred rallies cannot muster; nor can a starred rally without a fort (Rules p.22)', fn() {
+    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: CP(true), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } });
+    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16', muster: true }),
+      'unstarred');
+    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'S10', muster: true }),
+      'no fort at sea');
   }},
 
   { name: 'orders cycle one-at-a-time in initiative order within each step (Rules p.14)', fn() {

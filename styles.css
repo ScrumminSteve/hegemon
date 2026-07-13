@@ -180,3 +180,13 @@ button.picking { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass);
   background: rgba(255,255,255,.04); }
 .track-seat sup { font-size: 8px; letter-spacing: -1px; opacity: .85; }
 .tok-dot { margin-left: 2px; font-size: 8px; vertical-align: 2px; color: #e8c15a; }
+
+/* --- houses panel + active-decider spotlight (M2.b) --- */
+#houses-panel { margin: 6px 0 2px; display: grid; gap: 3px; }
+.house-row { display: flex; gap: 10px; align-items: baseline; font-size: 12px;
+  border-left: 3px solid; padding: 1px 6px; opacity: .8; }
+.house-row .house-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.house-active { opacity: 1; background: rgba(232,193,90,.10); box-shadow: inset 0 0 0 1px rgba(232,193,90,.25); }
+.seat-active { box-shadow: 0 0 0 1px rgba(232,193,90,.6); }
+.battle-score { font-size: 13px; margin: 2px 0 6px; }
+.battle-score .dim { opacity: .55; font-size: 11px; }
