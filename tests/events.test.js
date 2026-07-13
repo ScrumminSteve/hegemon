@@ -234,11 +234,10 @@ export const tests = [
     eq(s.phase, 'planning');
   }},
 
-  { name: 'bid and incursion cards log their pending milestones (M2.c–d)', fn() {
+  { name: 'the incursion card logs its pending milestone (M2.d)', fn() {
     let s = createGame(6, { seed: 11 });
-    rig(s, { I: 'E1-nothing', II: 'E2-bid', III: 'E3-incursion' });
+    rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     s = runRound(s);
-    ok(s.log.some(e => e.event === 'bidPending'));
     ok(s.log.some(e => e.event === 'incursionPending' && e.trigger === 'card'));
     eq(s.phase, 'planning', 'the round proceeds');
   }},

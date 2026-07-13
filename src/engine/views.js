@@ -37,6 +37,15 @@ export function viewFor(state, factionId) {
   }
   if (v.invaderDeck) v.invaderDeck = v.invaderDeck.map(() => 'hidden');
 
+  // Sealed bids are each faction's own secret until revealed together
+  // (Rules p.15). Presence is public (a fist over the table); value is not.
+  if (v.eventPhase?.bidding?.phase === 'sealed') {
+    const mine = v.eventPhase.bidding.bids[factionId];
+    v.eventPhase.bidding.bids = Object.fromEntries(
+      Object.keys(v.eventPhase.bidding.bids).map(f =>
+        [f, f === factionId ? mine : 'sealed']));
+  }
+
   // A Courier peek reveals the card to the holder alone.
   for (const q of v.pendingQueries) {
     if (q.type === 'threatPeekPlacement' && q.faction !== factionId) delete q.card;

@@ -304,7 +304,8 @@ function qLabel(q) {
       chooseLeaderCard: 'leader card', chooseCasualties: 'casualties',
       useCardAbility: 'card ability', cardTarget: 'card target',
       eventChoice: 'event decree', reconcileSupply: 'supply losses',
-      threatPeekPlacement: 'deck peek', muster: 'muster' }[q.type]);
+      threatPeekPlacement: 'deck peek', muster: 'muster',
+      bid: 'sealed bid', bidTieBreak: 'break the tie' }[q.type]);
 }
 
 function header(q, title) {
@@ -354,7 +355,7 @@ function reconcileForm(q) {
     const units = (game.unitsByRegion[rid] || []).filter(u => u.faction === q.faction);
     const types = [...new Set(units.map(u => u.type))];
     return `<div class="stepper-row"><b>${esc(rName(rid))}</b> (${units.length} units): ` +
-      types.map(t => `<button class="opt" data-region="${rid}" data-unit="${t}">destroy ${esc(theme.terms[t] || t)}</button>`).join(' ') +
+      types.map(t => `<button class="opt" data-region="${rid}" data-unit="${t}">destroy ${esc(unitName(t) || t)}</button>`).join(' ') +
       `</div>`;
   }).join('');
   return header(q, 'supply exceeded — choose losses') + rows +
@@ -374,6 +375,33 @@ function peekForm(q) {
     `<button class="opt" data-opt="bottom">bury it at the bottom</button>`;
 }
 
+function trackName(t) {
+  return theme.terms['track' + t[0].toUpperCase() + t.slice(1)] ?? t;
+}
+function bidForm(q) {
+  const amt = Math.min(ui.bidAmount ?? 0, q.max);
+  return header(q, `seal your bid — ${esc(trackName(q.track))}`) +
+    `<div class="stepper-row big-stepper">
+      <button class="opt" data-bid-step="-1" ${amt <= 0 ? 'disabled' : ''}>−</button>
+      <b class="bid-amt">${amt}</b>
+      <button class="opt" data-bid-step="1" ${amt >= q.max ? 'disabled' : ''}>+</button>
+      <span class="dim">of ${q.max} ${esc(theme.terms.authority)}</span>
+    </div>
+    <button class="primary" data-bid-commit>Seal ${amt} — hidden until all reveal</button>
+    <div class="hint">Every revealed bid is paid to the pool, win or lose (Rules p.15). Highest bid takes the top seat; the ${esc(theme.terms.tokenSovereign)} holder breaks ties.</div>`;
+}
+function bidTieBreakForm(q) {
+  const placed = ui.tieOrder || [];
+  const remaining = q.tied.filter(f => !placed.includes(f));
+  return header(q, `order the tie at ${q.amount} — ${esc(trackName(q.track))}`) +
+    (placed.length ? `<div class="hint">Placed so far: ${placed.map(f => fGlyph(f)).join(' → ')}</div>` : '') +
+    `<div class="btn-col">` +
+    remaining.map(f => `<button data-tie-pick="${f}">${fGlyph(f)} ${esc(fName(f))} ${placed.length === 0 ? '(highest)' : ''}</button>`).join('') +
+    `</div>` +
+    (placed.length ? `<button class="opt" data-tie-reset>start over</button>` : '') +
+    `<div class="hint">You hold the ${esc(theme.terms.tokenSovereign)}: tap the tied ${esc(theme.terms.factions.toLowerCase())} from best seat to worst — yourself included (Rules p.15).</div>`;
+}
+
 const MUSTER_COSTS_UI = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, upgrade: 1 };
 function musterForm(q) {
   const staged = ui.musterBuilds || [];
@@ -387,19 +415,20 @@ function musterForm(q) {
   const btn = (label, cost, data, on = true) =>
     `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
   const stagedRows = staged.map((b, i) =>
-    `<div class="stepper-row">${esc(theme.terms[b.type] || b.type)}${b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
+    `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
   return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${esc(rName(q.region))} — ${left}/${q.points} points`) +
     battleless() +
-    btn(`${esc(theme.terms.infantry)}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
-    btn(`${esc(theme.terms.cavalry)}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
-    btn(`${esc(theme.terms.siege_engine)}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region })) +
-    btn(`upgrade ${esc(theme.terms.infantry)} → ${esc(theme.terms.cavalry)}`, 1, JSON.stringify({ type: 'upgrade' }), hasInf) +
-    (port ? btn(`${esc(theme.terms.warship)} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
-    seas.map(sid => btn(`${esc(theme.terms.warship)} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }))).join('') +
+    btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
+    btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
+    btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region })) +
+    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('cavalry'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'cavalry' }), hasInf) +
+    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('siege_engine'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'siege_engine' }), hasInf) +
+    (port ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
+    seas.map(sid => btn(`${esc(unitName('warship'))} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }))).join('') +
     (stagedRows ? `<div class="hint">Staged:</div>` + stagedRows : '') +
     `<button class="opt commit" data-mcommit>1 ${staged.length ? 'muster ' + staged.length + ' build(s)' : 'muster nothing (pass)'}</button>`
       .replace('>1 ', '>') +
-    `<div class="hint">Costs: ${esc(theme.terms.infantry)}/${esc(theme.terms.warship)} 1 · ${esc(theme.terms.cavalry)}/${esc(theme.terms.siege_engine)} 2 · upgrade 1. Supply and pools are enforced on commit.</div>`;
+    `<div class="hint">Costs: ${esc(unitName('infantry'))}/${esc(unitName('warship'))} 1 · ${esc(unitName('cavalry'))}/${esc(unitName('siege_engine'))} 2 · upgrade 1. Supply and pools are enforced on commit.</div>`;
 }
 function battleless() { return ''; }
 
@@ -420,6 +449,8 @@ function formFor(q) {
   if (q.type === 'eventChoice') return eventChoiceForm(q);
   if (q.type === 'reconcileSupply') return reconcileForm(q);
   if (q.type === 'muster') return musterForm(q);
+  if (q.type === 'bid') return bidForm(q);
+  if (q.type === 'bidTieBreak') return bidTieBreakForm(q);
   if (q.type === 'threatPeekPlacement') return peekForm(q);
   return `<pre>${esc(JSON.stringify(q))}</pre>`;
 }
@@ -681,6 +712,31 @@ function bindForm(panel, q) {
       dispatch({ type: 'reconcileSupply', faction: q.faction, region: b.dataset.region, unitType: b.dataset.unit })));
     return;
   }
+  if (q.type === 'bid') {
+    panel.querySelectorAll('[data-bid-step]').forEach(b => b.addEventListener('click', () => {
+      ui.bidAmount = Math.max(0, Math.min(q.max, (ui.bidAmount ?? 0) + Number(b.dataset.bidStep)));
+      renderTurnPanel();
+    }));
+    panel.querySelector('[data-bid-commit]')?.addEventListener('click', () => {
+      const amount = Math.min(ui.bidAmount ?? 0, q.max);
+      ui.bidAmount = 0;
+      dispatch({ type: 'bid', faction: q.faction, track: q.track, amount });
+    });
+    return;
+  }
+  if (q.type === 'bidTieBreak') {
+    panel.querySelectorAll('[data-tie-pick]').forEach(b => b.addEventListener('click', () => {
+      const placed = (ui.tieOrder = ui.tieOrder || []);
+      placed.push(b.dataset.tiePick);
+      if (placed.length === q.tied.length) {
+        const order = placed.slice();
+        ui.tieOrder = null;
+        dispatch({ type: 'bidTieBreak', faction: q.faction, track: q.track, order });
+      } else renderTurnPanel();
+    }));
+    panel.querySelector('[data-tie-reset]')?.addEventListener('click', () => { ui.tieOrder = null; renderTurnPanel(); });
+    return;
+  }
   if (q.type === 'muster') {
     panel.querySelectorAll('[data-mbuild]').forEach(b => b.addEventListener('click', () => {
       (ui.musterBuilds = ui.musterBuilds || []).push(JSON.parse(b.dataset.mbuild));
@@ -805,7 +861,7 @@ function logLine(e) {
     case 'eventChoiceMade': return `${F(e.faction)} decreed: ${esc(e.option.startsWith('banOrder:') ? 'forbid ' + e.option.split(':')[1] + ' orders' : e.option)}.`;
     case 'supplyAdjusted': return `${F(e.faction)} supply ${e.from} → ${e.to}.`;
     case 'destroyedForSupply': return e.chosen
-      ? `${F(e.faction)} disbanded a ${esc(theme.terms[e.unit] || e.unit)} at ${esc(rName(e.region))} to meet supply.`
+      ? `${F(e.faction)} disbanded a ${esc(unitName(e.unit) || e.unit)} at ${esc(rName(e.region))} to meet supply.`
       : `${F(e.faction)} lost units to supply at ${esc(rName(e.region))}.`;
     case 'authorityCollected': return `${F(e.faction)} collected ${e.amount} ${esc(theme.terms.authority)}.`;
     case 'courierPeeked': return `${F(e.faction)} peeked at the threat deck.`;
@@ -815,7 +871,11 @@ function logLine(e) {
       ? `${F(e.faction)} recruited at ${esc(rName(e.region))} (${e.spent} pts).`
       : `${F(e.faction)} held recruitment at ${esc(rName(e.region))}.`;
     case 'rallyMusterOpened': return `${F(e.faction)}'s ★ rally raises banners at ${esc(rName(e.region))}.`;
-    case 'bidPending': return `<em>${esc(eventCardName(e.card))} — track bidding arrives in M2.c.</em>`;
+    case 'biddingOpened': return `Sealed bids open for the ${esc(trackName(e.track))} track.`;
+    case 'bidsRevealed': return `Bids revealed — ${game.factions.map(f => `${fGlyph(f)} ${e.bids[f] ?? 0}`).join(' · ')}.`;
+    case 'tieBroken': return `${F(e.by)} orders the tie: ${e.order.map(f => fGlyph(f)).join(' → ')}.`;
+    case 'trackRebuilt': return `The ${esc(trackName(e.track))} track stands anew: ${e.order.map(f => fGlyph(f)).join(' → ')}${e.passed ? ` — the ${esc(theme.terms['token' + e.token[0].toUpperCase() + e.token.slice(1)] ?? e.token)} passes to ${F(e.holder)}` : ''}.`;
+    case 'biddingClosed': return `<em>The auction closes; the new order of powers holds.</em>`;
     case 'incursionPending': return `<em>${e.trigger === 'threatMax' ? 'The threat breaks!' : esc(eventCardName(e.card || ''))} — incursions arrive in M2.d.</em>`;
     case 'ordersSubmitted': return `${F(e.faction)} committed orders.`;
     case 'ordersRevealed': return `All orders revealed.`;

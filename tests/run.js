@@ -9,8 +9,9 @@ import { tests as faqTests } from './faq.test.js';
 import { tests as eventTests } from './events.test.js';
 import { tests as musterTests } from './muster.test.js';
 import { tests as themeTests } from './themes.test.js';
+import { tests as biddingTests } from './bidding.test.js';
 
-const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests]];
+const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests], ['bidding', biddingTests]];
 let pass = 0, fail = 0;
 for (const [suite, tests] of suites) {
   for (const t of tests) {

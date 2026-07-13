@@ -200,3 +200,8 @@ button.picking { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass);
 
 #seed-line { margin-top: 6px; font-size: 11px; opacity: .45; cursor: pointer; user-select: none; }
 #seed-line:hover { opacity: .8; text-decoration: underline; }
+
+/* --- Clash of Kings (M2.c) --- */
+.big-stepper { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.big-stepper .bid-amt { font-size: 26px; min-width: 34px; text-align: center; color: var(--gold, #e8c15a); }
+.big-stepper button { width: 40px; height: 36px; font-size: 18px; }

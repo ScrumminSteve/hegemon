@@ -19,8 +19,9 @@ import { shuffle } from './rng.js';
 import { beginPlanning } from './planning.js';
 import { SETUP } from '../data/setup.js';
 import { advanceAction } from './actionPhase.js'; // tolerated ESM cycle (as combat↔actionPhase)
+import { beginBidding, bid as sealBid, bidTieBreak as breakTie, biddingActive } from './bidding.js';
 
-const BLOCKING = ['eventChoice', 'reconcileSupply', 'muster'];
+const BLOCKING = ['eventChoice', 'reconcileSupply', 'muster', 'bid', 'bidTieBreak'];
 
 function cardDef(state, id) {
   for (const cards of Object.values(EVENT_DECK_SETS[state.scenario.eventDeckSet || 'base'])) {
@@ -128,8 +129,7 @@ function resolveEventCard(state, deckId, cardId, chosen) {
     case 'muster':
       return resolveMusterCard(state, cardId);
     case 'bidTracks':
-      state.log.push({ round: state.round, event: 'bidPending', card: cardId, note: 'M2.c' });
-      return true;
+      return beginBidding(state, cardId);
     case 'incursion':
       state.log.push({ round: state.round, event: 'incursionPending', trigger: 'card', card: cardId, note: 'M2.d' });
       return true;
@@ -155,6 +155,18 @@ export function eventChoice(state, fid, option) {
     state.eventPhase.step += 1;
     progressEventPhase(state);
   }
+}
+
+// ---------- Clash of Kings plumbing (module: bidding.js) ----------
+
+export function bid(state, fid, track, amount) {
+  sealBid(state, fid, track, amount);
+  if (!biddingActive(state)) progressEventPhase(state);
+}
+
+export function bidTieBreak(state, fid, track, order) {
+  breakTie(state, fid, track, order);
+  if (!biddingActive(state)) progressEventPhase(state);
 }
 
 // ---------- Mustering (Rules p.9, p.25; FAQ v2.0) ----------
@@ -221,10 +233,12 @@ export function muster(state, fid, rid, builds = []) {
   let portAdds = 0;
   for (const b of builds) {
     if (b.type === 'upgrade') {
+      const target = b.to || 'cavalry'; // footman → knight OR siege engine (Rules p.9)
+      if (target !== 'cavalry' && target !== 'siege_engine') throw new Error(`Cannot upgrade infantry to ${target}`);
       const inf = (state.unitsByRegion[rid] || []).filter(u => u.faction === fid && u.type === 'infantry' && !u.routed);
       const upgrades = builds.filter(x => x.type === 'upgrade').length;
       if (inf.length < upgrades) throw new Error(`Not enough unrouted infantry at ${rid} to upgrade`);
-      pooled.cavalry += 1; pooled.infantry -= 1;
+      pooled[target] += 1; pooled.infantry -= 1;
       continue;
     }
     if (b.type === 'warship') {
@@ -260,8 +274,8 @@ export function muster(state, fid, rid, builds = []) {
   for (const b of builds) {
     if (b.type === 'upgrade') {
       const u = (state.unitsByRegion[rid] || []).find(x => x.faction === fid && x.type === 'infantry' && !x.routed);
-      u.type = 'cavalry';
-      applied.push({ upgrade: rid });
+      u.type = b.to || 'cavalry';
+      applied.push({ upgrade: rid, to: u.type });
     } else {
       state.unitsByRegion[b.to] = state.unitsByRegion[b.to] || [];
       state.unitsByRegion[b.to].push({ faction: fid, type: b.type, routed: false });
@@ -275,7 +289,8 @@ export function muster(state, fid, rid, builds = []) {
     // Roll back: rebuild is simpler than partial undo — reject atomically.
     for (const b of builds.slice().reverse()) {
       if (b.type === 'upgrade') {
-        const u = (state.unitsByRegion[rid] || []).find(x => x.faction === fid && x.type === 'cavalry' && !x.routed);
+        const t = b.to || 'cavalry';
+        const u = (state.unitsByRegion[rid] || []).find(x => x.faction === fid && x.type === t && !x.routed);
         if (u) u.type = 'infantry';
       } else {
         const arr = state.unitsByRegion[b.to] || [];

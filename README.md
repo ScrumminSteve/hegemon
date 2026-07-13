@@ -233,7 +233,38 @@ alongside the seed.
 
 
 ## P1 queue (stored, fix next engine session)
-*(empty — support-vs-neutrals fixed in M2.b-final; see changelog)*
+- **Muster upgrade offers only one path.** The upgrade build converts a footman
+  to a knight only; the owner expects BOTH upgrade options — footman → knight
+  and footman → siege engine, each for 1 point (verify exact Rules p.9 wording
+  at fix time; owner's physical-board expectation is both). Engine change:
+  upgrade entries become `{ type: 'upgrade', to: 'cavalry' | 'siege_engine' }`
+  (cost 1 either way, pool-checked per target, default 'cavalry' for
+  compatibility with recorded episodes); UI shows two upgrade buttons. Extend
+  the upgrade golden test to cover the siege path. Note: currently masked by
+  the "undefined" term-key P1 — same form, fix together.
+- **Muster form renders "undefined" everywhere.** Root cause diagnosed: the
+  muster form (plus `reconcileForm` and the `destroyedForSupply` Chronicle line)
+  read `theme.terms.infantry` / `.cavalry` / `.warship` / `.siege_engine`, but
+  theme term keys are `unitInfantry` / `unitCavalry` / `unitWarship` /
+  `unitSiege`. The existing `unitName(type)` helper (app.js:41) does the mapping
+  — swap all three call sites to it. Trivial; bundle with the next drop.
+- ~~Split march: reinforced support prong~~ **VERIFIED CORRECT (M2.c session):**
+  golden test from the owner's repro passes — non-combat prongs land first and
+  the reinforced support counts (attacker 6). The observed miss was the battle
+  score line rendering before support declaration; it now says "support not
+  yet declared". Original report: Marching two prongs —
+  one into battle, one into an adjacent friendly territory bearing your support
+  order for that same battle — should raise the support contribution by the
+  arriving units' strength. FAQ timing: non-combat portions of a march complete
+  FIRST, then the combat resolves, so the arrivals are legally present when
+  support strength is tallied. Investigation notes: `resolveMarch` is believed
+  to apply non-combat moves before `initiateCombat`, and `combatStrengths`
+  reads supporting units live from `unitsByRegion` — so the observed miss
+  likely hides in (a) combat initiating before all non-combat prongs land,
+  (b) the support-declaration query snapshotting strength, or (c) the arriving
+  units being flagged in a way the support tally filters (routed? move-marker?).
+  Write the golden test from the owner's repro first: same-march reinforce,
+  assert the battle total includes the arrivals.
 
 <!-- FIXED (M2.b-final): Support vs neutral forces: support orders contribute nothing to a march
   against a neutral force token — a London→Brussels march at strength 3 with an

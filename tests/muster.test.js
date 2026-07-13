@@ -4,6 +4,7 @@ import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
+import { combatStrengths } from '../src/engine/combat.js';
 
 const M  = (mod = 0) => ({ type: 'march', mod, starred: mod === 1 });
 const D  = (mod = 1) => ({ type: 'defend', mod, starred: mod === 2 });
@@ -57,6 +58,48 @@ function passUntil(s, fid) {
 }
 
 export const tests = [
+
+  { name: 'a split march reinforces its own supporting territory in the SAME battle (FAQ: non-combat prongs first)', fn() {
+    // Owner repro: one march, two prongs — cav+inf into the enemy at L17,
+    // one inf into own L18 which bears the S+1 backing that very battle.
+    let s = createGame(6, { seed: 7 });
+    s.unitsByRegion['L19'] = [{ faction: 'F3', type: 'cavalry', routed: false },
+                              { faction: 'F3', type: 'infantry', routed: false },
+                              { faction: 'F3', type: 'infantry', routed: false }];
+    s.unitsByRegion['L18'] = [{ faction: 'F3', type: 'infantry', routed: false }];
+    s.unitsByRegion['L17'] = [{ faction: 'F4', type: 'infantry', routed: false }];
+    beginPlanning(s);
+    const FILL = [D(1), D(1), SU(0), SU(0), CP(), CP(), M(-1), M(0)];
+    for (const fid of s.factions) {
+      const explicit = fid === 'F3' ? { L19: M(0), L18: SU(1) }
+        : (fid === 'F4' ? { L17: D(1), L30: M(-1) } : {});
+      let pool = FILL.filter(o => !(fid === 'F3' && ((o.type === 'march' && o.mod === 0) || (o.type === 'support' && o.mod === 1)))
+        && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
+      if (fid === 'F4') pool = pool.filter((o, i, a) => !(o.type === 'defend' && a.findIndex(x => x.type === 'defend') === i)); // one D(1) spent explicitly
+      const orders = { ...explicit };
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
+    }
+    s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
+    s = act(s, { type: 'resolveMarch', faction: 'F3', region: 'L19', moves: [
+      { to: 'L17', units: { cavalry: 1, infantry: 1 } },   // the battle prong
+      { to: 'L18', units: { infantry: 1 } },               // the reinforcement prong
+    ] });
+    // The reinforcement landed before combat:
+    eq((s.unitsByRegion['L18'] || []).filter(u => u.faction === 'F3').length, 2, 'prong landed pre-combat');
+    // Declare own support for the attacker, then measure the tally.
+    const sq = s.pendingQueries.find(x => x.type === 'declareSupport' && x.faction === 'F3');
+    ok(sq, 'own support order is called');
+    s = act(s, { type: 'declareSupport', faction: 'F3', region: 'L18', side: 'attacker' });
+    for (let i = 0; i < 6; i++) {
+      const oq = s.pendingQueries.find(x => x.type === 'declareSupport');
+      if (!oq) break;
+      s = act(s, { type: 'declareSupport', faction: oq.faction, region: oq.region, side: 'refuse' });
+    }
+    const st = combatStrengths(s);
+    eq(st.attacker, 6, 'cav 2 + inf 1 + march 0 + support (order 1 + TWO footmen) = 6');
+  }},
+
 
   { name: 'own adjacent support carries a neutral assault to the tie, and ties conquer (Rules p.26, p.28)', fn() {
     // The owner's board: London marches on the neutral 5 with 3 on the field
@@ -146,6 +189,24 @@ export const tests = [
       builds: [{ type: 'upgrade' }, { type: 'infantry', to: q.region }] });
     const units = (s.unitsByRegion[q.region] || []).filter(u => u.faction === 'F3');
     eq(units.filter(u => u.type === 'cavalry').length, cavBefore + 1, 'footman promoted');
+  }},
+
+  { name: 'the other upgrade path: a footman becomes a siege engine for the same point (Rules p.9)', fn() {
+    let s = passUntil(toMuster(), 'F3');
+    const q = musterQ(s);
+    s = act(s, { type: 'muster', faction: 'F3', region: q.region,
+      builds: [{ type: 'upgrade', to: 'siege_engine' }] });
+    const units = (s.unitsByRegion[q.region] || []).filter(u => u.faction === 'F3');
+    eq(units.filter(u => u.type === 'siege_engine').length, 1, 'engines rise from the ranks');
+    ok(s.log.some(e => e.event === 'mustered' && e.spent === 1));
+    // And the pool still binds: the third engine may never exist.
+    let s2 = passUntil(toMuster(), 'F1');
+    const q2 = musterQ(s2);
+    s2.unitsByRegion['L03'] = [{ faction: 'F1', type: 'siege_engine', routed: false },
+                               { faction: 'F1', type: 'siege_engine', routed: false }];
+    s2.unitsByRegion[q2.region].push({ faction: 'F1', type: 'infantry', routed: false });
+    throws(() => act(s2, { type: 'muster', faction: 'F1', region: q2.region,
+      builds: [{ type: 'upgrade', to: 'siege_engine' }] }), 'pool of 2');
   }},
 
   { name: 'warships muster into the harbor even under an enemy blockade (Rules p.25)', fn() {
