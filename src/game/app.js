@@ -160,8 +160,11 @@ function marchCandidates(fid, from) {
 }
 
 function overlayHighlights(g) {
-  // #1 — spotlight the active decider's owned/occupied territory.
-  const focus = game.pendingQueries[0]?.faction;
+  // #1 — spotlight the decider whose panel is OPEN (during planning all six
+  // seats hold queries at once; follow the tab the operator selected).
+  const qs = game.pendingQueries;
+  const activeQ = ui.activeQuery != null ? qs[Math.min(ui.activeQuery, qs.length - 1)] : qs[0];
+  const focus = activeQ?.faction;
   if (focus) {
     const held = new Set();
     for (const [rid, units] of Object.entries(game.unitsByRegion)) {
@@ -176,11 +179,8 @@ function overlayHighlights(g) {
     }
   }
   // #3 — while composing a march, ring the possible destinations; red = battle.
-  if (ui.mode === 'march' && ui.region) {
-    const qs = game.pendingQueries;
-    const q = ui.activeQuery != null ? qs[Math.min(ui.activeQuery, qs.length - 1)] : qs[0];
-    if (!q) return;
-    const { peaceful, battle } = marchCandidates(q.faction, ui.region);
+  if (ui.mode === 'march' && ui.region && activeQ) {
+    const { peaceful, battle } = marchCandidates(activeQ.faction, ui.region);
     for (const rid of peaceful) {
       const { x, y } = posOf(rid);
       g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-target' }));
@@ -215,17 +215,14 @@ function overlayState(svg) {
     g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 10, class: 'ov-garrison', style: `stroke:${fColor(gar.faction)}` }));
     const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' }); t.textContent = gar.strength; g.appendChild(t);
   }
-  for (const [rid, n] of Object.entries(game.neutrals || {})) {
-    const { x, y } = posOf(rid);
-    g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 11, class: 'ov-neutral' }));
-    const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' });
-    t.textContent = n.insurmountable ? '~' : n.strength;
-    g.appendChild(t);
-  }
+  // Setup defense bonuses only: one badge per neutral force, styled like the
+  // seat garrisons (same size, same numerals), gray ring for "no owner".
   for (const [rid, n] of Object.entries(game.neutrals)) {
     const { x, y } = posOf(rid);
-    g.appendChild(el('circle', { cx: x, cy: y - 32, r: 11, class: 'ov-neutral' }));
-    const t = el('text', { x, y: y - 27.5, class: 'ov-num' }); t.textContent = n.strength; g.appendChild(t);
+    g.appendChild(el('circle', { cx: x, cy: y - 32, r: 10, class: 'ov-neutral' }));
+    const t = el('text', { x, y: y - 27.5, class: 'ov-num' });
+    t.textContent = n.insurmountable ? '~' : n.strength;
+    g.appendChild(t);
   }
   for (const [rid, fid] of Object.entries(game.controlMarkers)) {
     const { x, y } = posOf(rid);

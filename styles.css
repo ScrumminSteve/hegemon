@@ -192,8 +192,8 @@ button.picking { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass);
 .battle-score .dim { opacity: .55; font-size: 11px; }
 
 /* --- map intel overlays (P2 batch, Jul 2026) --- */
-.ov-neutral { fill: rgba(120,120,130,.25); stroke: #9aa0ab; stroke-width: 2; }
-.ov-focus  { fill: none; stroke-width: 2; opacity: .35; stroke-dasharray: 3 5; pointer-events: none; }
+.ov-neutral { fill: var(--ink-2); stroke: #9aa0ab; stroke-width: 2; }
+.ov-focus  { fill: none; stroke-width: 3; opacity: .55; stroke-dasharray: 3 5; pointer-events: none; }
 .ov-target { fill: rgba(90,200,120,.07); stroke: #5ac878; stroke-width: 2.5; stroke-dasharray: 7 5; pointer-events: none; }
 .ov-battle { fill: rgba(220,90,90,.08);  stroke: #dc5a5a; stroke-width: 2.5; stroke-dasharray: 2 4; pointer-events: none; }
 [data-repick] { opacity: .8; font-size: 12px; margin: 2px 0 6px; }
