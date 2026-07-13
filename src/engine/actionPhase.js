@@ -234,9 +234,27 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
       for (const [t, n] of Object.entries(mv.units)) {
         strength += unitStrength({ type: t }, { fortified }) * n;
       }
-      if (strength < neutral.strength) {
-        throw new Error(`Strength ${strength} < neutral force ${neutral.strength} at ${mv.to} — march may not be attempted (Rules p.26)`);
+      // Own adjacent support orders count against a neutral force (Rules p.28);
+      // no combat occurs, so the support is tallied without a declaration step.
+      // Other players' support would require the accept/decline protocol
+      // (known gap) and is not counted.
+      let supportVal = 0;
+      const destKind = region(mv.to).kind;
+      for (const nb of adjacency()[mv.to] || []) {
+        const so = state.ordersByRegion[nb];
+        if (!so || so.faction !== fid || so.type !== 'support') continue;
+        const nbr = region(nb);
+        if (nbr.kind === 'port' && destKind === 'land') continue; // harbor ships cannot back a land fight (Rules p.25)
+        let val = so.mod;
+        for (const u of (state.unitsByRegion[nb] || [])) {
+          if (u.faction === fid && !u.routed) val += unitStrength(u, { fortified: false });
+        }
+        supportVal += val;
       }
+      if (strength + supportVal < neutral.strength) {
+        throw new Error(`Strength ${strength}${supportVal ? `+${supportVal} support` : ''} < neutral force ${neutral.strength} at ${mv.to} — march may not be attempted (Rules p.26, p.28)`);
+      }
+      if (supportVal) state.log.push({ round: state.round, event: 'neutralAssaultSupported', faction: fid, region: mv.to, support: supportVal });
     }
     validateDestination(state, fid, rid, mv.to, new Set(Object.keys(mv.units)));
   }
@@ -360,7 +378,7 @@ function cleanUp(state) {
   beginEventPhase(state); // Event Phase precedes planning from round 2 (Rules p.7)
 }
 
-function landAreasControlled(state, fid) {
+export function landAreasControlled(state, fid) {
   let n = 0;
   for (const r of REGIONS) {
     if (r.kind === 'land' && controllerOf(state, r.id) === fid) n++;

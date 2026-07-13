@@ -10,10 +10,10 @@ import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap } from '../map-view.js';
-import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf } from '../engine/state.js';
+import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
-import { transportReachable } from '../engine/actionPhase.js';
+import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 
 const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
@@ -241,7 +241,23 @@ function handleRegionTap(rid) {
     ui.awaitTokenFor = rid; renderTurnPanel(); return;
   }
   if (ui.mode === 'march' && ui.awaitDest) {
-    ui.moves.push({ to: rid, units: {} });
+    // Default: every remaining unassigned unit that CAN go there (adjust down).
+    const kind = region(rid).kind;
+    const naval = kind !== 'land';
+    const assigned = {};
+    for (const mv of ui.moves) for (const [t, n] of Object.entries(mv.units)) assigned[t] = (assigned[t] || 0) + n;
+    const q = game.pendingQueries[ui.activeQuery != null ? Math.min(ui.activeQuery, game.pendingQueries.length - 1) : 0];
+    const units = {};
+    for (const u of (game.unitsByRegion[ui.region] || [])) {
+      if (u.faction !== q?.faction || u.routed) continue;
+      if (naval !== (u.type === 'warship')) continue;
+      units[u.type] = (units[u.type] || 0) + 1;
+    }
+    for (const [t, n] of Object.entries(units)) {
+      units[t] = Math.max(0, n - (assigned[t] || 0));
+      if (!units[t]) delete units[t];
+    }
+    ui.moves.push({ to: rid, units });
     ui.awaitDest = false; renderTurnPanel(); return;
   }
 }
@@ -547,7 +563,7 @@ function raidForm(q) {
 
 // --- march ---
 function marchForm(q) {
-  if (ui.mode !== 'march') ui = { activeQuery: ui.activeQuery, mode: 'march', region: q.regions.length === 1 ? q.regions[0] : null, moves: [], leaveControl: false, awaitDest: false };
+  if (ui.mode !== 'march') ui = { activeQuery: ui.activeQuery, mode: 'march', region: q.regions.length === 1 ? q.regions[0] : null, moves: [], leaveControl: false, awaitDest: q.regions.length === 1 };
   let html = header(q, 'resolve a March');
   if (!ui.region) {
     html += `<div class="btn-col">` + q.regions.map(r => `<button data-pick="${r}">${esc(rName(r))}</button>`).join('') + `</div>`;
@@ -590,9 +606,14 @@ function rallyForm(q) {
     return html;
   }
   const o = game.ordersByRegion[ui.region];
+  const r = region(ui.region);
+  const pts = r.kind === 'land' ? regionProps(game, ui.region).muster : 0;
+  const canMuster = o?.starred && pts > 0;
+  const why = !o?.starred ? 'requires the ★ order'
+    : pts <= 0 ? `no ${theme.terms.fort.toLowerCase()} here (Rules p.22)` : '';
   html += `<p class="hint">${esc(rName(ui.region))}</p><div class="btn-col">
     <button class="primary" data-rally>Collect ${esc(theme.terms.authority)}</button>
-    ${o?.starred ? `<button disabled title="Mustering lands in M2">Muster units (M2)</button>` : ''}</div>`;
+    ${o?.starred ? `<button data-rally-muster ${canMuster ? '' : 'disabled'} title="${esc(why)}">Muster units (${pts} pts)</button>` : ''}</div>`;
   return html;
 }
 
@@ -704,7 +725,11 @@ function bindForm(panel, q) {
   }));
   panel.querySelector('[data-swapback]')?.addEventListener('click', () => { ui.mode = null; ui.swapRegion = null; renderTurnPanel(); });
 
-  panel.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { ui.region = b.dataset.pick; renderTurnPanel(); }));
+  panel.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+    ui.region = b.dataset.pick;
+    if (ui.mode === 'march') ui.awaitDest = true; // straight into destination picking
+    renderTurnPanel();
+  }));
   panel.querySelector('[data-repick]')?.addEventListener('click', () => {
     ui.region = null; ui.moves = []; ui.leaveControl = false; ui.awaitDest = false;
     renderTurnPanel();
@@ -723,6 +748,8 @@ function bindForm(panel, q) {
 
   panel.querySelector('[data-rally]')?.addEventListener('click', () =>
     dispatch({ type: 'resolveRally', faction: q.faction, region: ui.region }));
+  panel.querySelector('[data-rally-muster]')?.addEventListener('click', () =>
+    dispatch({ type: 'resolveRally', faction: q.faction, region: ui.region, muster: true }));
 
   panel.querySelectorAll('[data-support]').forEach(b => b.addEventListener('click', () =>
     dispatch({ type: 'declareSupport', faction: q.faction, region: q.region, side: b.dataset.support })));
@@ -894,7 +921,12 @@ function render() {
   if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
   $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
-    game.factions.map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
+    game.factions.slice().sort((a, b) =>
+      (seatsControlled(game, b) - seatsControlled(game, a)) ||
+      (landAreasControlled(game, b) - landAreasControlled(game, a)) ||
+      (game.supply[b] - game.supply[a]) ||
+      (game.tracks.initiative.indexOf(a) - game.tracks.initiative.indexOf(b))
+    ).map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
 }
 
 // ---------- chrome ----------
@@ -931,6 +963,21 @@ function init() {
     flash('Episode exported.');
   });
   $('#btn-load').addEventListener('click', () => $('#load-box').classList.toggle('hidden'));
+  $('#btn-load-file').addEventListener('click', () => $('#load-file').click());
+  $('#load-file').addEventListener('change', async e => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      game = deserialize((await f.text()).trim());
+      history = [serialize(game)];
+      ui = {};
+      resetTelemetry();
+      $('#load-box').classList.add('hidden');
+      render();
+      flash(`Restored ${f.name}.`);
+    } catch (err) { flash(`Could not restore: ${err.message}`); }
+    e.target.value = '';
+  });
   $('#btn-load-confirm').addEventListener('click', () => {
     try {
       game = deserialize($('#load-text').value.trim());

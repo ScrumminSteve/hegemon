@@ -230,3 +230,21 @@ alongside the seed.
 5. **Hygiene** — training data is views-plus-transcripts only; a learned policy can never
    memorize information a player couldn't see. Episode `config.seed` keeps train/eval
    splits honest (no seed leakage between them).
+
+
+## P1 queue (stored, fix next engine session)
+*(empty — support-vs-neutrals fixed in M2.b-final; see changelog)*
+
+<!-- FIXED (M2.b-final): Support vs neutral forces: support orders contribute nothing to a march
+  against a neutral force token — a London→Brussels march at strength 3 with an
+  adjacent Normandy S+1 (infantry + order = 2 more) is rejected against the 5
+  instead of tying it. Neutral resolution in `resolveMarch` counts only the
+  marching units + march modifier. Implementation notes: (a) confirm exact
+  wording on Rules p.28 — own adjacent support orders certainly count; whether
+  OTHER players' support may be lent to a neutral assault ties into the
+  support accept/decline protocol gap; (b) neutral conquest succeeds on
+  equal-or-exceed; (c) no leader cards vs neutrals — strength only. -->
+
+## UX backlog (accepted, not yet scheduled)
+*(empty — status-strip standings order, march auto-destination, all-units
+destination default, and file-picker Load all shipped in M2.b-final)*

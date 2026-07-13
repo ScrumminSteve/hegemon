@@ -58,6 +58,55 @@ function passUntil(s, fid) {
 
 export const tests = [
 
+  { name: 'own adjacent support carries a neutral assault to the tie, and ties conquer (Rules p.26, p.28)', fn() {
+    // The owner's board: London marches on the neutral 5 with 3 on the field
+    // and an S+1 footman next door — 3 + 2 = 5 ties, and the token falls.
+    let s = createGame(6, { seed: 7 });
+    s.unitsByRegion['L18'] = [{ faction: 'F3', type: 'cavalry', routed: false },
+                              { faction: 'F3', type: 'infantry', routed: false }];
+    s.unitsByRegion['L20'] = [{ faction: 'F3', type: 'infantry', routed: false }];
+    beginPlanning(s);
+    const FILL = [D(1), D(1), SU(0), SU(0), CP(), CP(), M(-1), M(0)];
+    for (const fid of s.factions) {
+      const explicit = fid === 'F3' ? { L18: M(0), L20: SU(1) } : (fid === 'F4' ? { L30: M(-1) } : {});
+      const pool = FILL.filter(o => !(fid === 'F3' && ((o.type === 'march' && o.mod === 0) || (o.type === 'support' && o.mod === 1)))
+        && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
+      const orders = { ...explicit };
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
+    }
+    s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
+    s = act(s, { type: 'resolveMarch', faction: 'F3', region: 'L18',
+      moves: [{ to: 'L19', units: { cavalry: 1, infantry: 1 } }] });
+    ok(s.log.some(e => e.event === 'neutralDestroyed' && e.region === 'L19'), 'the neutral 5 falls to 3+2');
+    ok(s.log.some(e => e.event === 'neutralAssaultSupported' && e.support === 2));
+    eq((s.unitsByRegion['L19'] || []).filter(u => u.faction === 'F3').length, 2, 'the column occupies');
+  }},
+
+  { name: 'without the support — or with only a RIVAL\'s support — the neutral holds (Rules p.28)', fn() {
+    let s = createGame(6, { seed: 7 });
+    s.unitsByRegion['L18'] = [{ faction: 'F3', type: 'cavalry', routed: false },
+                              { faction: 'F3', type: 'infantry', routed: false }];
+    // A rival's two footmen with support: would tie the 5 IF rival aid counted.
+    s.unitsByRegion['L20'] = [{ faction: 'F4', type: 'infantry', routed: false },
+                              { faction: 'F4', type: 'infantry', routed: false }];
+    beginPlanning(s);
+    const FILL = [D(1), D(1), SU(0), SU(0), CP(), CP(), M(-1), M(0)];
+    for (const fid of s.factions) {
+      const explicit = fid === 'F3' ? { L18: M(0) } : (fid === 'F4' ? { L20: SU(0), L30: M(-1) } : {});
+      const pool = FILL.filter(o => !(fid === 'F3' && o.type === 'march' && o.mod === 0)
+        && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
+      const orders = { ...explicit };
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
+    }
+    s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
+    throws(() => act(s, { type: 'resolveMarch', faction: 'F3', region: 'L18',
+      moves: [{ to: 'L19', units: { cavalry: 1, infantry: 1 } }] }),
+      'a rival cannot lend arms without consent');
+  }},
+
+
   { name: 'the muster card queues every controlled fortified area in initiative order (Rules p.9)', fn() {
     let s = toMuster();
     const seen = [];

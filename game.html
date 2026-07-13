@@ -40,7 +40,9 @@
       <button id="btn-load">Load</button>
     </div>
     <div id="load-box" class="hidden">
-      <textarea id="load-text" rows="4" placeholder="Paste a saved game here…"></textarea>
+      <button id="btn-load-file">Load a save file…</button>
+      <input type="file" id="load-file" accept="application/json,.json" hidden>
+      <textarea id="load-text" rows="4" placeholder="…or paste a saved game here"></textarea>
       <button id="btn-load-confirm">Restore</button>
     </div>
     <div id="seed-line" title="Tap to start a seeded game"></div>
