@@ -4,6 +4,22 @@
 export const THEME_CORE = {
   id: 'core',
   title: 'The Sundered Realm',
+
+  // M2.f presentation contract. Palette keys override the CSS custom-property
+  // space in styles.css 1:1 — every surface in the app reads these tokens, so
+  // a theme swap restyles chrome, forms, stage, and Chronicle in one move.
+  // canvas (per-theme map art + anchors) lands in M2.f.2; unitIcons in M2.f.3.
+  visuals: {
+    texture: 'linen',                 // chart-room weave
+    palette: {
+      ink: '#0B111C', ink2: '#101a29', sea: '#14283C',
+      slate: '#37424F', slate2: '#2C3641',
+      accent: '#C9A84C', text: '#D9D2C0', textDim: '#9aa3ad',
+      hair: 'rgba(217, 210, 192, 0.14)',
+    },
+    canvas: null,      // M2.f.2: { w, h, background, anchors }
+    unitIcons: null,   // M2.f.3: per-theme SVG symbol ids
+  },
   terms: {
     threat: 'Invader Threat',
     leaderCard: 'Leader Card',

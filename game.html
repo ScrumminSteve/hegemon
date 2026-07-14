@@ -12,6 +12,7 @@
   <main class="map-pane">
     <svg id="map" aria-label="Campaign map"></svg>
   </main>
+  <div id="stage" aria-live="polite"></div>
   <aside class="side">
     <header>
       <h1>Hegemon</h1>
@@ -28,6 +29,10 @@
       </select>
     </div>
     <section id="turn-panel"></section>
+    <details id="inspector-panel">
+      <summary>Seat inspector</summary>
+      <div id="inspector-body"></div>
+    </details>
     <section id="log-panel">
       <h3>Chronicle</h3>
       <div id="log"></div>
@@ -38,6 +43,7 @@
       <button id="btn-save">Save</button>
       <button id="btn-episode" title="Export a labeled learning episode (transcript + outcome)">Episode</button>
       <button id="btn-load">Load</button>
+      <button id="btn-quiet" title="Quiet mode: event reveals go to the Chronicle only, no stage cards">Quiet: off</button>
     </div>
     <div id="load-box" class="hidden">
       <button id="btn-load-file">Load a save file…</button>

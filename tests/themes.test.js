@@ -12,6 +12,17 @@ const PACKS = { asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 
 export const tests = [
 
+  { name: 'every theme ships a complete visuals contract (M2.f.0 palette space)', fn() {
+    const PALETTE_KEYS = ['ink', 'ink2', 'sea', 'slate', 'slate2', 'accent', 'text', 'textDim', 'hair'];
+    for (const [id, pack] of Object.entries({ core: THEME_CORE, ...PACKS })) {
+      ok(pack.visuals && typeof pack.visuals.texture === 'string', `${id} declares a texture`);
+      for (const k of PALETTE_KEYS) {
+        ok(typeof pack.visuals.palette?.[k] === 'string' && pack.visuals.palette[k].length > 0,
+          `${id} palette.${k} — a missing token would leak another theme's chrome`);
+      }
+    }
+  }},
+
   { name: 'every theme pack mirrors the core key space exactly (terms, factions, events, cards, regions)', fn() {
     for (const [id, pack] of Object.entries(PACKS)) {
       for (const section of ['terms', 'factions', 'eventCards', 'cards', 'regions']) {

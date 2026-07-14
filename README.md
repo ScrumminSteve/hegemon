@@ -151,7 +151,8 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
   (sea/port only, swept from land after the Courier step).
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
-- **M2.a–M2.e complete — the base game is playable start to finish** (M2.e victory checks in this drop).
+- **M2.a–M2.e complete — the base game is playable start to finish.**
+- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2 map pipeline · f.3 iconography · f.4 mobile & polish.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -210,6 +211,40 @@ from actionPhase for compatibility). New suite: `tests/victory.test.js`
 (8 goldens: mid-round stop with orders left unresolved, the mid-combat gate,
 gameOver hygiene, the full tie-breaker cascade, dispatch failure, replay).
 Suite total: 194.
+
+## M2.f — Presentation milestone (plan banked; f.0 + f.1 in this drop)
+
+**Owner decisions (Jul 2026):** AI-generated raster maps curated by owner with
+prompt-spec guidance; organic painted regions with tap halos (no literal hex
+outlines over art); per-theme canvas + pan/zoom (portrait Sundered Realm,
+landscape 2026); event reveals as a 3-card batch; **the stage is never
+modal** — the map and a seat inspector stay reachable mid-decision; quiet
+mode for campaign grinding. Phases: f.0 tokens → f.1 stage → f.2 map pipeline
+(art integration, anchor calibration tool, pan/zoom) → f.3 iconography
+(per-theme unit/token symbol sets) → f.4 mobile & polish.
+
+**f.0 — Presentation contract + design tokens (shipped).** Theme packs grow a
+`visuals` block: a 9-key palette written 1:1 onto the CSS custom-property
+space (`applyThemeVisuals`), a `texture` keying per-theme chrome weaves
+(linen / parchment / carbon, inline-SVG, subtle), and `canvas` / `unitIcons`
+slots reserved for f.2/f.3. Switching themes now restyles the entire app —
+chrome, forms, stage, Chronicle — not just the names. Golden: every pack must
+ship the complete palette space.
+
+**f.1 — Stage layer (shipped).** Dramatic moments pop out over the map;
+table work (planning, order resolution, mustering) stays beside it. Three
+pieces: (1) a **presentation queue** — each Event Phase's reveals become one
+3-card stage batch with outcome lines and a Continue button; pure
+presentation, the engine has already advanced, replay and headless agents are
+untouched; (2) **stage-bound decisions** — bids, event decrees, incursion
+choices, and all combat queries render in a floating stage card; a "to panel"
+button demotes any decision back to the side panel (and "return to stage"
+restores it), the map stays pannable and tappable throughout — no backdrop,
+no modality; (3) a **seat inspector** (collapsible, side panel): any seat's
+hand, discard, authority, supply, seats, and the threat, for mid-decision
+reference. Quiet toggle suppresses batch cards (Chronicle keeps everything);
+minimize/quiet/batch state survives `ui` resets, and undo advances the
+presentation watermark so the rewound past never re-stages. Suite total: 195.
 
 ## M3 information-access contract (banked Jul 2026)
 

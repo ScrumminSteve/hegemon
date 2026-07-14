@@ -5,6 +5,19 @@
 export const THEME_ASOIAF = {
   id: 'asoiaf',
   title: 'The War of Five Kings',
+
+  // M2.f presentation contract — aged parchment and candlelight.
+  visuals: {
+    texture: 'parchment',
+    palette: {
+      ink: '#171008', ink2: '#20170c', sea: '#2a1f10',
+      slate: '#4a3a22', slate2: '#382c19',
+      accent: '#C98A3B', text: '#E8DCC4', textDim: '#a89878',
+      hair: 'rgba(232, 220, 196, 0.16)',
+    },
+    canvas: null,
+    unitIcons: null,
+  },
   terms: {
     threat: 'Wildling Threat',
     leaderCard: 'House Card',

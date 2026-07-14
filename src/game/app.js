@@ -24,6 +24,34 @@ const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
 
 let theme = THEME_CORE;
 let game = null;
+
+// M2.f.0 — a theme owns the whole chrome: its palette is written onto the
+// CSS custom-property space and its texture keys the body weave.
+const PALETTE_VARS = { ink: '--ink', ink2: '--ink-2', sea: '--sea', slate: '--slate',
+  slate2: '--slate-2', accent: '--brass', text: '--bone', textDim: '--bone-dim', hair: '--hair' };
+function applyThemeVisuals() {
+  const v = theme.visuals || {};
+  const root = document.documentElement;
+  for (const [k, cssVar] of Object.entries(PALETTE_VARS)) {
+    if (v.palette?.[k]) root.style.setProperty(cssVar, v.palette[k]);
+  }
+  document.body.dataset.texture = v.texture || 'linen';
+}
+
+// M2.f.1 — stage state lives OUTSIDE `ui` (which resets on every dispatch).
+// seen: log watermark for the presentation queue; batch: the pending 3-card
+// event-phase reveal; minimized: decision demoted to the side panel; quiet:
+// passive reveals go to the Chronicle only.
+const stageState = { seen: 0, batch: null, minimized: false, quiet: false };
+let inspectorFid = 'F1';
+
+// Dramatic decisions pop out on stage; table work (planning, order
+// resolution, mustering) stays beside the map where the geography is.
+const STAGE_TYPES = new Set(['eventChoice', 'bid', 'bidTieBreak', 'threatPeekPlacement',
+  'invaderBid', 'invaderTieBreak', 'incursionUnits', 'incursionTrack', 'incursionCard',
+  'incursionOption', 'incursionMusterSite',
+  'declareSupport', 'useBlade', 'retreat', 'chooseLeaderCard', 'chooseCasualties',
+  'useCardAbility', 'cardTarget']);
 let history = [];
 let ui = {};              // transient form state; never rules, never truth
 
@@ -57,6 +85,7 @@ function newGame(seed) {
   beginPlanning(game);
   history = [serialize(game)];
   ui = {};
+  stageState.seen = 0; stageState.batch = null; stageState.minimized = false;
   render();
 }
 
@@ -77,6 +106,7 @@ function dispatch(action) {
     history.push(serialize(game));
     if (history.length > 200) history.shift();
     ui = {};
+    stageState.minimized = false; // each new decision earns its own entrance
     render();
   } catch (e) {
     telemetry.rejections.push({ atAction: game.actionLog.length, type: action.type, faction: action.faction, error: e.message, thinkMs });
@@ -93,6 +123,9 @@ function undo() {
   const undone = telemetry.timings.pop();
   telemetry.undos.push({ atAction: game.actionLog.length, undone: undone ? { type: undone.type, faction: undone.faction } : null });
   ui = {};
+  stageState.seen = game.log.length; // never re-stage the rewound past
+  stageState.batch = null;
+  stageState.minimized = false;
   render();
 }
 
@@ -269,6 +302,7 @@ function renderTurnPanel() {
   const panel = $('#turn-panel');
   if (!game) { panel.innerHTML = ''; return; }
 
+  renderBatchCard($('#stage')); // cheap; overwritten below if a decision takes the stage
   if (game.phase === 'gameOver') {
     const over = game.log.find(e => e.event === 'gameOver');
     panel.innerHTML = `<div class="victory">👑 ${esc(fName(game.winner))} rules the realm
@@ -289,13 +323,105 @@ function renderTurnPanel() {
       `<button class="tab ${q === active ? 'on' : ''}" data-q="${i}" style="border-color:${fColor(q.faction)}">
         ${fGlyph(q.faction)} ${esc(qLabel(q))}</button>`).join('') + `</div>`;
   }
-  html += formFor(active);
-  panel.innerHTML = html;
+
+  // Placement (M2.f.1): batch reveals hold the stage first; then a dramatic
+  // decision takes it, unless the operator minimized it back to this panel.
+  // The stage is never modal — the map stays live either way.
+  const stageEl = $('#stage');
+  const wantsStage = STAGE_TYPES.has(active.type);
+  const stageBound = wantsStage && !stageState.minimized && !stageState.batch;
+
+  if (stageBound) {
+    html += `<div class="hint">⤢ ${fGlyph(active.faction)} ${esc(qLabel(active))} — deciding on stage.</div>`;
+    panel.innerHTML = html;
+    stageEl.innerHTML = `<div class="stage-card">
+      <div class="stage-head"><span class="stage-title">${esc(qLabel(active))}</span>
+        <button class="stage-min" data-stage-min>▾ to panel</button></div>
+      <div class="stage-body">${formFor(active)}</div></div>`;
+    stageEl.querySelector('[data-stage-min]').addEventListener('click', () => {
+      stageState.minimized = true; renderTurnPanel();
+    });
+    bindForm(stageEl.querySelector('.stage-body'), active);
+  } else {
+    if (wantsStage && stageState.minimized && !stageState.batch) {
+      html += `<button class="stage-reopen" data-stage-open>⤢ Return to stage</button>`;
+    }
+    html += formFor(active);
+    panel.innerHTML = html;
+    panel.querySelector('[data-stage-open]')?.addEventListener('click', () => {
+      stageState.minimized = false; renderTurnPanel();
+    });
+    renderBatchCard(stageEl);
+    bindForm(panel, active);
+  }
 
   panel.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => {
     ui = { activeQuery: +b.dataset.q }; renderTurnPanel();
   }));
-  bindForm(panel, active);
+}
+
+// ---------- M2.f.1 — presentation queue ----------
+// Scan newly logged events once per dispatch; an Event Phase's reveals become
+// one 3-card stage batch (the physical table's "flip all three" moment).
+// Engine state has ALREADY advanced — this is presentation only, invisible to
+// replay and to headless agents.
+const BATCH_SKIP = new Set(['eventCardRevealed', 'eventPhaseBegan', 'planningBegan']);
+function scanForStage() {
+  if (!game) return;
+  const fresh = game.log.slice(stageState.seen);
+  stageState.seen = game.log.length;
+  if (stageState.quiet) return;
+  const beganAt = fresh.findIndex(e => e.event === 'eventPhaseBegan');
+  if (beganAt === -1) return;
+  const slice = fresh.slice(beganAt);
+  const reveals = slice.filter(e => e.event === 'eventCardRevealed')
+    .map(e => ({ deck: e.deck, card: e.card }));
+  if (!reveals.length) return;
+  const icons = new Set(slice.filter(e => e.event === 'threatAdvanced').map(e => e.card));
+  const lines = slice.filter(e => !BATCH_SKIP.has(e.event)).map(logLine).filter(Boolean).slice(0, 12);
+  stageState.batch = { round: slice[0].round, reveals, icons: [...icons], lines };
+}
+
+function renderBatchCard(stageEl) {
+  if (!stageState.batch) { stageEl.innerHTML = ''; return; }
+  const b = stageState.batch;
+  stageEl.innerHTML = `<div class="stage-card">
+    <div class="stage-head"><span class="stage-title">Round ${b.round} — the decks speak</span></div>
+    <div class="reveal-row">${b.reveals.map(r => `
+      <div class="reveal-card">
+        <div class="reveal-deck">Deck ${esc(r.deck)}</div>
+        <div class="reveal-name">${esc(eventCardName(r.card))}</div>
+        <div class="reveal-icon">${b.icons.includes(r.card) ? '⚠ ' + esc(theme.terms.threat || 'threat') : ''}</div>
+      </div>`).join('')}</div>
+    <div class="stage-lines">${b.lines.map(l => `<div>${l}</div>`).join('')}</div>
+    <button class="stage-ok" data-stage-ok>Continue</button></div>`;
+  stageEl.querySelector('[data-stage-ok]').addEventListener('click', () => {
+    stageState.batch = null; renderTurnPanel();
+  });
+}
+
+// ---------- M2.f.1 — seat inspector ----------
+// Mid-decision reference: any seat's hand, discard, and vitals, without
+// leaving the stage. Table mode renders full state by design (contract §4);
+// mixed human/bot games (M3.c) will scope this to viewFor.
+function renderInspector() {
+  const el = $('#inspector-body');
+  if (!el || !game) return;
+  const f = inspectorFid;
+  const hand = game.leaderHands[f] || [];
+  const discard = game.leaderDiscards[f] || [];
+  el.innerHTML = `
+    <div class="insp-chips">${game.factions.map(x =>
+      `<button class="insp-chip ${x === f ? 'on' : ''}" data-insp="${x}" style="border-left:3px solid ${fColor(x)}">${fGlyph(x)}</button>`).join('')}</div>
+    <div class="insp-stats">${fGlyph(f)} <b>${esc(fName(f))}</b> ·
+      ⌂${seatsControlled(game, f)} seats · ⛁${game.supply[f]} supply ·
+      ◈${game.authority[f]} ${esc(theme.terms.authority)} ·
+      ${esc(theme.terms.threat || 'threat')} ${game.threat}/12</div>
+    <div class="insp-cards">${hand.map(id => cardChip(id, { withText: false })).join('') || '<span class="dim">no cards in hand</span>'}</div>
+    ${discard.length ? `<div class="insp-stats" style="margin-top:6px">spent: ${discard.map(id => esc(theme.cards?.[id] ?? id)).join(', ')}</div>` : ''}`;
+  el.querySelectorAll('[data-insp]').forEach(b => b.addEventListener('click', () => {
+    inspectorFid = b.dataset.insp; renderInspector();
+  }));
 }
 
 function qLabel(q) {
@@ -1175,6 +1301,8 @@ function renderTracks() {
 
 function render() {
   lastRenderAt = performance.now();
+  applyThemeVisuals();
+  scanForStage();
   const svg = $('#map');
   renderMap(svg, theme, { onSelect: handleRegionTap });
   overlayState(svg);
@@ -1182,6 +1310,7 @@ function render() {
   renderHouses();
   renderTracks();
   renderLog();
+  renderInspector();
   const sl = $('#seed-line');
   if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
@@ -1203,6 +1332,12 @@ function init() {
     if (raw && Number.isFinite(+raw)) newGame(+raw);
   });
   $('#btn-undo').addEventListener('click', undo);
+  $('#btn-quiet').addEventListener('click', e => {
+    stageState.quiet = !stageState.quiet;
+    if (stageState.quiet) stageState.batch = null;
+    e.target.textContent = `Quiet: ${stageState.quiet ? 'on' : 'off'}`;
+    renderTurnPanel();
+  });
   $('#btn-save').addEventListener('click', () => {
     const blob = new Blob([serialize(game)], { type: 'application/json' });
     const a = document.createElement('a');

@@ -5,6 +5,19 @@
 export const THEME_2026 = {
   id: 'modern2026',
   title: '2026: The Concert of Powers',
+
+  // M2.f presentation contract — carbon, steel, and cold signal light.
+  visuals: {
+    texture: 'carbon',
+    palette: {
+      ink: '#080b0e', ink2: '#0e1319', sea: '#12202b',
+      slate: '#2e3a44', slate2: '#232d36',
+      accent: '#5FAECD', text: '#D4DAE0', textDim: '#8b98a3',
+      hair: 'rgba(212, 218, 224, 0.14)',
+    },
+    canvas: null,
+    unitIcons: null,
+  },
   terms: {
     threat: 'Crisis Index',
     leaderCard: 'Leader Card',
