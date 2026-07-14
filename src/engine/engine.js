@@ -7,6 +7,7 @@ import { eventChoice, reconcileSupply, muster, bid, bidTieBreak } from './eventP
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
 import { chooseLeaderCard } from './cards.js';
+import { invaderBid, invaderTieBreak, incursionUnits, incursionTrack, incursionCard, incursionOption, incursionMusterSite } from './invaders.js';
 import { createGame, seatsControlled, serialize } from './state.js';
 
 export { beginPlanning, beginActionPhase, orderableRegions, starLimit, ORDER_TOKENS };
@@ -40,6 +41,27 @@ const HANDLERS = {
   },
   bidTieBreak(state, action) {
     bidTieBreak(state, action.faction, action.track, action.order);
+  },
+  invaderBid(state, action) {
+    invaderBid(state, action.faction, action.amount);
+  },
+  invaderTieBreak(state, action) {
+    invaderTieBreak(state, action.faction, action.chosen);
+  },
+  incursionUnits(state, action) {
+    incursionUnits(state, action.faction, action.units || []);
+  },
+  incursionTrack(state, action) {
+    incursionTrack(state, action.faction, action.track);
+  },
+  incursionCard(state, action) {
+    incursionCard(state, action.faction, action.card);
+  },
+  incursionOption(state, action) {
+    incursionOption(state, action.faction, action.option);
+  },
+  incursionMusterSite(state, action) {
+    incursionMusterSite(state, action.faction, action.region);
   },
   resolveRaid(state, action) {
     resolveRaid(state, action.faction, action.region, action.target ?? null);
@@ -170,6 +192,28 @@ export function legalActions(state, faction) {
       out.push({ type: 'useCardAbility', ability: q.ability, options: [true, false] });
     } else if (q.type === 'cardTarget') {
       out.push({ type: 'cardTarget', ability: q.ability, options: q.skippable ? [...q.options, 'skip'] : q.options });
+    } else if (q.type === 'muster') {
+      out.push({ type: 'muster', region: q.region, points: q.points, source: q.source ?? 'card' });
+    } else if (q.type === 'bid') {
+      out.push({ type: 'bid', track: q.track, max: q.max });
+    } else if (q.type === 'bidTieBreak') {
+      out.push({ type: 'bidTieBreak', track: q.track, tied: q.tied });
+    } else if (q.type === 'invaderBid') {
+      out.push({ type: 'invaderBid', max: q.max, strength: q.strength });
+    } else if (q.type === 'invaderTieBreak') {
+      out.push({ type: 'invaderTieBreak', side: q.side, options: q.tied });
+    } else if (q.type === 'incursionUnits') {
+      out.push({ type: 'incursionUnits', purpose: q.purpose, count: q.count,
+        optional: !!q.optional, unitType: q.unitType ?? null,
+        regions: q.regions ?? null, constraint: q.constraint ?? null });
+    } else if (q.type === 'incursionTrack') {
+      out.push({ type: 'incursionTrack', mode: q.mode, options: q.options, amount: q.amount ?? null });
+    } else if (q.type === 'incursionCard') {
+      out.push({ type: 'incursionCard', purpose: q.purpose, from: q.from, options: q.options });
+    } else if (q.type === 'incursionOption') {
+      out.push({ type: 'incursionOption', options: q.options });
+    } else if (q.type === 'incursionMusterSite') {
+      out.push({ type: 'incursionMusterSite', options: q.options });
     }
   }
   return out;

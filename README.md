@@ -151,8 +151,44 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
   (sea/port only, swept from land after the Courier step).
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
-- **M2.a** complete (see above).
+- **M2.a** complete · **M2.b** complete · **M2.c** complete · **M2.d** complete (this drop).
 
+
+## M2.d — Invaders & incursions (this drop)
+
+The two `incursionPending` stubs are now the real thing (Rules pp.22–23; FAQ):
+`src/engine/invaders.js` runs both triggers — threat-max (immediate, resolved
+BEFORE any revealed card's effect) and the Deck III incursion card (at current
+threat strength) — through one flow: sealed simultaneous bids from every
+participating faction (masked by `viewFor` exactly like Clash bids, recorded in
+`privateKnowledge.lastBid`), reveal, total-vs-strength outcome, sovereign-holder
+tie-break (naming ONE faction), and only THEN the invader-card draw — the
+ordering that makes the Courier's peek worth authority. All nine owner-
+transcribed cards implemented, win and loss sides, with queries where the rules
+grant choices (unit picks incl. the single-fortified-area constraint, track
+choices, hand/discard picks, the Preemptive poison-pick, victory mustering via
+the existing muster machinery with `source: 'incursion'`). Defender win resets
+threat to 0; invader win sets it back 2 (min 0); used card is buried at the
+bottom; every draw voids all `privateKnowledge.threatDeck` peeks (the banked
+M3 contract). The Preemptive re-attack chains a second incursion at strength 6
+with the prior highest bidder excluded. Strength-0 attacks are still bid and
+cannot be lost (FAQ). New suite: `tests/invaders.test.js` (27 goldens incl.
+masking-as-anti-cheat, penalty ordering, serialization mid-effect, and a
+transcript-replay determinism check on an unrigged seed). Suite total: 186.
+
+**Owner-audit items from this drop (verify against your cards/rulebook):**
+- Dominance tokens follow position 1 whenever an invader card reorders a track
+  (kingBeyond drops/rises, preemptive track-shift). Implemented uniformly;
+  confirm the FAQ agrees for the *drop* cases, not just the explicit
+  take-the-token victory text.
+- Massing (loss): if the forced discard empties the hand, the discard returns
+  to hand, mirroring the last-card recycle. Confirm FAQ wording.
+- Horde (loss) reading: both destroyed units must come from ONE of the lowest
+  bidder's fortified areas (not split across two). Confirm card text.
+- Threat-track granularity: the engine steps +1 per icon to a max of 12
+  (golden-tested since M2.a). If your physical track moves in steps of 2
+  (positions 0/2/4…12), icons-to-attack and the −2 setback are half the
+  board's pace. Self-consistent as built — flag only if you want board parity.
 
 ## M3 information-access contract (banked Jul 2026)
 
@@ -165,8 +201,8 @@ never raw state. Parity with a remote human player is the invariant:
 2. **No amnesia.** Earned secrets persist in `state.privateKnowledge[fid]`, merged
    into that faction's view only (first client: the Courier's deck peek). Anything
    a human would remember, the view must carry. M2.c bids and any future
-   spy/peek effects write here. M2.d must invalidate `threatDeck` entries on any
-   invader-deck draw or shuffle.
+   spy/peek effects write here. M2.d invalidates `threatDeck` entries on every
+   invader-deck draw (implemented; golden-tested).
 3. **One lens.** UI panels and AI reasoning read the same derived helpers
    (`seatsControlled`, `starLimit`, `regionProps`, track arrays) so what the
    player sees and what the robot knows can never drift apart.
@@ -233,7 +269,13 @@ alongside the seed.
 
 
 ## P1 queue (stored, fix next engine session)
-- **Muster upgrade offers only one path.** The upgrade build converts a footman
+*(empty)*
+
+- ~~Muster upgrade offers only one path~~ **SHIPPED (m2.c):** engine accepts
+  `{ type: 'upgrade', to: 'cavalry' | 'siege_engine' }` (default 'cavalry' for
+  episode compatibility), pool-checked per target; UI shows both buttons;
+  goldens cover the siege path and pool exhaustion. Original note: The upgrade build converts a footman
+  to a knight only; the owner expects BOTH upgrade options — footman → knight The upgrade build converts a footman
   to a knight only; the owner expects BOTH upgrade options — footman → knight
   and footman → siege engine, each for 1 point (verify exact Rules p.9 wording
   at fix time; owner's physical-board expectation is both). Engine change:
@@ -242,7 +284,8 @@ alongside the seed.
   compatibility with recorded episodes); UI shows two upgrade buttons. Extend
   the upgrade golden test to cover the siege path. Note: currently masked by
   the "undefined" term-key P1 — same form, fix together.
-- **Muster form renders "undefined" everywhere.** Root cause diagnosed: the
+- ~~Muster form renders "undefined" everywhere~~ **SHIPPED (m2.c):** all three
+  call sites now go through `unitName(type)`. Original note: the
   muster form (plus `reconcileForm` and the `destroyedForSupply` Chronicle line)
   read `theme.terms.infantry` / `.cavalry` / `.warship` / `.siege_engine`, but
   theme term keys are `unitInfantry` / `unitCavalry` / `unitWarship` /
@@ -279,3 +322,11 @@ alongside the seed.
 ## UX backlog (accepted, not yet scheduled)
 *(empty — status-strip standings order, march auto-destination, all-units
 destination default, and file-picker Load all shipped in M2.b-final)*
+
+<!-- FIXED (M2.d session): Port diamonds rendered at the raw land↔sea midpoint,
+which drifted far offshore when the sea center was distant — P01 landed nearer
+L03, P02 nearer L11. New shared `portAnchor(land, sea)` in map-view.js pins
+each port to its land hex's seaward edge (46px hex radius + 16px clearance);
+app.js posOf uses the same helper, so diamonds, units-in-harbor glyphs, and
+tap targets stay aligned. Verified: every port anchor is now nearest its own
+land region; no two anchors within 30px. -->

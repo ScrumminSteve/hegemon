@@ -20,8 +20,11 @@ import { beginPlanning } from './planning.js';
 import { SETUP } from '../data/setup.js';
 import { advanceAction } from './actionPhase.js'; // tolerated ESM cycle (as combat↔actionPhase)
 import { beginBidding, bid as sealBid, bidTieBreak as breakTie, biddingActive } from './bidding.js';
+import { beginIncursion, advanceIncursionQueue } from './invaders.js'; // tolerated ESM cycle
 
-const BLOCKING = ['eventChoice', 'reconcileSupply', 'muster', 'bid', 'bidTieBreak'];
+const BLOCKING = ['eventChoice', 'reconcileSupply', 'muster', 'bid', 'bidTieBreak',
+  'invaderBid', 'invaderTieBreak', 'incursionUnits', 'incursionTrack',
+  'incursionCard', 'incursionOption', 'incursionMusterSite'];
 
 function cardDef(state, id) {
   for (const cards of Object.values(EVENT_DECK_SETS[state.scenario.eventDeckSet || 'base'])) {
@@ -83,15 +86,25 @@ export function advanceThreat(state, by) {
   state.threat = Math.min(12, state.threat + 1);
   state.log.push({ round: state.round, event: 'threatAdvanced', threat: state.threat, card: by });
   if (state.threat >= 12) {
-    // Reaching 12 triggers an immediate incursion (Rules p.22) — M2.d.
-    state.log.push({ round: state.round, event: 'incursionPending', trigger: 'threatMax', note: 'M2.d' });
+    // Reaching 12 triggers an immediate incursion, resolved BEFORE any of the
+    // revealed cards' effects (Rules p.22). progressEventPhase honors the flag
+    // ahead of its card loop.
+    state.eventPhase.threatMaxIncursion = true;
   }
 }
 
 export function progressEventPhase(state) {
   const ep = state.eventPhase;
   if (!ep) return;
+  if (ep.incursion) return; // resumes via the incursion pipeline
   if (state.pendingQueries.some(q => BLOCKING.includes(q.type))) return;
+
+  // A threat-max incursion interrupts BEFORE any card effect (Rules p.22).
+  if (ep.threatMaxIncursion) {
+    delete ep.threatMaxIncursion;
+    beginIncursion(state, { trigger: 'threatMax', fromCardStep: false });
+    return;
+  }
 
   while (ep.step < ep.revealed.length) {
     const { deck, card } = ep.revealed[ep.step];
@@ -131,8 +144,8 @@ function resolveEventCard(state, deckId, cardId, chosen) {
     case 'bidTracks':
       return beginBidding(state, cardId);
     case 'incursion':
-      state.log.push({ round: state.round, event: 'incursionPending', trigger: 'card', card: cardId, note: 'M2.d' });
-      return true;
+      // Invaders attack at the current threat strength (Rules p.22).
+      return beginIncursion(state, { trigger: 'card', fromCardStep: true });
     default:
       state.log.push({ round: state.round, event: 'eventUnhandled', card: cardId });
       return true;
@@ -173,7 +186,7 @@ export function bidTieBreak(state, fid, track, order) {
 
 export const MUSTER_COSTS = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, upgrade: 1 };
 
-function fortifiedControlled(state, fid) {
+export function fortifiedControlled(state, fid) {
   const out = [];
   for (const r of REGION_LIST) {
     if (r.kind !== 'land') continue;
@@ -202,7 +215,7 @@ function resolveMusterCard(state, cardId) {
   return false;
 }
 
-function inPlay(state, fid, type) {
+export function inPlay(state, fid, type) {
   let n = 0;
   for (const units of Object.values(state.unitsByRegion)) {
     for (const u of units) if (u.faction === fid && u.type === type) n++;
@@ -308,6 +321,10 @@ export function muster(state, fid, rid, builds = []) {
     advanceAction(state); // starred-rally muster hands back to the action cycler
     return;
   }
+  if (q.source === 'incursion') {
+    advanceIncursionQueue(state); // invader-card muster hands back to the incursion queue
+    return;
+  }
   const done = resolveMusterCard(state, null);
   if (done) {
     state.eventPhase.step += 1;
@@ -348,7 +365,7 @@ function boardSupply(state, fid) {
   return Math.min(6, n);
 }
 
-function supplyViolations(state, fid) {
+export function supplyViolations(state, fid) {
   const limits = SETUP.supplyLimits[state.supply[fid]].slice().sort((a, b) => b - a);
   const armies = [];
   for (const [rid, units] of Object.entries(state.unitsByRegion)) {
@@ -399,6 +416,18 @@ export function reconcileSupply(state, fid, rid, unitType) {
   state.pendingQueries.splice(qi, 1);
   state.unitsByRegion[rid] = (state.unitsByRegion[rid] || []).filter(x => x !== u);
   state.log.push({ round: state.round, event: 'destroyedForSupply', faction: fid, region: rid, unit: unitType, chosen: true });
+
+  if (q.source === 'incursion') {
+    // Invader-card supply loss: reconcile this faction alone, then resume
+    // the incursion's effect queue.
+    const bad = supplyViolations(state, fid);
+    if (bad.length) {
+      state.pendingQueries.push({ type: 'reconcileSupply', faction: fid, regions: bad.sort(), source: 'incursion' });
+    } else {
+      advanceIncursionQueue(state);
+    }
+    return;
+  }
 
   const done = resolveSupplyUpdate(state, null);
   if (done) {

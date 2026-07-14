@@ -9,7 +9,7 @@ import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
-import { renderMap } from '../map-view.js';
+import { renderMap, portAnchor } from '../map-view.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -113,8 +113,7 @@ const el = (tag, attrs = {}) => {
 const posOf = rid => {
   const r = byId[rid];
   if (r.kind !== 'port') return { x: r.x, y: r.y };
-  const a = byId[r.landId], b = byId[r.seaId];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  return portAnchor(byId[r.landId], byId[r.seaId]); // must match the diamond
 };
 
 function unitGlyph(u, x, y) {
@@ -305,7 +304,11 @@ function qLabel(q) {
       useCardAbility: 'card ability', cardTarget: 'card target',
       eventChoice: 'event decree', reconcileSupply: 'supply losses',
       threatPeekPlacement: 'deck peek', muster: 'muster',
-      bid: 'sealed bid', bidTieBreak: 'break the tie' }[q.type]);
+      bid: 'sealed bid', bidTieBreak: 'break the tie',
+      invaderBid: 'incursion bid', invaderTieBreak: 'name the ' + (q.side === 'highest' ? 'victor' : 'fallen'),
+      incursionUnits: { destroy: 'losses', downgrade: 'losses', upgrade: 'promotions' }[q.purpose] || 'units',
+      incursionTrack: 'track choice', incursionCard: q.purpose === 'retrieve' ? 'retrieve a card' : 'discard a card',
+      incursionOption: 'choose your fate', incursionMusterSite: 'muster site' }[q.type]);
 }
 
 function header(q, title) {
@@ -432,6 +435,120 @@ function musterForm(q) {
 }
 function battleless() { return ''; }
 
+// ---------- incursion (M2.d) ----------
+function incursionBanner() {
+  const inc = game.eventPhase?.incursion;
+  if (!inc) return '';
+  const sealed = inc.phase === 'sealed';
+  const bidders = game.factions.filter(f => !inc.excluded.includes(f));
+  const cell = f => sealed
+    ? `<span class="card-chip ghost">${fGlyph(f)} ${inc.bids[f] !== undefined ? '✊' : '…'}</span>`
+    : `<span class="card-chip">${fGlyph(f)} <b>${inc.bids[f] ?? 0}</b></span>`;
+  let html = `<div class="battle">
+    <div class="battle-side">${esc(theme.terms.invaders)}<b>${inc.strength}</b></div>
+    <div class="battle-vs">${esc(theme.terms.incursion)}</div>
+    <div class="battle-side">${sealed ? 'sealed bids' : `bids <b>${inc.total ?? 0}</b>`}</div>
+  </div>
+  <div class="battle-cards"><div>${bidders.map(cell).join(' ')}</div></div>`;
+  if (inc.excluded.length) {
+    html += `<div class="hint">${inc.excluded.map(f => fGlyph(f) + ' ' + esc(fName(f))).join(', ')} stand${inc.excluded.length === 1 ? 's' : ''} apart from this attack.</div>`;
+  }
+  if (inc.card) {
+    const def = INVADER_CARDS[inc.card];
+    const held = inc.outcome === 'defenders';
+    html += `<div class="card-text"><b>${esc(eventCardName(inc.card))}</b> — the wall ${held ? 'holds' : 'is breached'}.
+      <div class="hint">${esc(invaderText(held ? def.winText : def.lossText))}</div></div>`;
+  }
+  return html;
+}
+
+function invaderBidForm(q) {
+  const amt = Math.min(ui.bidAmount ?? 0, q.max);
+  return incursionBanner() + header(q, `seal your bid — strength ${q.strength}`) +
+    `<div class="stepper-row big-stepper">
+      <button class="opt" data-bid-step="-1" ${amt <= 0 ? 'disabled' : ''}>−</button>
+      <b class="bid-amt">${amt}</b>
+      <button class="opt" data-bid-step="1" ${amt >= q.max ? 'disabled' : ''}>+</button>
+      <span class="dim">of ${q.max} ${esc(theme.terms.authority)}</span>
+    </div>
+    <button class="primary" data-invbid-commit>Seal ${amt} — hidden until all reveal</button>
+    <div class="hint">If the combined bids reach ${q.strength}, the realm holds and the highest bidder is rewarded; if not, the lowest bidder suffers worst. Every bid is paid, win or lose (Rules p.22–23).</div>`;
+}
+
+function invaderTieBreakForm(q) {
+  const label = q.side === 'highest' ? 'takes the reward' : 'suffers the worst';
+  return incursionBanner() + header(q, `tie at ${q.amount} — name who ${label}`) +
+    `<div class="btn-col">` +
+    q.tied.map(f => `<button data-invtie="${f}">${fGlyph(f)} ${esc(fName(f))}</button>`).join('') +
+    `</div>
+    <div class="hint">You hold the ${esc(theme.terms.tokenSovereign)}: choose ONE of the tied ${esc(theme.terms.factions.toLowerCase())} — yourself included (Rules p.23).</div>`;
+}
+
+function incUnitLabel(purpose) {
+  return { destroy: 'destroy', downgrade: 'degrade', upgrade: 'promote' }[purpose];
+}
+function incursionUnitsForm(q) {
+  const picks = ui.incUnits || [];
+  const lockRegion = q.constraint === 'singleRegion' && picks.length ? picks[0].region : null;
+  const rows = [];
+  for (const [rid, units] of Object.entries(game.unitsByRegion)) {
+    if (q.regions && !q.regions.includes(rid)) continue;
+    const mine = units.filter(u => u.faction === q.faction && (!q.unitType || u.type === q.unitType));
+    if (!mine.length) continue;
+    const types = {};
+    for (const u of mine) types[u.type] = (types[u.type] || 0) + 1;
+    const chosenHere = t => picks.filter(p => p.region === rid && p.type === t).length;
+    rows.push(`<div class="stepper-row"><b>${esc(rName(rid))}</b>: ` +
+      Object.entries(types).map(([t, n]) => {
+        const c = chosenHere(t);
+        const disabled = picks.length >= q.count || c >= n || (lockRegion && lockRegion !== rid);
+        return `<button class="opt" data-incpick='${JSON.stringify({ region: rid, type: t })}' ${disabled ? 'disabled' : ''}>` +
+          `${incUnitLabel(q.purpose)} ${esc(unitName(t) || t)}${c ? ` <b>×${c}</b>` : ''} <span class="dim">(${n})</span></button>`;
+      }).join(' ') + `</div>`);
+  }
+  const ready = q.optional ? true : picks.length === q.count;
+  return incursionBanner() + header(q, `${incUnitLabel(q.purpose)} ${q.optional ? 'up to ' : ''}${q.count} unit(s)`) +
+    rows.join('') +
+    (picks.length ? `<div class="hint">Chosen: ${picks.map(p => `${esc(unitName(p.type))} @ ${esc(rName(p.region))}`).join(', ')} <button class="opt" data-increset>start over</button></div>` : '') +
+    `<button class="primary" data-inccommit ${ready ? '' : 'disabled'}>${q.optional && !picks.length ? 'Promote none (pass)' : 'Confirm ' + picks.length}</button>` +
+    (q.constraint === 'singleRegion' ? `<div class="hint">All losses must come from ONE fortified area (card text).</div>` : '');
+}
+
+function incursionTrackForm(q) {
+  const verb = { toBottom: 'fall to the bottom of', toTop: 'rise to the top of', shiftDown: `fall ${q.amount} places on` }[q.mode];
+  return incursionBanner() + header(q, `${verb} which track?`) +
+    `<div class="btn-col">` +
+    q.options.map(t => `<button data-inctrack="${t}">${esc(trackName(t))}</button>`).join('') +
+    `</div>` +
+    (q.mode === 'toTop' ? `<div class="hint">You take the chosen track's token with the seat.</div>` : '');
+}
+
+function incursionCardForm(q) {
+  const verb = q.purpose === 'retrieve' ? 'Retrieve from your discard' : 'Discard from your hand';
+  return incursionBanner() + header(q, verb.toLowerCase()) +
+    `<div class="btn-col">` +
+    q.options.map(id => `<button data-inccard="${id}">${cardChip(id, { withText: false })}</button>`).join('') +
+    `</div>`;
+}
+
+const INC_OPTION_LABELS = {
+  destroyUnits: o => `destroy ${o.count} of your units${o.where === 'anywhere' ? ' (anywhere)' : ''}`,
+  trackShift: o => `fall ${Math.abs(o.amount)} places on your highest track`,
+};
+function incursionOptionForm(q) {
+  return incursionBanner() + header(q, 'choose your fate') +
+    `<div class="btn-col">` +
+    q.options.map((o, i) => `<button data-incopt="${i}">${esc((INC_OPTION_LABELS[o.type] || (() => o.type))(o))}</button>`).join('') +
+    `</div>`;
+}
+
+function incursionMusterSiteForm(q) {
+  return incursionBanner() + header(q, 'muster at which stronghold?') +
+    `<div class="btn-col">` +
+    q.options.map(site => `<button data-incsite="${site.region}">${esc(rName(site.region))} <span class="dim">(${site.points} pts)</span></button>`).join('') +
+    `</div>`;
+}
+
 function formFor(q) {
   if (q.type === 'submitOrders') return planningForm(q);
   if (q.type === 'courierDecision') return courierForm(q);
@@ -452,6 +569,13 @@ function formFor(q) {
   if (q.type === 'bid') return bidForm(q);
   if (q.type === 'bidTieBreak') return bidTieBreakForm(q);
   if (q.type === 'threatPeekPlacement') return peekForm(q);
+  if (q.type === 'invaderBid') return invaderBidForm(q);
+  if (q.type === 'invaderTieBreak') return invaderTieBreakForm(q);
+  if (q.type === 'incursionUnits') return incursionUnitsForm(q);
+  if (q.type === 'incursionTrack') return incursionTrackForm(q);
+  if (q.type === 'incursionCard') return incursionCardForm(q);
+  if (q.type === 'incursionOption') return incursionOptionForm(q);
+  if (q.type === 'incursionMusterSite') return incursionMusterSiteForm(q);
   return `<pre>${esc(JSON.stringify(q))}</pre>`;
 }
 
@@ -737,6 +861,56 @@ function bindForm(panel, q) {
     panel.querySelector('[data-tie-reset]')?.addEventListener('click', () => { ui.tieOrder = null; renderTurnPanel(); });
     return;
   }
+  if (q.type === 'invaderBid') {
+    panel.querySelectorAll('[data-bid-step]').forEach(b => b.addEventListener('click', () => {
+      ui.bidAmount = Math.max(0, Math.min(q.max, (ui.bidAmount ?? 0) + Number(b.dataset.bidStep)));
+      renderTurnPanel();
+    }));
+    panel.querySelector('[data-invbid-commit]')?.addEventListener('click', () => {
+      const amount = Math.min(ui.bidAmount ?? 0, q.max);
+      ui.bidAmount = 0;
+      dispatch({ type: 'invaderBid', faction: q.faction, amount });
+    });
+    return;
+  }
+  if (q.type === 'invaderTieBreak') {
+    panel.querySelectorAll('[data-invtie]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'invaderTieBreak', faction: q.faction, chosen: b.dataset.invtie })));
+    return;
+  }
+  if (q.type === 'incursionUnits') {
+    panel.querySelectorAll('[data-incpick]').forEach(b => b.addEventListener('click', () => {
+      (ui.incUnits = ui.incUnits || []).push(JSON.parse(b.dataset.incpick));
+      renderTurnPanel();
+    }));
+    panel.querySelector('[data-increset]')?.addEventListener('click', () => { ui.incUnits = null; renderTurnPanel(); });
+    panel.querySelector('[data-inccommit]')?.addEventListener('click', () => {
+      const units = ui.incUnits || [];
+      ui.incUnits = null;
+      dispatch({ type: 'incursionUnits', faction: q.faction, units });
+    });
+    return;
+  }
+  if (q.type === 'incursionTrack') {
+    panel.querySelectorAll('[data-inctrack]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'incursionTrack', faction: q.faction, track: b.dataset.inctrack })));
+    return;
+  }
+  if (q.type === 'incursionCard') {
+    panel.querySelectorAll('[data-inccard]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'incursionCard', faction: q.faction, card: b.dataset.inccard })));
+    return;
+  }
+  if (q.type === 'incursionOption') {
+    panel.querySelectorAll('[data-incopt]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'incursionOption', faction: q.faction, option: +b.dataset.incopt })));
+    return;
+  }
+  if (q.type === 'incursionMusterSite') {
+    panel.querySelectorAll('[data-incsite]').forEach(b => b.addEventListener('click', () =>
+      dispatch({ type: 'incursionMusterSite', faction: q.faction, region: b.dataset.incsite })));
+    return;
+  }
   if (q.type === 'muster') {
     panel.querySelectorAll('[data-mbuild]').forEach(b => b.addEventListener('click', () => {
       (ui.musterBuilds = ui.musterBuilds || []).push(JSON.parse(b.dataset.mbuild));
@@ -876,7 +1050,34 @@ function logLine(e) {
     case 'tieBroken': return `${F(e.by)} orders the tie: ${e.order.map(f => fGlyph(f)).join(' → ')}.`;
     case 'trackRebuilt': return `The ${esc(trackName(e.track))} track stands anew: ${e.order.map(f => fGlyph(f)).join(' → ')}${e.passed ? ` — the ${esc(theme.terms['token' + e.token[0].toUpperCase() + e.token.slice(1)] ?? e.token)} passes to ${F(e.holder)}` : ''}.`;
     case 'biddingClosed': return `<em>The auction closes; the new order of powers holds.</em>`;
-    case 'incursionPending': return `<em>${e.trigger === 'threatMax' ? 'The threat breaks!' : esc(eventCardName(e.card || ''))} — incursions arrive in M2.d.</em>`;
+    case 'incursionBegan': return `<b>⚠ ${esc(theme.terms.incursion)}!</b> ${e.trigger === 'threatMax' ? 'The threat breaks at its peak' : e.trigger === 'reattack' ? `${esc(theme.terms.invaders)} come again` : `${esc(theme.terms.invaders)} attack`} — strength ${e.strength}.${e.excluded ? ` ${e.excluded.map(f => F(f)).join(', ')} stand apart.` : ''}`;
+    case 'incursionBidsRevealed': return `Bids revealed — ${Object.keys(e.bids).map(f => `${fGlyph(f)} ${e.bids[f]}`).join(' · ')} — ${e.total} against strength ${e.strength}.`;
+    case 'incursionOutcome': return e.outcome === 'defenders'
+      ? `<b>The realm holds</b> (${e.total} ≥ ${e.strength}).`
+      : `<b>The defenses are breached</b> (${e.total} < ${e.strength}).`;
+    case 'incursionTieBroken': return `${F(e.by)} names ${F(e.chosen)} as the ${e.side === 'highest' ? 'highest' : 'lowest'} bidder.`;
+    case 'incursionCardRevealed': return `The ${esc(theme.terms.invaders)} reveal: <b>${esc(eventCardName(e.card))}</b>.`;
+    case 'incursionNothing': return `${F(e.faction)} ${{
+      noUnits: 'has no units to lose', emptyDiscard: 'has no spent leaders to reclaim',
+      singleCard: 'holds too few cards to pay', noCavalry: `has no ${esc(theme.terms.unitCavalry.toLowerCase())} to lose`,
+      noUpgrade: 'can promote no one', noFortified: 'holds no stronghold to muster at',
+      noAuthority: `has no ${esc(theme.terms.authority.toLowerCase())} left to lose`,
+      reattackExempt: 'stands apart as the invaders regroup' }[e.reason] || 'is spared'}.`;
+    case 'incursionTrackMoved': return `${F(e.faction)} ${e.to === 'top' ? 'rises to the top of' : e.to === 'bottom' ? 'falls to the bottom of' : `falls ${e.to.replace('down', '')} places on`} the ${esc(trackName(e.track))} track.`;
+    case 'tokenPassed': return `The ${esc(theme.terms['token' + e.token[0].toUpperCase() + e.token.slice(1)] ?? e.token)} passes to ${F(e.holder)}.`;
+    case 'incursionUnitsDestroyed': return `${F(e.faction)} loses ${esc(e.units.map(u => `${unitName(u.type)} @ ${rName(u.region)}`).join(', '))} to the ${esc(theme.terms.invaders.toLowerCase())}.`;
+    case 'incursionUnitsDowngraded': return `${F(e.faction)}'s ${esc(theme.terms.unitCavalry.toLowerCase())} ${e.changes.every(c => c.destroyed) ? 'are cut down' : e.changes.some(c => c.destroyed) ? 'are unhorsed — some cut down where no footman could stand' : 'are unhorsed, fighting on as ' + esc(theme.terms.unitInfantry.toLowerCase())}.`;
+    case 'incursionUnitsUpgraded': return `${F(e.faction)} promotes ${e.regions.length} ${esc(theme.terms.unitInfantry.toLowerCase())} to ${esc(theme.terms.unitCavalry.toLowerCase())} in victory.`;
+    case 'incursionCardsDiscarded': return `${F(e.faction)} discards ${e.cards.map(c => esc(theme.cards?.[c] ?? c)).join(', ')} to the ${esc(theme.terms.invaders.toLowerCase())}.`;
+    case 'incursionCardRetrieved': return `${F(e.faction)} reclaims ${esc(theme.cards?.[e.card] ?? e.card)} from the discard.`;
+    case 'incursionDiscardRecovered': return `${F(e.faction)}'s spent leaders return to hand (${e.count}).`;
+    case 'incursionMusterAwarded': return `${F(e.faction)} may raise banners at ${esc(rName(e.region))} in victory.`;
+    case 'incursionAuthorityLost': return `${F(e.faction)} forfeits ${e.amount} ${esc(theme.terms.authority)}.`;
+    case 'incursionBidRefunded': return `${F(e.faction)}'s bid of ${e.amount} comes home in victory.`;
+    case 'incursionOptionChosen': return `${F(e.faction)} chooses: ${e.option === 'destroyUnits' ? 'sacrifice units' : 'surrender standing'}.`;
+    case 'threatReset': return `The ${esc(theme.terms.threat || 'threat')} ${e.outcome === 'defenders' ? 'is thrown back' : 'recedes'}: ${e.from} → ${e.to}.`;
+    case 'incursionResolved': return `<em>The ${esc(theme.terms.incursion.toLowerCase())} passes. ${esc(eventCardName(e.card))} is buried beneath the deck.</em>`;
+    case 'incursionReattack': return `<b>⚠ ${esc(theme.terms.invaders)} strike again</b> — strength ${e.strength}!`;
     case 'ordersSubmitted': return `${F(e.faction)} committed orders.`;
     case 'ordersRevealed': return `All orders revealed.`;
     case 'courierSwapped': return `${F(e.faction)} used the ${esc(theme.terms.tokenCourier)} at ${esc(rName(e.region))}.`;

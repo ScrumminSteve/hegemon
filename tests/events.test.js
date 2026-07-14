@@ -234,21 +234,28 @@ export const tests = [
     eq(s.phase, 'planning');
   }},
 
-  { name: 'the incursion card logs its pending milestone (M2.d)', fn() {
+  { name: 'the incursion card opens sealed bids at the current threat strength (Rules p.22)', fn() {
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     s = runRound(s);
-    ok(s.log.some(e => e.event === 'incursionPending' && e.trigger === 'card'));
-    eq(s.phase, 'planning', 'the round proceeds');
+    ok(s.log.some(e => e.event === 'incursionBegan' && e.trigger === 'card'));
+    const bids = s.pendingQueries.filter(x => x.type === 'invaderBid');
+    eq(bids.length, 6, 'all six factions bid');
+    eq(bids[0].strength, s.threat, 'attack at current threat strength');
+    eq(s.phase, 'event', 'the phase waits on the bids');
   }},
 
-  { name: 'reaching threat 12 flags an immediate incursion (Rules p.22)', fn() {
+  { name: 'reaching threat 12 triggers an immediate incursion before card effects (Rules p.22)', fn() {
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-banRaid' });
     s.threat = 11;
     s = runRound(s);
     eq(s.threat, 12);
-    ok(s.log.some(e => e.event === 'incursionPending' && e.trigger === 'threatMax'));
+    ok(s.log.some(e => e.event === 'incursionBegan' && e.trigger === 'threatMax'));
+    eq(s.pendingQueries.filter(x => x.type === 'invaderBid').length, 6);
+    // No revealed card has resolved yet: the incursion cuts the line.
+    ok(!s.log.some(e => e.event === 'eventNothing'), 'card effects wait');
+    ok(!s.roundFlags.bannedOrders, 'the ban has not landed yet');
   }},
 
   { name: 'a paused Event Phase survives serialization (architecture invariant)', fn() {

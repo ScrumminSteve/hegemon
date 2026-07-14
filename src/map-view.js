@@ -38,6 +38,20 @@ function iconRow(g, region, cx, cy) {
   });
 }
 
+/**
+ * A port's anchor: pinned to its LAND region's edge, nudged toward the sea.
+ * The raw land↔sea midpoint (the old formula) drifts far offshore when the sea
+ * region's center is distant — P01/P02 rendered nearer to the WRONG land hex.
+ * 62px = hex radius (46) + diamond clearance; the diamond visibly belongs to
+ * its harbor town. app.js posOf uses this same helper so units, taps, and
+ * overlays stay glued to the diamond.
+ */
+export function portAnchor(land, sea) {
+  const dx = sea.x - land.x, dy = sea.y - land.y;
+  const d = Math.hypot(dx, dy) || 1;
+  return { x: land.x + (dx / d) * 62, y: land.y + (dy / d) * 62 };
+}
+
 export function renderMap(svg, theme, { onSelect } = {}) {
   svg.innerHTML = '';
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -104,10 +118,9 @@ export function renderMap(svg, theme, { onSelect } = {}) {
     nodes.appendChild(g);
   }
 
-  // ports as diamonds on the land↔sea midpoint
+  // ports as diamonds pinned to their land region's seaward edge
   for (const p of PORTS) {
-    const A = pos[p.landId], B = pos[p.seaId];
-    const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+    const { x: mx, y: my } = portAnchor(pos[p.landId], pos[p.seaId]);
     const g = svgEl('g', { class: 'region port', 'data-id': p.id, tabindex: 0, role: 'button' });
     g.appendChild(svgEl('rect', { x: mx - 9, y: my - 9, width: 18, height: 18, class: 'shape port-diamond', transform: `rotate(45 ${mx} ${my})` }));
     g.addEventListener('click', () => onSelect?.(p.id));

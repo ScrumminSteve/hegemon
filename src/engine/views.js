@@ -46,6 +46,14 @@ export function viewFor(state, factionId) {
         [f, f === factionId ? mine : 'sealed']));
   }
 
+  // Incursion bids seal under the same law (Rules p.22).
+  if (v.eventPhase?.incursion?.phase === 'sealed') {
+    const mine = v.eventPhase.incursion.bids[factionId];
+    v.eventPhase.incursion.bids = Object.fromEntries(
+      Object.keys(v.eventPhase.incursion.bids).map(f =>
+        [f, f === factionId ? mine : 'sealed']));
+  }
+
   // A Courier peek reveals the card to the holder alone.
   for (const q of v.pendingQueries) {
     if (q.type === 'threatPeekPlacement' && q.faction !== factionId) delete q.card;
