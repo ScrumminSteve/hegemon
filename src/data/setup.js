@@ -14,6 +14,7 @@ export const SETUP = {
   threatTrackStart: 2,            // Rules p.4, setup step 2
   startingAuthority: 5,           // Rules p.5, setup step 11
   maxRounds: 10,
+  victoryTarget: 7,               // fortified seats to win instantly (Rules p.25)
   victoryTarget: 7,               // seats (fort/citadel areas) controlled
 
   // Army-size limits per supply position (board supply chart). Each entry is

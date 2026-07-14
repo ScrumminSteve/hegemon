@@ -151,7 +151,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
   (sea/port only, swept from land after the Courier step).
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
-- **M2.a** complete · **M2.b** complete · **M2.c** complete · **M2.d** complete (this drop).
+- **M2.a–M2.e complete — the base game is playable start to finish** (M2.e victory checks in this drop).
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -189,6 +189,27 @@ transcript-replay determinism check on an unrigged seed). Suite total: 186.
   (golden-tested since M2.a). If your physical track moves in steps of 2
   (positions 0/2/4…12), icons-to-attack and the −2 setback are half the
   board's pace. Self-consistent as built — flag only if you want board parity.
+
+## M2.e — Victory (this drop)
+
+`src/engine/victory.js` owns both endings (Rules p.25; FAQ v2.0): the INSTANT
+win — the moment a faction holds its 7th fortified seat during the Action
+Phase, checked inside the action cycler BEFORE the next order is dealt or
+clean-up can roll the round, gated to never fire mid-combat (embattled control
+is transient until casualties and retreat settle) — and the ROUNDS ending,
+where the final clean-up ranks the table by seats, then total land areas, then
+supply, then Initiative-track position (the pre-existing endGame, relocated
+and formalized). On gameOver: pendingQueries are voided, `applyAction` refuses
+further actions, `legalActions` returns [], and the log carries reason +
+standings + seat counts. Victory is now a **scenario dispatch**
+(`state.scenario.victory: 'seats'`, target via `SETUP.victoryTarget`), the
+seam where AFFC secret objectives or points variants land as new
+`VICTORY_MODES` entries — unknown modes fail loudly, no silent fallback.
+`landAreasControlled` moved to state.js beside `seatsControlled` (re-exported
+from actionPhase for compatibility). New suite: `tests/victory.test.js`
+(8 goldens: mid-round stop with orders left unresolved, the mid-combat gate,
+gameOver hygiene, the full tie-breaker cascade, dispatch failure, replay).
+Suite total: 194.
 
 ## M3 information-access contract (banked Jul 2026)
 

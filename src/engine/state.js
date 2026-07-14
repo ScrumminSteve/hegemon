@@ -129,7 +129,7 @@ export function createGame(seatCount = 6, opts = {}) {
     areaMods: {},        // improvement/degradation deltas per region (expansion seam)
     privateKnowledge: Object.fromEntries(active.map(f => [f, {}])), // earned secrets,
                          // merged into that faction's view ONLY (M3 AI parity seam)
-    scenario: { id: 'base', cardSet: 'base', eventDecks: ['I', 'II', 'III'],
+    scenario: { id: 'base', cardSet: 'base', victory: 'seats', eventDecks: ['I', 'II', 'III'],
                 victory: 'seats', maxRounds: SETUP.maxRounds }, // composition root (expansion seam)
     leaderHands: Object.fromEntries(active.map(f => [f, HAND_BY_FACTION[f].slice()])),
     leaderDiscards: Object.fromEntries(active.map(f => [f, []])),
@@ -169,6 +169,11 @@ export function controllerOf(state, rid) {
 /** Fort/citadel regions controlled — the victory metric (Rules p.16). */
 export function seatsControlled(state, fid) {
   return REGIONS.filter(r => r.kind === 'land' && r.muster > 0 && controllerOf(state, r.id) === fid).length;
+}
+
+/** Total land regions controlled — the first victory tie-breaker (FAQ v2.0). */
+export function landAreasControlled(state, fid) {
+  return REGIONS.filter(r => r.kind === 'land' && controllerOf(state, r.id) === fid).length;
 }
 
 export function serialize(state) {

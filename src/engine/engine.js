@@ -7,6 +7,7 @@ import { eventChoice, reconcileSupply, muster, bid, bidTieBreak } from './eventP
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
 import { chooseLeaderCard } from './cards.js';
+import { checkInstantVictory } from './victory.js';
 import { invaderBid, invaderTieBreak, incursionUnits, incursionTrack, incursionCard, incursionOption, incursionMusterSite } from './invaders.js';
 import { createGame, seatsControlled, serialize } from './state.js';
 
@@ -100,6 +101,7 @@ const HANDLERS = {
 };
 
 export function applyAction(state, action) {
+  if (state.phase === 'gameOver') throw new Error('The game is over — no further actions (Rules p.25)');
   const handler = HANDLERS[action.type];
   if (!handler) throw new Error(`Unknown action type: ${action.type}`);
 
@@ -107,6 +109,9 @@ export function applyAction(state, action) {
   const logStart = next.log.length;
   const stamp = { _round: next.round, _phase: next.phase }; // when the action was ISSUED
   handler(next, action);
+  // Instant victory (Rules p.25): checked once the action settles, never
+  // mid-combat — see victory.js for the gates.
+  checkInstantVictory(next);
   next.actionLog.push({ ...action, ...stamp }); // transcript: replayable, sliceable (M3.L)
   return { state: next, events: next.log.slice(logStart) };
 }
@@ -156,6 +161,7 @@ export function episodeRecord(state, meta = {}) {
  * order placement is combinatorial, so we describe the decision space.
  */
 export function legalActions(state, faction) {
+  if (state.phase === 'gameOver') return []; // nothing left to decide (Rules p.25)
   const out = [];
   for (const q of state.pendingQueries) {
     if (q.faction !== faction) continue;

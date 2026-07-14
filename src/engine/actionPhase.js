@@ -8,6 +8,7 @@ import { REGIONS, PORTS } from '../data/map.js';
 import { SETUP } from '../data/setup.js';
 import { beginPlanning } from './planning.js';
 import { beginEventPhase } from './eventPhase.js';
+import { endGameByRounds, checkInstantVictory } from './victory.js';
 import { initiateCombat } from './combat.js';
 
 const ADJ = adjacency();
@@ -86,6 +87,11 @@ export function beginActionPhase(state) {
 export function advanceAction(state) { advance(state); }
 
 function advance(state) {
+  // Instant victory (Rules p.25): the game ends the moment the 7th seat is
+  // held and the field is settled — BEFORE the cycler hands out the next
+  // order, and before clean-up can roll the round over. The gate itself
+  // declines mid-combat and outside the action phase (see victory.js).
+  if (checkInstantVictory(state)) return;
   const order = state.tracks.initiative;
   const c = state.actionCursor;
   while (c.stepIdx < STEPS.length) {
@@ -369,8 +375,8 @@ function cleanUp(state) {
   delete state.actionCursor;
   state.log.push({ round: state.round, event: 'cleanUp' });
 
-  if (state.round >= SETUP.maxRounds) {
-    endGame(state);
+  if (state.round >= (state.scenario.maxRounds ?? SETUP.maxRounds)) {
+    endGameByRounds(state); // final standings (Rules p.25) — see victory.js
     return;
   }
   state.round += 1;
@@ -378,23 +384,4 @@ function cleanUp(state) {
   beginEventPhase(state); // Event Phase precedes planning from round 2 (Rules p.7)
 }
 
-export function landAreasControlled(state, fid) {
-  let n = 0;
-  for (const r of REGIONS) {
-    if (r.kind === 'land' && controllerOf(state, r.id) === fid) n++;
-  }
-  return n;
-}
-
-function endGame(state) {
-  // Victory: seats; ties by total land areas, then Supply, then the
-  // Initiative track (FAQ v2.0 errata, superseding Rules p.16).
-  const ranked = state.factions.slice().sort((a, b) =>
-    (seatsControlled(state, b) - seatsControlled(state, a)) ||
-    (landAreasControlled(state, b) - landAreasControlled(state, a)) ||
-    (state.supply[b] - state.supply[a]) ||
-    (state.tracks.initiative.indexOf(a) - state.tracks.initiative.indexOf(b)));
-  state.phase = 'gameOver';
-  state.winner = ranked[0];
-  state.log.push({ round: state.round, event: 'gameOver', winner: state.winner });
-}
+export { landAreasControlled } from './state.js'; // moved to state.js in M2.e

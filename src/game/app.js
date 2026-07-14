@@ -14,6 +14,8 @@ import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOW
 import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
+import { SETUP } from '../data/setup.js';
+const SETUP_VICTORY_TARGET = SETUP.victoryTarget;
 
 const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
@@ -268,8 +270,10 @@ function renderTurnPanel() {
   if (!game) { panel.innerHTML = ''; return; }
 
   if (game.phase === 'gameOver') {
+    const over = game.log.find(e => e.event === 'gameOver');
     panel.innerHTML = `<div class="victory">👑 ${esc(fName(game.winner))} rules the realm
-      <span>(${seatsControlled(game, game.winner)} seats)</span></div>`;
+      <span>(${seatsControlled(game, game.winner)} seats · ${over?.reason === 'seats' ? 'instant victory' : 'won on standings, round ' + game.round})</span></div>` +
+      (over?.standings ? `<div class="hint">${over.standings.map((f, i) => `${i + 1}. ${fGlyph(f)} ${esc(fName(f))} (${over.seats?.[f] ?? 0})`).join(' · ')}</div>` : '');
     return;
   }
 
@@ -1124,7 +1128,7 @@ function logLine(e) {
     case 'cleanUp': return `— Round ${e.round} ends —`;
     case 'eventPhasePending': return `(${esc(theme.terms.eventPhase)} arrives in M2 — straight to planning.)`;
     case 'actionPhaseBegan': return `— The armies move —`;
-    case 'gameOver': return `👑 ${F(e.winner)} wins the game!`;
+    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the game ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
     default: return null;
   }
 }
