@@ -2,7 +2,7 @@
 // applyAction(state, action) -> { state, events }: pure with respect to its
 // inputs (the incoming state is never mutated), deterministic, serializable.
 
-import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
+import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderClasses, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
 import { eventChoice, reconcileSupply, muster, bid, bidTieBreak } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
@@ -11,7 +11,7 @@ import { checkInstantVictory } from './victory.js';
 import { invaderBid, invaderTieBreak, incursionUnits, incursionTrack, incursionCard, incursionOption, incursionMusterSite } from './invaders.js';
 import { createGame, seatsControlled, serialize } from './state.js';
 
-export { beginPlanning, beginActionPhase, orderableRegions, starLimit, ORDER_TOKENS };
+export { beginPlanning, beginActionPhase, orderClasses, orderableRegions, starLimit, ORDER_TOKENS };
 
 const HANDLERS = {
   submitOrders(state, action) {
@@ -133,10 +133,19 @@ export function stateHash(state) {
 }
 
 /** Flatten a finished (or in-flight) game into a learning episode record. */
+// Bumped whenever a fix CHANGES legal behavior (not just adds features), so
+// the M3 corpus can filter episodes recorded under superseded rules.
+// 2: m2e-fb3 — retreat-to-port family (squadron capacity, routed-first
+//    supply toll, routed-only order sweep). Episodes with rulesRevision < 2
+//    (or without the field) may contain over-capacity ports and garrison
+//    sacrifices that the current engine correctly forbids.
+export const RULES_REVISION = 2;
+
 export function episodeRecord(state, meta = {}) {
   return {
     schema: 'hegemon-episode/1',
     engine: state.version,
+    rulesRevision: RULES_REVISION,
     meta,               // free-form: { title, author, notes, tags: ['opener','F1'] }
     hash: stateHash(state),   // digest of the final state this transcript reaches
     config: state.config,

@@ -59,6 +59,43 @@ function passUntil(s, fid) {
 
 export const tests = [
 
+  { name: 'a split march reinforces support against a NEUTRAL force too — the prong lands before the assault tally (Rules p.28; owner repro Jul 2026)', fn() {
+    // Owner repro (m2e campaign): march from L19 sends cavalry into own L18
+    // (bearing S+1) and infantry into a neutral force at L17. The assault
+    // tally must count the arriving cavalry: 1 (inf) + support (1 order +
+    // 1 footman + 2 arriving cav) = 5 vs force 5 — legal only with the prong.
+    let s = createGame(6, { seed: 7 });
+    s.unitsByRegion['L19'] = [{ faction: 'F3', type: 'cavalry', routed: false },
+                              { faction: 'F3', type: 'infantry', routed: false }];
+    s.unitsByRegion['L18'] = [{ faction: 'F3', type: 'infantry', routed: false }];
+    delete s.unitsByRegion['L17'];
+    s.neutrals['L17'] = { strength: 5 };
+    beginPlanning(s);
+    const FILL = [D(1), D(1), SU(0), SU(0), CP(), CP(), M(-1), M(0)];
+    for (const fid of s.factions) {
+      const explicit = fid === 'F3' ? { L19: M(0), L18: SU(1) } : {};
+      const pool = FILL.filter(o => !(fid === 'F3' && ((o.type === 'march' && o.mod === 0) || (o.type === 'support' && o.mod === 1))));
+      const orders = { ...explicit };
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
+    }
+    s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
+    // Without the reinforcement prong the assault is short (1+2 < 5): rejected.
+    throws(() => act(s, { type: 'resolveMarch', faction: 'F3', region: 'L19', moves: [
+      { to: 'L17', units: { infantry: 1 } },
+    ] }), 'march may not be attempted');
+    // With the prong the same order succeeds — regardless of prong order in the array.
+    s = act(s, { type: 'resolveMarch', faction: 'F3', region: 'L19', moves: [
+      { to: 'L17', units: { infantry: 1 } },
+      { to: 'L18', units: { cavalry: 1 } },
+    ] });
+    ok(s.neutrals['L17'] === undefined, 'the neutral force falls');
+    const ev = s.log.find(e => e.event === 'neutralAssaultSupported');
+    eq(ev.support, 4, 'order 1 + standing footman 1 + arriving cavalry 2');
+    eq((s.unitsByRegion['L18'] || []).filter(u => u.faction === 'F3').length, 2, 'prong landed');
+    eq((s.unitsByRegion['L17'] || []).filter(u => u.faction === 'F3').length, 1, 'assault landed');
+  }},
+
   { name: 'a split march reinforces its own supporting territory in the SAME battle (FAQ: non-combat prongs first)', fn() {
     // Owner repro: one march, two prongs — cav+inf into the enemy at L17,
     // one inf into own L18 which bears the S+1 backing that very battle.
@@ -308,7 +345,13 @@ export const tests = [
     ok(rq.options.includes('L37'), 'and the ship-bridged home across S11');
     s = act(s, { type: 'retreat', faction: 'F1', to: 'L37' });
     const exiled = (s.unitsByRegion['L37'] || []).filter(u => u.faction === 'F6' && u.type === 'cavalry' && u.routed);
-    eq(exiled.length, 2, 'routed to the chosen exile (beside the home garrison)');
+    // Supply toll at the exile falls on the RETREATING army, never the
+    // standing garrison (Rules p.21) — one routed cavalry pays it.
+    eq(exiled.length, 1, 'routed to the chosen exile, less the supply toll');
+    ok(s.log.some(e => e.event === 'destroyedForSupply' && e.faction === 'F6' && e.routed === true),
+      'the toll came from the arrivals');
+    ok((s.unitsByRegion['L37'] || []).some(u => u.faction === 'F6' && !u.routed),
+      'the home garrison stands untouched');
     ok(!s.combat, 'combat closed');
   }},
 

@@ -11,7 +11,7 @@ import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor } from '../map-view.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
-import { applyAction, beginPlanning, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
+import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
@@ -212,9 +212,13 @@ function overlayHighlights(g) {
         style: `stroke:${fColor(focus)}; fill:${fColor(focus)}` }));
     }
   }
-  // #3 — while composing a march, ring the possible destinations; red = battle.
-  if (ui.mode === 'march' && ui.region && activeQ) {
-    const { peaceful, battle } = marchCandidates(activeQ.faction, ui.region);
+  // #3 — march projections (owner P2, Jul 2026): the green/red destination
+  // rings come up the moment a march step is in front of you — not only
+  // after entering composition. Red = a battle would begin there.
+  const marchRegion = (ui.mode === 'march' && ui.region) ? ui.region
+    : (activeQ?.type === 'resolveOrder' && activeQ.step === 'march') ? (ui.region || activeQ.regions[0]) : null;
+  if (marchRegion && activeQ) {
+    const { peaceful, battle } = marchCandidates(activeQ.faction, marchRegion);
     for (const rid of peaceful) {
       const { x, y } = posOf(rid);
       g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-target' }));
@@ -222,6 +226,34 @@ function overlayHighlights(g) {
     for (const rid of battle) {
       const { x, y } = posOf(rid);
       g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-battle' }));
+    }
+  }
+
+  // Raid resolution (owner P2): ring the raider and every reachable enemy order.
+  if (activeQ?.type === 'resolveOrder' && activeQ.step === 'raid') {
+    const src = ui.region || activeQ.regions[0];
+    const { x, y } = posOf(src);
+    g.appendChild(el('circle', { cx: x, cy: y, r: 50, class: 'ov-raider' }));
+    for (const rid of ADJ[src] || []) {
+      const o = game.ordersByRegion[rid];
+      if (o && o.faction !== activeQ.faction) {
+        const p = posOf(rid);
+        g.appendChild(el('circle', { cx: p.x, cy: p.y, r: 46, class: 'ov-battle' }));
+      }
+    }
+  }
+  // Battle presentation (owner P2): every participating territory reads at a
+  // glance — battlefield (pulsing ring exists below), the attacker's origin,
+  // and each declared supporter tinted by the side it backs.
+  if (game.combat) {
+    const c = game.combat;
+    const o = posOf(c.origin);
+    g.appendChild(el('circle', { cx: o.x, cy: o.y, r: 50, class: 'ov-origin',
+      style: `stroke:${fColor(c.attacker)}` }));
+    for (const sp of c.supports) {
+      const p = posOf(sp.region);
+      g.appendChild(el('circle', { cx: p.x, cy: p.y, r: 48, class: 'ov-support',
+        style: `stroke:${fColor(sp.side === 'attacker' ? c.attacker : c.defender)}` }));
     }
   }
 }
@@ -233,16 +265,22 @@ function overlayState(svg) {
 
   for (const [rid, units] of Object.entries(game.unitsByRegion)) {
     const { x, y } = posOf(rid);
+    const isPort = region(rid).kind === 'port';
     const step = 15, x0 = x - ((units.length - 1) * step) / 2;
-    units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - 32)));
+    // Port clusters hug the diamond so harbors read as occupied (owner P2).
+    units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - (isPort ? 19 : 32))));
   }
+  const staged = (ui.mode === 'planning' && ui.assignments) ? ui.assignments : null;
+  const stagedFor = staged ? game.pendingQueries[Math.min(ui.activeQuery ?? 0, game.pendingQueries.length - 1)]?.faction : null;
   for (const [rid, o] of Object.entries(game.ordersByRegion)) {
-    const { x, y } = posOf(rid);
-    const disc = el('circle', { cx: x - 34, cy: y - 10, r: 11, class: 'ov-order', style: `stroke:${fColor(o.faction)}` });
-    g.appendChild(disc);
-    const t = el('text', { x: x - 34, y: y - 5.5, class: 'ov-order-txt' });
-    t.textContent = orderName(o.type)[0] + (o.mod ? (o.mod > 0 ? '+' + o.mod : o.mod) : '') + (o.starred ? '★' : '');
-    g.appendChild(t);
+    if (staged && rid in staged) continue; // the live pick supersedes any committed badge
+    drawOrderBadge(g, rid, o, o.revealed ? 'ov-order' : 'ov-order-back');
+  }
+  if (staged) {
+    // Owner P2: see your picks land on the map as you assign them.
+    for (const [rid, o] of Object.entries(staged)) {
+      if (o) drawOrderBadge(g, rid, { ...o, faction: stagedFor, revealed: true }, 'ov-order ov-staged');
+    }
   }
   for (const [rid, gar] of Object.entries(game.garrisons)) {
     const { x, y } = posOf(rid);
@@ -267,6 +305,43 @@ function overlayState(svg) {
     g.appendChild(el('circle', { cx: x, cy: y, r: 54, class: 'ov-battle' }));
   }
   svg.appendChild(g);
+}
+
+/**
+ * One order badge. Committed face-down orders (planning secrecy, Rules p.12 —
+ * owner P1, Jul 2026) render as a blank token back: presence is public on the
+ * physical table, the face is not. Revealed orders get a labeled token with a
+ * full-name tooltip; staged picks render dashed (not yet committed).
+ */
+function drawOrderBadge(g, rid, o, cls) {
+  const { x, y } = posOf(rid);
+  const isPort = region(rid).kind === 'port';
+  const bx = isPort ? x : x - 34, by = isPort ? y + 16 : y - 19;
+  const back = cls.includes('ov-order-back');
+  const badge = el('rect', { x: bx - 15, y: by - 9, width: 30, height: 18, rx: 4,
+    class: cls, style: `stroke:${fColor(o.faction)}` });
+  const tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+  tip.textContent = back ? `${fName(o.faction)} — order placed (face-down)`
+    : `${fName(o.faction)} — ${orderName(o.type)}${o.mod ? (o.mod > 0 ? ' +' + o.mod : ' ' + o.mod) : ''}${o.starred ? ' ★' : ''}`;
+  badge.appendChild(tip);
+  g.appendChild(badge);
+  const t = el('text', { x: bx, y: by + 4, class: 'ov-order-txt' });
+  t.textContent = back ? '🂠'
+    : orderName(o.type)[0] + (o.mod ? (o.mod > 0 ? '+' + o.mod : o.mod) : '') + (o.starred ? '★' : '');
+  g.appendChild(t);
+}
+
+/** Scroll the map pane so a region sits centered (owner P2: panel → map sync). */
+function centerMap(rid) {
+  const pane = document.querySelector('.map-pane');
+  const svg = $('#map');
+  if (!pane || !svg) return;
+  const vb = svg.viewBox.baseVal;
+  const rect = svg.getBoundingClientRect();
+  const { x, y } = posOf(rid);
+  const sx = rect.width / vb.width, sy = rect.height / vb.height;
+  pane.scrollTo({ left: x * sx - pane.clientWidth / 2 + (rect.left + pane.scrollLeft - pane.getBoundingClientRect().left),
+    top: y * sy - pane.clientHeight / 2, behavior: 'smooth' });
 }
 
 // ---------- region taps feed the active form ----------
@@ -541,7 +616,11 @@ function musterForm(q) {
   const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
   const left = q.points - spent;
   const port = PORTS.find(pp => pp.landId === q.region);
-  const seas = [...(ADJ[q.region] || [])].filter(x => region(x).kind === 'maritime');
+  // Offer only destinations the engine will accept: seas holding another
+  // faction's ships are closed to mustering (Rules p.25 — owner P1, Jul 2026).
+  const seas = [...(ADJ[q.region] || [])].filter(x => region(x).kind === 'maritime'
+    && !(game.unitsByRegion[x] || []).some(u => u.faction !== q.faction));
+  const harborOpen = port && !(game.unitsByRegion[port.id] || []).some(u => u.faction !== q.faction);
   const hasInf = (game.unitsByRegion[q.region] || [])
     .filter(u => u.faction === q.faction && u.type === 'infantry' && !u.routed).length
     > staged.filter(b => b.type === 'upgrade').length;
@@ -556,7 +635,7 @@ function musterForm(q) {
     btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region })) +
     btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('cavalry'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'cavalry' }), hasInf) +
     btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('siege_engine'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'siege_engine' }), hasInf) +
-    (port ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
+    (port && harborOpen ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
     seas.map(sid => btn(`${esc(unitName('warship'))} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }))).join('') +
     (stagedRows ? `<div class="hint">Staged:</div>` + stagedRows : '') +
     `<button class="opt commit" data-mcommit>1 ${staged.length ? 'muster ' + staged.length + ' build(s)' : 'muster nothing (pass)'}</button>`
@@ -772,16 +851,22 @@ function planningForm(q) {
   const remaining = remainingTokens(poolBasis);
 
   let html = header(q, 'assign orders');
-  html += `<div class="star-budget">★ ${used.filter(o => o.starred).length}/${limit}</div><div class="order-rows">`;
+  html += `<div class="star-budget">★ ${used.filter(o => o.starred).length}/${limit}</div>
+    <div class="sec-label">Territories</div><div class="order-rows">`;
   for (const [rid, o] of Object.entries(ui.assignments)) {
     html += `<button class="order-row ${ui.awaitTokenFor === rid ? 'picking' : ''}" data-row="${rid}">
       <span>${esc(rName(rid))}</span><span class="tok">${o ? esc(tokenLabel(o)) : '—'}</span></button>`;
   }
   html += `</div>`;
   if (ui.awaitTokenFor) {
-    html += `<div class="token-grid">` + remaining.map((t, i) =>
-      `<button class="token" data-tok="${i}" ${t.starred && stars >= limit ? 'disabled' : ''}>
-        ${esc(tokenLabel(t))}</button>`).join('') + `</div>`;
+    const banned = game.roundFlags.bannedOrders || [];
+    html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div><div class="token-grid">` + remaining.map((t, i) => {
+      const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
+      return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
+        ${ban ? `title="forbidden this round (event card)"` : ''}>
+        ${esc(tokenLabel(t))}${ban ? ' ⃠' : ''}</button>`;
+    }).join('') + `</div>`;
+    if (banned.length) html += `<div class="hint">Event decree: ${banned.map(esc).join(', ')} orders are forbidden this round.</div>`;
   }
   const complete = Object.values(ui.assignments).every(Boolean);
   html += `<button class="primary" id="do-submit" ${complete ? '' : 'disabled'}>Commit orders</button>`;
@@ -814,7 +899,11 @@ function courierForm(q) {
     } else {
       const used = mine.filter(([rid]) => rid !== ui.swapRegion).map(([, o]) => o);
       html += `<p class="hint">New order for ${esc(rName(ui.swapRegion))}:</p><div class="token-grid">` +
-        remainingTokens(used).map((t, i) => `<button class="token" data-swapt="${i}">${esc(tokenLabel(t))}</button>`).join('') + `</div>`;
+        remainingTokens(used).map((t, i) => {
+          const banned = game.roundFlags.bannedOrders || [];
+          const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
+          return `<button class="token" data-swapt="${i}" ${ban ? 'disabled title="forbidden this round (event card)"' : ''}>${esc(tokenLabel(t))}${ban ? ' ⃠' : ''}</button>`;
+        }).join('') + `</div>`;
     }
     html += `<button data-swapback>← back</button>`;
   } else {
@@ -910,7 +999,11 @@ function battleBanner() {
     <div class="battle-side" style="border-color:${fColor(c.attacker)}">${fGlyph(c.attacker)} ${esc(fName(c.attacker))}<b>${s.attacker}</b></div>
     <div class="battle-vs">⚔ ${esc(rName(c.region))}</div>
     <div class="battle-side" style="border-color:${fColor(c.defender)}">${fGlyph(c.defender)} ${esc(fName(c.defender))}<b>${s.defender}</b></div>
-  </div>` + battleCards(c);
+  </div>` + battleCards(c) +
+    `<div class="hint">⚔ Battle for <b>${esc(rName(c.region))}</b> — ${fGlyph(c.attacker)} marching from ${esc(rName(c.origin))}.` +
+    (c.supports.length ? `<br>Backing: ${c.supports.map(sp =>
+      `${esc(rName(sp.region))} (${fGlyph(sp.faction)} → ${sp.side === 'attacker' ? fGlyph(c.attacker) : fGlyph(c.defender)})`).join(' · ')}` : '') +
+    `</div>`;
 }
 
 function battleCards(c) {
@@ -924,9 +1017,11 @@ function battleCards(c) {
 }
 
 function supportForm(q) {
+  const c = game.combat;
+  const who = f => q.faction === f ? 'yourself' : fName(f);
   return battleBanner() + header(q, `support from ${rName(q.region)}`) + `<div class="btn-col">
-    <button data-support="attacker">Back the attacker</button>
-    <button data-support="defender">Back the defender</button>
+    <button data-support="attacker">Back the attacker — ${fGlyph(c.attacker)} ${esc(who(c.attacker))}</button>
+    <button data-support="defender">Back the defender — ${fGlyph(c.defender)} ${esc(who(c.defender))}</button>
     <button data-support="refuse" class="ghost">Refuse</button></div>`;
 }
 
@@ -1059,6 +1154,7 @@ function bindForm(panel, q) {
     dispatch({ type: 'submitOrders', faction: q.faction, orders: ui.assignments }));
 
   panel.querySelectorAll('[data-row]').forEach(b => b.addEventListener('click', () => {
+    centerMap(b.dataset.row);
     ui.awaitTokenFor = b.dataset.row; renderTurnPanel();
   }));
   panel.querySelectorAll('[data-tok]').forEach(b => b.addEventListener('click', () => {
@@ -1314,13 +1410,26 @@ function render() {
   const sl = $('#seed-line');
   if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
-  $('#status-line').textContent = `Round ${game.round} of 10 · ${phaseNames[game.phase] || game.phase} · ${theme.terms.threat || 'Threat'} ${game.threat ?? 0}/12 · ` +
-    game.factions.slice().sort((a, b) =>
+  $('#status-line').textContent = `Round ${game.round} of ${game.scenario.maxRounds ?? 10} · ${phaseNames[game.phase] || game.phase}`;
+  // P2 (owner, Jul 2026): threat and standings get their own strips instead
+  // of riding in the round/phase sentence.
+  const vit = $('#vitals-panel');
+  if (vit) {
+    const t = game.threat ?? 0;
+    const board = game.factions.slice().sort((a, b) =>
       (seatsControlled(game, b) - seatsControlled(game, a)) ||
       (landAreasControlled(game, b) - landAreasControlled(game, a)) ||
       (game.supply[b] - game.supply[a]) ||
-      (game.tracks.initiative.indexOf(a) - game.tracks.initiative.indexOf(b))
-    ).map(f => `${fGlyph(f)}${seatsControlled(game, f)}`).join(' ');
+      (game.tracks.initiative.indexOf(a) - game.tracks.initiative.indexOf(b)));
+    vit.innerHTML = `
+      <div class="vital-row" title="${esc(theme.terms.threat || 'Threat')} — incursion at 12">
+        <span class="vital-name">${esc(theme.terms.threat || 'Threat')}</span>
+        <span class="threat-meter"><span class="threat-fill${t >= 10 ? ' hot' : ''}" style="width:${(t / 12) * 100}%"></span></span>
+        <span class="vital-num">${t}/12</span></div>
+      <div class="vital-row" title="standings: seats · land · supply · initiative (Rules p.25)">
+        <span class="vital-name">Standing</span>
+        <span class="board-row">${board.map((f, i) => `<span class="board-seat" style="border-color:${fColor(f)}" title="${esc(fName(f))} — ${seatsControlled(game, f)} seats">${i === 0 ? '👑' : ''}${fGlyph(f)}</span>`).join('')}</span></div>`;
+  }
 }
 
 // ---------- chrome ----------

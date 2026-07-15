@@ -39,6 +39,20 @@ function stage({ plants = {}, strip = [], orders = {} }, seed = 5) {
   return applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' }).state;
 }
 
+/** Benignly resolve preceding orders until fid's march at rid is queued. */
+function driveToMarch(s, fid, rid) {
+  for (let i = 0; i < 40; i++) {
+    const q = s.pendingQueries.find(x => x.type === 'resolveOrder');
+    if (!q) break;
+    if (q.step === 'march' && q.faction === fid && q.regions.includes(rid)) return s;
+    const r0 = q.regions[0];
+    if (q.step === 'rally') s = applyAction(s, { type: 'resolveRally', faction: q.faction, region: r0 }).state;
+    else if (q.step === 'raid') s = applyAction(s, { type: 'resolveRaid', faction: q.faction, region: r0, target: null }).state;
+    else s = applyAction(s, { type: 'resolveMarch', faction: q.faction, region: r0, moves: [] }).state;
+  }
+  throw new Error(`${fid}'s march at ${rid} never came up`);
+}
+
 // F1 (K+F at L01) attacks F3 infantry planted at L07.
 function l07Scenario(defUnits = [['F3', 'infantry'], ['F3', 'infantry']]) {
   return stage({
@@ -48,6 +62,72 @@ function l07Scenario(defUnits = [['F3', 'infantry'], ['F3', 'infantry']]) {
 }
 
 export const tests = [
+
+  // ---------- retreat-to-port supply & order hygiene (owner P1 repro, Jul 2026) ----------
+  { name: 'a retreat that breaks supply sheds the ROUTED arrivals — never the healthy harbor garrison or its order (Rules p.21; owner repro)', fn() {
+    let s = stage({
+      plants: {
+        L21: [['F3', 'infantry']],                       // owns the harbor town
+        P07: [['F3', 'warship']],                        // the healthy occupant
+        S04: [['F3', 'warship'], ['F3', 'warship']],     // the doomed defenders
+        S12: [['F1', 'warship'], ['F1', 'warship'], ['F1', 'warship']],
+      },
+      orders: { F1: { S12: M(0) }, F3: { P07: D(1) } },  // the port bears an order
+    });
+    s.supply.F3 = 0;                                     // a 3-ship port army cannot stand
+    s = driveToMarch(s, 'F1', 'S12');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F1', region: 'S12',
+      moves: [{ to: 'S04', units: { warship: 3 } }] }).state;
+    const q = s.pendingQueries.find(x => x.type === 'retreat' && x.faction === 'F3');
+    ok(q && q.options.includes('P07'), 'the whole squadron fits the harbor (1+2 = cap)');
+    s = applyAction(s, { type: 'retreat', faction: 'F3', to: 'P07' }).state;
+    const shed = s.log.filter(e => e.event === 'destroyedForSupply' && e.faction === 'F3');
+    eq(shed.length, 1, 'one ship pays the supply toll');
+    ok(shed[0].routed === true && shed[0].unit === 'warship', 'and it is a routed arrival');
+    const harbor = s.unitsByRegion['P07'].filter(u => u.faction === 'F3');
+    eq(harbor.length, 2);
+    ok(harbor.some(u => !u.routed), 'the healthy occupant still stands');
+    ok(s.ordersByRegion['P07'] && s.ordersByRegion['P07'].type === 'defend', 'its order survives with it');
+  }},
+
+  { name: 'a harbor left with only routed wrecks cannot hold an order — it is swept at combat end (FAQ v2.0; owner repro)', fn() {
+    let s = stage({
+      plants: {
+        L21: [['F3', 'infantry']],
+        P07: [['F3', 'warship']],
+        S04: [['F3', 'warship'], ['F3', 'warship']],
+        S12: [['F1', 'warship'], ['F1', 'warship'], ['F1', 'warship']],
+      },
+      orders: { F1: { S12: M(0) }, F3: { P07: D(1) } },
+    });
+    s.unitsByRegion['P07'][0].routed = true;             // the occupant is already a wreck
+    s.supply.F3 = 0;
+    s = driveToMarch(s, 'F1', 'S12');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F1', region: 'S12',
+      moves: [{ to: 'S04', units: { warship: 3 } }] }).state;
+    s = applyAction(s, { type: 'retreat', faction: 'F3', to: 'P07' }).state;
+    ok(s.unitsByRegion['P07'].every(u => u.routed), 'only wrecks remain in the harbor');
+    ok(!s.ordersByRegion['P07'], 'routed units cannot execute orders: the order is gone');
+    ok(s.log.some(e => e.event === 'orderSwept' && e.region === 'P07'), 'and the Chronicle says so');
+  }},
+
+  { name: 'a port is no retreat when the whole squadron cannot fit the 3-ship cap (Rules p.25)', fn() {
+    let s = stage({
+      plants: {
+        L21: [['F3', 'infantry']],
+        P07: [['F3', 'warship'], ['F3', 'warship']],     // two already moored
+        S04: [['F3', 'warship'], ['F3', 'warship']],     // two would arrive: 4 > 3
+        S12: [['F1', 'warship'], ['F1', 'warship'], ['F1', 'warship']],
+      },
+      orders: { F1: { S12: M(0) } },
+    });
+    s = driveToMarch(s, 'F1', 'S12');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F1', region: 'S12',
+      moves: [{ to: 'S04', units: { warship: 3 } }] }).state;
+    const q = s.pendingQueries.find(x => x.type === 'retreat' && x.faction === 'F3');
+    ok(q, 'a retreat is owed');
+    ok(!q.options.includes('P07'), 'the crowded harbor is not among the options');
+  }},
 
   { name: 'a contested march initiates combat: attackers lifted from the origin (Rules p.15, p.17)', fn() {
     const s = l07Scenario();

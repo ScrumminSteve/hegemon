@@ -57,7 +57,19 @@ export function renderMap(svg, theme, { onSelect } = {}) {
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const pos = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 
-  // chart graticule
+  // M2.f.2 — painted theme canvas. The art is composited by
+  // tools/build-map.py FROM this same map data, so anchors align by
+  // construction: the image spans the compositor's exact working window.
+  const canvas = theme.visuals?.canvas;
+  svg.classList.toggle('has-canvas', !!canvas);
+  if (canvas) {
+    const img = svgEl('image', { x: canvas.x, y: canvas.y, width: canvas.w, height: canvas.h });
+    img.setAttribute('href', canvas.background);
+    img.setAttribute('preserveAspectRatio', 'none');
+    svg.appendChild(img);
+  }
+
+  // chart graticule (vector themes only; ghosted over art)
   const grid = svgEl('g', { class: 'graticule' });
   for (let x = 100; x < W; x += 100) grid.appendChild(svgEl('line', { x1: x, y1: 0, x2: x, y2: H }));
   for (let y = 100; y < H; y += 100) grid.appendChild(svgEl('line', { x1: 0, y1: y, x2: W, y2: y }));
@@ -79,6 +91,10 @@ export function renderMap(svg, theme, { onSelect } = {}) {
 
   const nodes = svgEl('g', { class: 'nodes' });
   svg.appendChild(nodes);
+  // All names live in a dedicated layer appended LAST (owner P2, Jul 2026):
+  // text always paints above diamonds, seals, and unit clusters.
+  const labels = svgEl('g', { class: 'labels' });
+  const labelQueue = [];
 
   for (const r of REGIONS) {
     const g = svgEl('g', { class: `region ${r.kind}`, 'data-id': r.id, tabindex: 0, role: 'button' });
@@ -92,9 +108,17 @@ export function renderMap(svg, theme, { onSelect } = {}) {
       const poly = svgEl('polygon', { points: hexPath(r.x, r.y, 46), class: 'shape land-hex' });
       if (home) poly.style.stroke = home.color;
       g.appendChild(poly);
+      if (r.muster > 0) {
+        // Interim fortified marker (owner request, Jul 2026): a second inner
+        // ring makes muster-value regions readable at a glance in every
+        // theme. Replaced by themed castle/citadel icons in M2.f.3.
+        g.appendChild(svgEl('polygon', { points: hexPath(r.x, r.y, 39), class: 'hex-fort' }));
+      }
       if (home) {
-        g.appendChild(svgEl('circle', { cx: r.x, cy: r.y - 16, r: 13, class: 'home-seal', style: `fill:${home.color}` }));
-        const glyph = svgEl('text', { x: r.x, y: r.y - 11.5, class: 'home-glyph' });
+        // Grander seat seal (owner P2, Jul 2026): larger disc, ceremonial ring.
+        g.appendChild(svgEl('circle', { cx: r.x, cy: r.y - 15, r: 20, class: 'home-ring', style: `stroke:${home.color}` }));
+        g.appendChild(svgEl('circle', { cx: r.x, cy: r.y - 15, r: 16.5, class: 'home-seal', style: `fill:${home.color}` }));
+        const glyph = svgEl('text', { x: r.x, y: r.y - 9, class: 'home-glyph' });
         glyph.textContent = theme.factions[r.home]?.glyph || '●';
         g.appendChild(glyph);
       }
@@ -103,7 +127,7 @@ export function renderMap(svg, theme, { onSelect } = {}) {
 
     const label = svgEl('text', { x: r.x, y: r.y + (r.kind === 'maritime' ? 58 : 66), class: 'label' });
     label.textContent = name;
-    g.appendChild(label);
+    labelQueue.push(label);
 
     const idTag = svgEl('text', { x: r.x, y: r.y + (r.kind === 'maritime' ? 4 : (r.home ? 34 : 24)), class: 'idtag' });
     idTag.textContent = r.id;
@@ -117,12 +141,17 @@ export function renderMap(svg, theme, { onSelect } = {}) {
     g.addEventListener('blur', () => highlight(svg, r.id, false));
     nodes.appendChild(g);
   }
+  for (const l of labelQueue) labels.appendChild(l);
+  svg.appendChild(labels);
 
   // ports as diamonds pinned to their land region's seaward edge
   for (const p of PORTS) {
     const { x: mx, y: my } = portAnchor(pos[p.landId], pos[p.seaId]);
     const g = svgEl('g', { class: 'region port', 'data-id': p.id, tabindex: 0, role: 'button' });
-    g.appendChild(svgEl('rect', { x: mx - 9, y: my - 9, width: 18, height: 18, class: 'shape port-diamond', transform: `rotate(45 ${mx} ${my})` }));
+    g.appendChild(svgEl('rect', { x: mx - 12, y: my - 12, width: 24, height: 24, class: 'shape port-diamond', transform: `rotate(45 ${mx} ${my})` }));
+    const pl = svgEl('text', { x: mx, y: my + 3.5, class: 'port-mark' });
+    pl.textContent = '⚓';
+    g.appendChild(pl);
     g.addEventListener('click', () => onSelect?.(p.id));
     g.addEventListener('mouseenter', () => highlight(svg, p.id, true));
     g.addEventListener('mouseleave', () => highlight(svg, p.id, false));

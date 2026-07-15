@@ -152,7 +152,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
-- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2 map pipeline · f.3 iconography · f.4 mobile & polish.
+- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport/calibration · f.3 iconography · f.4 mobile & polish.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -223,6 +223,12 @@ mode for campaign grinding. Phases: f.0 tokens → f.1 stage → f.2 map pipelin
 (art integration, anchor calibration tool, pan/zoom) → f.3 iconography
 (per-theme unit/token symbol sets) → f.4 mobile & polish.
 
+**f.3 scope additions (owner, m2e feedback):** theme-specific distinguishable
+icons for castles vs strongholds (interim: a neutral inner ring on all
+fortified regions shipped with the m2e-feedback drop), theme-specific supply
+and influence icons (panel + map icon rows currently use generic glyphs), and
+theme-specific port marks (the diamond is generic).
+
 **f.0 — Presentation contract + design tokens (shipped).** Theme packs grow a
 `visuals` block: a 9-key palette written 1:1 onto the CSS custom-property
 space (`applyThemeVisuals`), a `texture` keying per-theme chrome weaves
@@ -245,6 +251,43 @@ hand, discard, authority, supply, seats, and the threat, for mid-decision
 reference. Quiet toggle suppresses batch cards (Chronicle keeps everything);
 minimize/quiet/batch state survives `ui` resets, and undo advances the
 presentation watermark so the rewound past never re-stages. Suite total: 195.
+
+## M2.f.2a — Map compositor (this drop)
+
+**Geometry from code, materials from art.** `tools/build-map.py` renders both
+theme maps FROM map.js (via tools/dump-map.mjs): a machine-verified landmass
+(every land anchor on land, every sea anchor on ocean-connected water, one
+mainland, graph-derived islands — L22/L35/L37 — separated, every harbor on a
+coast, no enclosed lakes; the build FAILS if any check fails), painted with
+the owner's six MJ swatches (`assets/art-src/`), biome washes zoned by
+per-region Voronoi with noise-warped boundaries, terrain stamps cut from the
+owner's sheet and scattered per-biome with a keep-clear radius around all 58
+game anchors, waterline rings, coast ink, relief, vignette. Deterministic
+(seeded numpy noise): same inputs, same pixels. Outputs
+`assets/map-asoiaf.webp` (431 KB) and a fully procedural
+`assets/map-2026.webp` (68 KB, carbon/topo — no art sources needed) under a
+600 KB/theme budget. **Biome authoring:** `tools/map-config.json` — the
+terrain table was seeded from the latitude+noise default on first build;
+edit any region's biome and re-run to repaint. Theme `visuals.canvas`
+carries the placement contract ({background,x,y,w,h} in map units — golden
+enforced); map-view renders the art under the graph, and over art the region
+shapes become tap halos (invisible until hover/tap) while seals, forts,
+ports, icon rows, unit clusters, order badges, and top-layer labels ride
+above. Core theme stays vector by design (reference/debug skin).
+**Remaining f.2b:** pan/pinch-zoom viewport; anchor micro-calibration tool;
+sea-shoal repeat break-up; optional drier rock swatch + second stamp sheet
+(only 4 mountain / 5 hill stamps survived extraction).
+
+## AWAITING OWNER — threat-track granularity (from episode audit)
+
+Icon counting is verified perfect (episode r1–r4: 6/6 icons, zero missed,
+zero phantom). But the engine steps +1 strength per icon while the physical
+board moves one SPACE (= +2) on a 7-space track — the invader subsystem runs
+at half pressure (owner's round-6 11/12 with an icon-lucky 9 draws; a
+threat-max attack is near-impossible in 10 rounds). Pending owner's two
+board checks: (1) seven spaces 0/2/4…12? (2) invader-victory setback = 2
+SPACES (−4)? On confirmation: advanceThreat +2, setback −4, golden updates,
+RULES_REVISION → 3.
 
 ## M3 information-access contract (banked Jul 2026)
 
@@ -326,6 +369,73 @@ alongside the seed.
 
 ## P1 queue (stored, fix next engine session)
 *(empty)*
+
+- ~~[P1] Retreat-to-port destroyed the healthy occupant; stale order lingered~~
+  **FIXED (m2e feedback 3):** owner repro — two beaten ships retreated into a
+  1-ship port; the 3-ship port army broke supply and `destroyForSupply`
+  destroyed the FIRST warship found: the healthy pre-existing occupant, whose
+  march order then lingered over a routed-only garrison. Three fixes:
+  (1) retreat supply losses now come from the ROUTED arrivals first — Rules
+  p.21 puts the toll on the retreating army, never the standing garrison;
+  (2) the combat-end order sweep now removes orders in areas holding only
+  ROUTED units of the ordering faction (FAQ: routed units cannot execute
+  orders); (3) found in review: port-retreat legality now requires the WHOLE
+  arriving squadron to fit the 3-ship cap (2 moored + 2 arriving = 4 was
+  offered before). destroyedForSupply log now carries unit type + routed
+  flag. One pre-existing golden (Robb-class directed retreat) encoded the
+  buggy garrison-sacrifice behavior and was corrected to the rule. Three new
+  goldens. Suite: 199.
+- **[P2, banked]** Retreat supply destruction is auto-resolved routed-first
+  by type priority; the rulebook grants the owner the CHOICE of which
+  retreating units die. Upgrade to a chooseCasualties-style query (touches
+  the retreatLosses probe used by victor-directed retreats).
+- **[owner-audit]** Engine counts port stacks (2+ ships) as armies against
+  supply — this is what triggered the repro. FAQ recollection says correct;
+  confirm on your rulebook. If ports are exempt, the fix is one filter in
+  armiesOf and the repro becomes moot.
+
+- ~~[P1] Opposing orders visible during planning~~ **FIXED (m2e feedback 2):**
+  committed-but-unrevealed orders (`revealed: false`) now render as blank
+  token BACKS on the map — presence public (as on the physical table), face
+  hidden until the reveal. The acting seat's in-progress picks render as
+  dashed live badges (which also delivered "see my orders land on the map as
+  I assign"). NOTE for M3.c: table mode still trusts the operator; mixed
+  human/bot seats must route the whole overlay through viewFor.
+- **m2e feedback batch 2 (all P2, shipped):** support buttons name who you'd
+  back ("yourself" included); planning panel split into labeled Territories /
+  Orders sections with distinct chrome; territory rows recenter the map (map
+  taps already opened rows); labels moved to a top paint layer with an ink
+  halo — no icon ever covers text again; seat seals enlarged with a
+  ceremonial ring; port diamonds enlarged with an anchor mark, harbor unit
+  clusters hug the diamond, port order badges sit below it; march green/red
+  destination rings now appear the moment a march step is active (not only
+  in composition); raid resolution rings the raider and every reachable
+  enemy order; battles ring the battlefield, the attacker's origin (dashed,
+  attacker color), and each declared supporter (tinted by backed side), and
+  the battle banner names the field, the origin, and every backing
+  territory.
+- **[graphics → banked to f.3]:** proper order-token graphics (per-theme
+  token faces instead of letter badges). Interim shipped: larger labeled
+  token rects with full-name tooltips.
+
+- ~~Split-march support vs NEUTRAL forces~~ **FIXED (m2e feedback):** the
+  combat path landed prongs before battle (golden since m2.c), but the
+  neutral-assault path tallied support during the hostility scan, BEFORE
+  prongs applied — a same-march reinforcement never counted (owner repro:
+  London → Brussels-neutral + Normandy-support). resolveMarch now counts this
+  march's own prong units destined for the supporting territory. New golden
+  proves the assault is rejected without the prong and legal with it.
+- ~~Muster offered enemy-held seas~~ **FIXED (m2e feedback):** engine always
+  rejected these (Rules p.25 golden in place); the muster form now filters
+  destination options to what the engine will accept — enemy-occupied seas
+  and enemy-held harbors are never offered.
+- ~~Banned orders selectable in planning~~ **FIXED (m2e feedback):** engine
+  always rejected on submit (and on courier swap, which re-validates the full
+  post-swap set); the planning palette and the courier swap grid now disable
+  banned-class tokens with a ⃠ mark and a decree notice.
+- ~~[P2] Crisis index / leaderboard bundled with round + phase~~ **FIXED:**
+  the status line keeps round · phase; threat gets its own meter row (red
+  above 10) and standings its own strip in a new vitals panel.
 
 - ~~Muster upgrade offers only one path~~ **SHIPPED (m2.c):** engine accepts
   `{ type: 'upgrade', to: 'cavalry' | 'siege_engine' }` (default 'cavalry' for

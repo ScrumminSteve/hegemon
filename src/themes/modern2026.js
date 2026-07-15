@@ -15,7 +15,8 @@ export const THEME_2026 = {
       accent: '#5FAECD', text: '#D4DAE0', textDim: '#8b98a3',
       hair: 'rgba(212, 218, 224, 0.14)',
     },
-    canvas: null,
+    // Rendered by tools/build-map.py from map.js — anchors align by construction.
+    canvas: { background: 'assets/map-2026.webp', x: -25, y: -47, w: 1101, h: 1707 },
     unitIcons: null,
   },
   terms: {

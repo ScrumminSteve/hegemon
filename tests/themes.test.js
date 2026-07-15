@@ -12,6 +12,17 @@ const PACKS = { asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 
 export const tests = [
 
+  { name: 'a theme canvas, when present, carries the full placement contract (M2.f.2)', fn() {
+    for (const [id, pack] of Object.entries({ core: THEME_CORE, ...PACKS })) {
+      const cv = pack.visuals?.canvas;
+      if (!cv) continue; // vector themes are fine
+      for (const k of ['background', 'x', 'y', 'w', 'h']) {
+        ok(cv[k] !== undefined, `${id} canvas.${k} — a partial canvas would misplace every anchor`);
+      }
+      ok(typeof cv.background === 'string' && cv.background.endsWith('.webp'), `${id} canvas points at a webp asset`);
+    }
+  }},
+
   { name: 'every theme ships a complete visuals contract (M2.f.0 palette space)', fn() {
     const PALETTE_KEYS = ['ink', 'ink2', 'sea', 'slate', 'slate2', 'accent', 'text', 'textDim', 'hair'];
     for (const [id, pack] of Object.entries({ core: THEME_CORE, ...PACKS })) {

@@ -244,6 +244,9 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
       // no combat occurs, so the support is tallied without a declaration step.
       // Other players' support would require the accept/decline protocol
       // (known gap) and is not counted.
+      // Units this SAME march is moving into the supporting territory count
+      // too: non-combat prongs land before the assault resolves (FAQ — same
+      // ruling as the combat path, owner repro Jul 2026).
       let supportVal = 0;
       const destKind = region(mv.to).kind;
       for (const nb of adjacency()[mv.to] || []) {
@@ -254,6 +257,12 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
         let val = so.mod;
         for (const u of (state.unitsByRegion[nb] || [])) {
           if (u.faction === fid && !u.routed) val += unitStrength(u, { fortified: false });
+        }
+        for (const mv2 of moves) { // reinforcement prongs of this very march
+          if (mv2 === mv || mv2.to !== nb) continue;
+          for (const [t, n] of Object.entries(mv2.units)) {
+            val += unitStrength({ type: t }, { fortified: false }) * n;
+          }
         }
         supportVal += val;
       }

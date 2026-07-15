@@ -576,7 +576,8 @@ function concludeCombat(state) {
     // ship-transport-connected land (FAQ v2.0).
     if (c.retreatChooser && c.retreatChooser === c.defender) {
       const attackerNaval = c.attackingUnits.every(u => u.type === 'warship');
-      const opts = new Set(legalRetreats(state, c.attacker, c.region, null, attackerNaval));
+      const attackerArriving = c.attackingUnits.filter(u => u.type !== 'siege_engine' && !u.routed).length;
+      const opts = new Set(legalRetreats(state, c.attacker, c.region, null, attackerNaval, Math.max(1, attackerArriving)));
       const originOwner0 = controllerOf(state, c.origin);
       if (!originOwner0 || originOwner0 === c.attacker) opts.add(c.origin);
       opts.delete(c.region);
@@ -616,8 +617,9 @@ function concludeCombat(state) {
 
 // ---------- retreats (Rules p.21) ----------
 
-export function legalRetreats(state, fid, from, attackOrigin, navalOverride = null) {
+export function legalRetreats(state, fid, from, attackOrigin, navalOverride = null, incoming = null) {
   const retreating = (state.unitsByRegion[from] || []).filter(u => u.faction === fid);
+  const arriving = incoming ?? Math.max(1, retreating.filter(u => u.type !== 'siege_engine' && !u.routed).length);
   // Beaten attackers are off-board (held in combat state): callers directing
   // their retreat must say what is retreating rather than trust the region.
   const naval = navalOverride ?? (retreating.length > 0 && retreating.every(u => u.type === 'warship'));
@@ -637,7 +639,7 @@ export function legalRetreats(state, fid, from, attackOrigin, navalOverride = nu
       if (controllerOf(state, pdef.landId) !== fid) continue;   // must own the harbor
       const occupants = state.unitsByRegion[pdef.id] || [];
       if (occupants.some(u => u.faction !== fid)) continue;
-      if (occupants.length >= PORT_CAPACITY) continue;          // 3-ship cap (Rules p.25)
+      if (occupants.length + arriving > PORT_CAPACITY) continue; // the WHOLE squadron must fit the 3-ship cap (Rules p.25)
       out.push(pdef.id);
     }
   }
@@ -709,14 +711,18 @@ export function retreatLosses(state, fid, to) {
 }
 
 function destroyForSupply(state, fid, at) {
+  // ROUTED units are shed first (owner P1 repro, Jul 2026): a retreat that
+  // breaks supply must not kill the healthy garrison so its own wrecks can
+  // stay. Within each pass, the usual expendability order applies.
   const order = ['infantry', 'warship', 'cavalry', 'siege_engine'];
   for (let guard = 0; guard < 12; guard++) {
     try { checkSupply(state, fid); return; } catch {
       const units = state.unitsByRegion[at] || [];
-      const idx = order.map(t => units.findIndex(u => u.faction === fid && u.type === t)).find(i => i !== -1);
+      let idx = order.map(t => units.findIndex(u => u.faction === fid && u.type === t && u.routed)).find(i => i !== -1);
+      if (idx === undefined) idx = order.map(t => units.findIndex(u => u.faction === fid && u.type === t)).find(i => i !== -1);
       if (idx === undefined) return;
-      units.splice(idx, 1);
-      state.log.push({ round: state.round, event: 'destroyedForSupply', faction: fid, region: at });
+      const [gone] = units.splice(idx, 1);
+      state.log.push({ round: state.round, event: 'destroyedForSupply', faction: fid, region: at, unit: gone.type, routed: !!gone.routed });
     }
   }
 }
@@ -821,9 +827,12 @@ function endCombat(state) {
     c.afterCombatDone = true;
   }
   delete state.combat;
-  // Combat cleanup: order tokens in areas without units are removed (FAQ v2.0 errata).
+  // Combat cleanup: order tokens in areas without UN-ROUTED units of the
+  // ordering faction are removed — routed units cannot execute orders
+  // (FAQ v2.0; owner P1 repro Jul 2026: a stale march on a port garrisoned
+  // only by retreated wrecks).
   for (const [rid, o] of Object.entries(state.ordersByRegion)) {
-    if (!(state.unitsByRegion[rid] || []).some(u => u.faction === o.faction)) {
+    if (!(state.unitsByRegion[rid] || []).some(u => u.faction === o.faction && !u.routed)) {
       delete state.ordersByRegion[rid];
       state.log.push({ round: state.round, event: 'orderSwept', region: rid, faction: o.faction });
     }
