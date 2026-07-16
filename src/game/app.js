@@ -11,6 +11,11 @@ import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
 import { ICON_SETS } from '../icons.js';
+
+// Bumped every delivered drop; shown beside the seed so a stale deploy or a
+// cached module is visible at a glance (owner finding, Jul 2026: an entire
+// icon milestone was invisible — cache vs code was undiagnosable remotely).
+export const BUILD_ID = 'm2f3b';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -175,12 +180,23 @@ function marchCandidates(fid, from) {
       if (r.kind === 'land' && r.id !== from && transportReachable(game, fid, from, r.id)) cand.add(r.id);
     }
   }
-  const myPort = PORTS.find(pp => pp.seaId === from);
-  if (hasShips && myPort && controllerOf(game, myPort.landId) === fid) cand.add(myPort.id);
   for (const rid of cand) {
     const r = region(rid);
     if (r.kind === 'land' && !hasLand) continue;
     if (r.kind === 'maritime' && !hasShips) continue;
+    if (r.kind === 'port') {
+      // Owner finding (Jul 2026): symmetric adjacency now surfaces EVERY
+      // port of the sea (the old .find() offered only the first). A port is
+      // only ever a peaceful destination: own harbor, entered from its sea,
+      // with a berth free (Rules p.25) — the validator enforces exact counts.
+      if (!hasShips) continue;
+      const pdef = PORTS.find(pp => pp.id === rid);
+      if (!pdef || pdef.seaId !== from) continue;
+      if (controllerOf(game, pdef.landId) !== fid) continue;
+      if ((game.unitsByRegion[rid] || []).length >= 3) continue;
+      out.peaceful.push(rid);
+      continue;
+    }
     const n = game.neutrals?.[rid];
     if (n?.insurmountable) continue;
     const there = game.unitsByRegion[rid] || [];
@@ -219,13 +235,14 @@ function overlayHighlights(g) {
     : (activeQ?.type === 'resolveOrder' && activeQ.step === 'march') ? (ui.region || activeQ.regions[0]) : null;
   if (marchRegion && activeQ) {
     const { peaceful, battle } = marchCandidates(activeQ.faction, marchRegion);
+    const ringR = rid => region(rid).kind === 'port' ? 22 : 46;
     for (const rid of peaceful) {
       const { x, y } = posOf(rid);
-      g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-target' }));
+      g.appendChild(el('circle', { cx: x, cy: y, r: ringR(rid), class: 'ov-target' }));
     }
     for (const rid of battle) {
       const { x, y } = posOf(rid);
-      g.appendChild(el('circle', { cx: x, cy: y, r: 46, class: 'ov-battle' }));
+      g.appendChild(el('circle', { cx: x, cy: y, r: ringR(rid), class: 'ov-battle' }));
     }
   }
 
@@ -1419,7 +1436,7 @@ function render() {
   renderLog();
   renderInspector();
   const sl = $('#seed-line');
-  if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'}`;
+  if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'} · build ${BUILD_ID}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
   $('#status-line').textContent = `Round ${game.round} of ${game.scenario.maxRounds ?? 10} · ${phaseNames[game.phase] || game.phase}`;
   // P2 (owner, Jul 2026): threat and standings get their own strips instead

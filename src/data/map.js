@@ -109,6 +109,7 @@ export const EDGES = [
   ['S06','L21'], ['S06','L25'], ['S06','L27'], ['S06','L28'],
   ['S07','L25'], ['S07','L30'], ['S07','L32'], ['S07','L34'],
   ['S08','L30'], ['S08','L31'], ['S08','L32'], ['S08','L35'],
+  ['S07','L35'], // owner finding Jul 2026: Bordeaux borders The Mediterranean
   ['S09','L06'], ['S09','L34'],
   ['S10','L14'], ['S10','L34'], ['S10','L36'],
   ['S11','L06'], ['S11','L08'], ['S11','L10'], ['S11','L14'], ['S11','L37'],
@@ -124,6 +125,13 @@ export function buildAdjacency() {
   const adj = {};
   for (const r of [...REGIONS, ...PORTS]) adj[r.id] = new Set();
   for (const [a, b] of EDGES) { adj[a].add(b); adj[b].add(a); }
-  for (const p of PORTS) { adj[p.id].add(p.landId); adj[p.id].add(p.seaId); }
+  for (const p of PORTS) {
+    // SYMMETRIC (owner finding, Jul 2026): the sea and land must know their
+    // port too — the one-way version silently hid every sea->port march and
+    // kept harbor support orders out of sea battles (combat's port-support
+    // guard existed but could never fire).
+    adj[p.id].add(p.landId); adj[p.id].add(p.seaId);
+    adj[p.landId].add(p.id); adj[p.seaId].add(p.id);
+  }
   return adj;
 }

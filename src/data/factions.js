@@ -4,7 +4,7 @@
 
 export const FACTIONS = [
   { id: 'F1', homeRegionId: 'L01', color: '#8FA8B8', seatCount: 3 },
-  { id: 'F2', homeRegionId: 'L36', color: '#C9A227', seatCount: 3 },
+  { id: 'F2', homeRegionId: 'L36', color: '#C22B3A', seatCount: 3 }, // crimson (owner: old gold collided with hex strokes)
   { id: 'F3', homeRegionId: 'L22', color: '#E3C34C', seatCount: 3 },
   { id: 'F4', homeRegionId: 'L30', color: '#6FA05C', seatCount: 5 },
   { id: 'F5', homeRegionId: 'L28', color: '#C96A2B', seatCount: 6 },

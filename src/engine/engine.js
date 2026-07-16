@@ -144,7 +144,12 @@ export function stateHash(state) {
 //    sets the token back two spaces (-4). Episodes with rulesRevision < 3
 //    ran the invader subsystem at half pressure: threat trajectories and
 //    incursion strengths are systematically low.
-export const RULES_REVISION = 3;
+// 4: harbor adjacency made symmetric (owner finding Jul 2026) — sea->port
+//    marches are now reachable, harbor support orders now back adjacent sea
+//    battles, march-in respects the 3-ship cap, and Bordeaux (L35) borders
+//    The Mediterranean (S07). Episodes < 4 were played on a board where
+//    none of those moves existed.
+export const RULES_REVISION = 4;
 
 export function episodeRecord(state, meta = {}) {
   return {

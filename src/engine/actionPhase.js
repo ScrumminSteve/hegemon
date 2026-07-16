@@ -229,7 +229,7 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
     if (enemyUnits || enemyGarrison) {
       hostile += 1;
       combatMove = mv;
-      validateDestination(state, fid, rid, mv.to, new Set(Object.keys(mv.units)));
+      validateDestination(state, fid, rid, mv.to, new Set(Object.keys(mv.units)), Object.values(mv.units).reduce((a, b) => a + b, 0));
       continue;
     }
     if (neutral) {
@@ -271,7 +271,7 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
       }
       if (supportVal) state.log.push({ round: state.round, event: 'neutralAssaultSupported', faction: fid, region: mv.to, support: supportVal });
     }
-    validateDestination(state, fid, rid, mv.to, new Set(Object.keys(mv.units)));
+    validateDestination(state, fid, rid, mv.to, new Set(Object.keys(mv.units)), Object.values(mv.units).reduce((a, b) => a + b, 0));
   }
   if (hostile > 1) throw new Error('Only one march destination may be contested (Rules p.15)');
 

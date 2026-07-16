@@ -1,4 +1,46 @@
 {
+  "barriers": [
+    {
+      "a": "L04",
+      "b": "L02",
+      "type": "river"
+    },
+    {
+      "a": "L09",
+      "b": "L15",
+      "type": "river"
+    },
+    {
+      "a": "L10",
+      "b": "L15",
+      "type": "river"
+    },
+    {
+      "a": "L05",
+      "b": "L11",
+      "type": "mountains"
+    },
+    {
+      "a": "L12",
+      "b": "L15",
+      "type": "mountains"
+    },
+    {
+      "a": "L13",
+      "b": "L18",
+      "type": "mountains"
+    },
+    {
+      "a": "L25",
+      "b": "L33",
+      "type": "mountains"
+    },
+    {
+      "a": "L25",
+      "b": "L32",
+      "type": "mountains"
+    }
+  ],
   "seed": 42,
   "terrain": {
     "L01": "tundra",

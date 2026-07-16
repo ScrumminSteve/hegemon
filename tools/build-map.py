@@ -257,6 +257,92 @@ def scatter(out, mask_img, zones, icons, plan, seed=9):
             if rng.random() < 0.5: im = ImageOps.mirror(im)
             out.alpha_composite(im, (int(x - im.width / 2), int(y - im.height)))
 
+# ---------- barriers (owner request, Jul 2026) ----------
+# Terrain that EXPLAINS non-adjacency: visually-close territories that do not
+# share an edge get a mountain chain or a river across the corridor between
+# their anchors. Geometry from tools/map-config.json; verified non-adjacent
+# at build time — a barrier between adjacent regions would be a lie.
+def barrier_geometry(a, b):
+    ax, ay = P(*pos[a]); bx, by = P(*pos[b])
+    mx, my = (ax + bx) / 2, (ay + by) / 2
+    dx, dy = bx - ax, by - ay
+    n = math.hypot(dx, dy) or 1
+    px, py = -dy / n, dx / n                      # perpendicular: the wall line
+    L = min(max(n * 0.55, 120 * S), 300 * S) / 2
+    return mx, my, px, py, L
+
+def check_barriers():
+    adj = {tuple(sorted(e)) for e in map(tuple, edges)}
+    for bar in cfg.get('barriers', []):
+        assert tuple(sorted((bar['a'], bar['b']))) not in adj,             f"barrier {bar['a']}|{bar['b']}: regions ARE adjacent — remove the barrier or the edge"
+        assert bar['a'] in pos and bar['b'] in pos, f"barrier names unknown region: {bar}"
+
+def river_layer(mask_img, style):
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(layer)
+    rng = np.random.default_rng(31)
+    for bar in cfg.get('barriers', []):
+        if bar['type'] != 'river': continue
+        mx, my, px, py, L = barrier_geometry(bar['a'], bar['b'])
+        dx, dy = py, -px                          # along-flow direction for the wiggle
+        pts = []
+        steps = max(8, int(L / (9 * S)))
+        for i in range(-steps, steps + 1):
+            t = i / steps * L
+            wig = math.sin(i * 0.9) * 7 * S + float(rng.uniform(-2.5, 2.5)) * S
+            pts.append((mx + px * t + dx * wig, my + py * t + dy * wig))
+        for width, col in style:
+            ld.line(pts, fill=col, width=int(width * S), joint='curve')
+    # rivers exist on LAND only
+    layer.putalpha(ImageChops.multiply(layer.getchannel('A'), mask_img))
+    return layer
+
+def mountain_barriers_stamps(out, mask_img, icons):
+    rng = np.random.default_rng(37)
+    mp = mask_img.load()
+    srcs = icons.get('mountain', []) or icons.get('hill', [])
+    if not srcs: return
+    for bar in cfg.get('barriers', []):
+        if bar['type'] != 'mountains': continue
+        mx, my, px, py, L = barrier_geometry(bar['a'], bar['b'])
+        # Dense, larger, slightly staggered: the chain must read as a WALL,
+        # not blend into the ambient scatter — it encodes "not adjacent".
+        n_st = max(5, int(L / (12 * S)))
+        placed = []
+        for i in range(-n_st, n_st + 1):
+            t = i / n_st * L * 0.95
+            stag = (8 if i % 2 else -8)
+            x = mx + px * t + (stag + float(rng.uniform(-4, 4))) * S * 0.4
+            y = my + py * t + (stag + float(rng.uniform(-4, 4))) * S * 0.4
+            if not (0 <= x < W and 0 <= y < H) or mp[int(x), int(y)] == 0: continue
+            placed.append((x, y))
+        for (x, y) in sorted(placed, key=lambda q: q[1]):
+            src = srcs[int(rng.integers(0, len(srcs)))]
+            sc = float(rng.uniform(0.36, 0.52))
+            im = ImageEnhance.Brightness(ImageEnhance.Color(src).enhance(0.72)).enhance(0.97)
+            im = im.resize((max(6, int(src.width * sc)), max(6, int(src.height * sc))), Image.LANCZOS)
+            if rng.random() < 0.5: im = ImageOps.mirror(im)
+            out.alpha_composite(im, (int(x - im.width / 2), int(y - im.height)))
+
+def mountain_barriers_ridges(out, mask_img):
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(layer)
+    rng = np.random.default_rng(37)
+    mp = mask_img.load()
+    for bar in cfg.get('barriers', []):
+        if bar['type'] != 'mountains': continue
+        mx, my, px, py, L = barrier_geometry(bar['a'], bar['b'])
+        n_st = max(5, int(L / (13 * S)))
+        for i in range(-n_st, n_st + 1):
+            t = i / n_st * L * 0.92
+            x = mx + px * t + float(rng.uniform(-5, 5)) * S
+            y = my + py * t + float(rng.uniform(-5, 5)) * S
+            if not (0 <= x < W and 0 <= y < H) or mp[int(x), int(y)] == 0: continue
+            w = float(rng.uniform(8, 12)) * S; h = w * 0.62
+            ld.line([(x - w / 2, y), (x, y - h), (x + w / 2, y)],
+                    fill=(150, 158, 166, 235), width=int(2.1 * S), joint='curve')
+    out.alpha_composite(layer)
+
 # ---------- shared finish ----------
 def coast_and_vignette(out, m, ink_rgb, vig_rgb):
     coast = ImageChops.subtract(m.filter(ImageFilter.MaxFilter(5)), m.filter(ImageFilter.MinFilter(5))).filter(ImageFilter.GaussianBlur(1.2))
@@ -313,6 +399,8 @@ def render_asoiaf(m, zones, icons):
         (['pine', 'tree'], 'forest', 150, 0.22, 0.36, 17),
         (['hill', 'tree'], 'hills', 34, 0.3, 0.45, 26),
         (['pine'], 'tundra', 16, 0.18, 0.28, 30)])
+    out.alpha_composite(river_layer(m, [(7.5, (46, 38, 24, 255)), (4.2, (58, 74, 84, 255)), (2.0, (96, 120, 128, 255))]))
+    mountain_barriers_stamps(out, m, icons)
     return coast_and_vignette(out.convert('RGB'), m, (58, 46, 30), (34, 30, 22))
 
 def render_2026(m, zones):
@@ -329,8 +417,10 @@ def render_2026(m, zones):
     sea = ImageOps.colorize(octave_noise(W, H, [(240, .5), (60, .25)], seed=3), black=(7, 10, 13), white=(17, 24, 30), mid=(11, 16, 21))
     glow = waterline(m, [64, 40, 24, 12, 6])
     sea = Image.composite(ImageOps.colorize(Image.new('L', (W, H), 255), black=(0, 0, 0), white=(95, 174, 205)), sea, glow.point(lambda v: min(v, 44)))
-    out = Image.composite(land, sea, m)
-    return coast_and_vignette(out, m, (95, 174, 205), (10, 12, 14))
+    out = Image.composite(land, sea, m).convert('RGBA')
+    out.alpha_composite(river_layer(m, [(7, (5, 8, 11, 255)), (3.8, (38, 74, 96, 255)), (1.8, (95, 174, 205, 220))]))
+    mountain_barriers_ridges(out, m)
+    return coast_and_vignette(out.convert('RGB'), m, (95, 174, 205), (10, 12, 14))
 
 # ---------- run ----------
 mask = build_mask()
@@ -338,6 +428,7 @@ fails = verify(mask)
 if fails:
     print('GEOMETRY FAILS:', '; '.join(fails)); sys.exit(1)
 print(f'geometry verified: {len(land_ids)} land ({len(islands)} islands), {len(sea_ids)} seas, {len(ports)} harbors')
+check_barriers()
 zones = biome_masks_for(mask)
 icons = extract_stamps()
 print('stamps:', {k: len(v) for k, v in icons.items()})

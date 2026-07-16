@@ -274,6 +274,39 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
+**m2f-fb5 — owner findings batch (Jul 2026):**
+- **[P1-grade, engine] Harbor adjacency was one-way** — ports knew their sea
+  and land, but never the reverse. Consequences fixed: sea->port marches now
+  exist (offered per-port — the old UI workaround surfaced only the FIRST
+  port of a sea, so S04's second harbor was invisible); harbor support
+  orders now back adjacent sea battles (combat's port-support guard existed
+  but could never fire); march-in enforces the 3-ship cap (muster and
+  retreat had it; march didn't). Three goldens + a symmetry invariant.
+  RULES_REVISION → 4.
+- **Owner map ruling:** Bordeaux (L35) borders The Mediterranean (S07) —
+  edge added, locked by golden.
+- **Routed edges:** long routes (821px sea lanes!) no longer slice through
+  unrelated territories — any edge passing within 42px of a foreign anchor
+  takes perpendicular waypoints pushed away from each offender and renders
+  as a smoothed curve, like printed-board sea lanes. Pure rendering; anchor
+  data untouched. (Owner may still reposition sea anchors as data edits —
+  the art rebuilds automatically.)
+- **F2 is crimson** (#C22B3A): the old gold collided with hex strokes AND
+  with F3's brighter gold.
+- **Barriers** (owner list): terrain that EXPLAINS non-adjacency, rendered
+  on BOTH painted maps from tools/map-config.json `barriers` — rivers
+  (White Harbor|Karhold; Twins|Harrenhal and Seagard|Harrenhal fork like a
+  proper Trident) and wall-grade mountain chains (Widow's Watch|Fingers,
+  Mountains of the Moon|Harrenhal, Eyrie|Crackclaw, Starfall|Dornish
+  Marches, Starfall|Three Towers). Build-time check refuses a barrier
+  between regions that ARE adjacent. 2026 renders ridges/cold rivers
+  procedurally.
+- **Build stamp:** the seed line now reads `seed N · build m2f3b`. An owner
+  spent a session unable to tell cache from code — never again. Bump
+  BUILD_ID in src/game/app.js every drop.
+- **Port destination rings:** march projections ring reachable harbors
+  (tight 22px ring hugging the diamond); ports are only ever green.
+
 **f.3 — iconography (shipped):** `src/icons.js` holds three complete symbol
 sets under ONE stable id namespace (#i-unit-infantry, #i-fort-citadel,
 #i-ord-march…) — `injectIcons()` swaps the <defs> per theme and no caller

@@ -214,15 +214,59 @@ export function renderMap(svg, theme, { onSelect } = {}) {
 
   // edges
   const edges = svgEl('g', { class: 'edges' });
-  for (const [a, b] of EDGES) {
+  // Routed edges (owner finding, Jul 2026): long routes — sea lanes
+  // especially — used to slice straight through unrelated territories.
+  // Any edge passing near a foreign anchor now takes waypoints pushed
+  // perpendicular, AWAY from each offender: curved sea lanes around
+  // landmasses, exactly like a printed board. Pure rendering; data untouched.
+  const CLEAR_EDGE = 42;
+  function routedPoints(a, b) {
     const A = pos[a], B = pos[b];
-    if (!A || !B) continue;
+    const dx = B.x - A.x, dy = B.y - A.y;
+    const len2 = dx * dx + dy * dy || 1;
+    const way = [];
+    for (const r of REGIONS) {
+      if (r.id === a || r.id === b) continue;
+      const t = Math.max(0.08, Math.min(0.92, ((r.x - A.x) * dx + (r.y - A.y) * dy) / len2));
+      const px2 = A.x + t * dx, py2 = A.y + t * dy;
+      const d = Math.hypot(r.x - px2, r.y - py2);
+      if (d >= CLEAR_EDGE) continue;
+      const nx = px2 - r.x, ny = py2 - r.y;
+      const n = Math.hypot(nx, ny) || 1;
+      const push = 58 + (CLEAR_EDGE - d);
+      way.push({ t, x: r.x + (nx / n) * push, y: r.y + (ny / n) * push });
+    }
+    way.sort((u, v) => u.t - v.t);
+    // merge waypoints that crowd each other
+    const merged = [];
+    for (const w of way) {
+      const last = merged[merged.length - 1];
+      if (last && Math.hypot(w.x - last.x, w.y - last.y) < 46) {
+        last.x = (last.x + w.x) / 2; last.y = (last.y + w.y) / 2;
+      } else merged.push(w);
+    }
+    return [{ x: A.x, y: A.y }, ...merged, { x: B.x, y: B.y }];
+  }
+  for (const [a, b] of EDGES) {
+    if (!pos[a] || !pos[b]) continue;
     const sea = a.startsWith('S') || b.startsWith('S');
-    edges.appendChild(svgEl('line', {
-      x1: A.x, y1: A.y, x2: B.x, y2: B.y,
-      class: sea ? 'edge edge-sea' : 'edge edge-land',
-      'data-a': a, 'data-b': b,
-    }));
+    const pts = routedPoints(a, b);
+    const cls = sea ? 'edge edge-sea' : 'edge edge-land';
+    if (pts.length === 2) {
+      edges.appendChild(svgEl('line', {
+        x1: pts[0].x, y1: pts[0].y, x2: pts[1].x, y2: pts[1].y,
+        class: cls, 'data-a': a, 'data-b': b,
+      }));
+    } else {
+      // smooth through the waypoints with quadratic midpoint curves
+      let d = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 1; i < pts.length - 1; i++) {
+        const mx2 = (pts[i].x + pts[i + 1].x) / 2, my2 = (pts[i].y + pts[i + 1].y) / 2;
+        d += ` Q ${pts[i].x} ${pts[i].y} ${mx2} ${my2}`;
+      }
+      d += ` L ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
+      edges.appendChild(svgEl('path', { d, class: cls, fill: 'none', 'data-a': a, 'data-b': b }));
+    }
   }
   svg.appendChild(edges);
 

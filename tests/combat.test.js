@@ -5,6 +5,7 @@ import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { combatStrengths, legalRetreats } from '../src/engine/combat.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
+import { PORTS, EDGES, buildAdjacency } from '../src/data/map.js';
 
 const M  = (mod = 0) => ({ type: 'march', mod, starred: mod === 1 });
 const D  = (mod = 1) => ({ type: 'defend', mod, starred: mod === 2 });
@@ -62,6 +63,49 @@ function l07Scenario(defUnits = [['F3', 'infantry'], ['F3', 'infantry']]) {
 }
 
 export const tests = [
+
+  // ---------- harbors in the adjacency web (owner finding, Jul 2026) ----------
+  { name: 'adjacency is symmetric: every sea and land knows its harbor (the one-way version hid all sea->port marches)', fn() {
+    const adj = buildAdjacency();
+    for (const p of PORTS) {
+      ok(adj[p.seaId].has(p.id), `${p.seaId} lists ${p.id}`);
+      ok(adj[p.landId].has(p.id), `${p.landId} lists ${p.id}`);
+    }
+    ok(EDGES.some(([a, b]) => (a === 'S07' && b === 'L35') || (a === 'L35' && b === 'S07')),
+      'Bordeaux borders The Mediterranean (owner map ruling)');
+  }},
+
+  { name: 'ships may march from the sea into their own harbor (Rules p.25)', fn() {
+    let s = stage({
+      plants: {
+        L21: [['F3', 'infantry']],                    // owns the harbor town
+        S04: [['F3', 'warship'], ['F3', 'warship']],
+      },
+      orders: { F3: { S04: M(0) } },
+    });
+    s = driveToMarch(s, 'F3', 'S04');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F3', region: 'S04',
+      moves: [{ to: 'P07', units: { warship: 2 } }] }).state;
+    eq((s.unitsByRegion['P07'] || []).filter(u => u.faction === 'F3').length, 2, 'both ships moor');
+    ok(!s.combat, 'entering your own harbor is never a battle');
+  }},
+
+  { name: 'the harbor cap holds on the march too: never a fourth ship (Rules p.25)', fn() {
+    let s = stage({
+      plants: {
+        L21: [['F3', 'infantry']],
+        P07: [['F3', 'warship'], ['F3', 'warship']],  // two already moored
+        S04: [['F3', 'warship'], ['F3', 'warship']],
+      },
+      orders: { F3: { S04: M(0) } },
+    });
+    s = driveToMarch(s, 'F3', 'S04');
+    throws(() => applyAction(s, { type: 'resolveMarch', faction: 'F3', region: 'S04',
+      moves: [{ to: 'P07', units: { warship: 2 } }] }), 'cannot moor');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F3', region: 'S04',
+      moves: [{ to: 'P07', units: { warship: 1 } }] }).state;
+    eq((s.unitsByRegion['P07'] || []).length, 3, 'exactly to the cap');
+  }},
 
   // ---------- retreat-to-port supply & order hygiene (owner P1 repro, Jul 2026) ----------
   { name: 'a retreat that breaks supply sheds the ROUTED arrivals — never the healthy harbor garrison or its order (Rules p.21; owner repro)', fn() {
