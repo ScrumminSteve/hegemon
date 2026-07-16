@@ -382,8 +382,8 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 /* ---------- M2.f.3 — iconography ---------- */
 .ic-fort { color: var(--brass); pointer-events: none; }
 .ic-port { color: var(--brass); pointer-events: none; }
-.ic-supply { color: var(--bone-dim); pointer-events: none; }
-.ic-coin { color: var(--brass); pointer-events: none; }
+.ic-supply { color: #9A6B3F; pointer-events: none; } /* wood (owner, Jul 2026) */
+.ic-coin { color: #FFD34D; pointer-events: none; } /* bright yellow POWER (owner, Jul 2026) */
 .unit-ic { pointer-events: none; }
 .tok { fill: var(--ink-2); stroke-width: 2; }
 .ov-order-back.tok { fill: var(--slate-2, #1c2430); opacity: 0.92; }

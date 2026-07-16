@@ -39,6 +39,18 @@
       "a": "L25",
       "b": "L32",
       "type": "mountains"
+    },
+    {
+      "a": "L03",
+      "b": "L06",
+      "mouth": "S01",
+      "type": "river"
+    },
+    {
+      "a": "L03",
+      "b": "L08",
+      "mouth": "S01",
+      "type": "river"
     }
   ],
   "seed": 42,

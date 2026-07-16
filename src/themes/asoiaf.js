@@ -16,7 +16,7 @@ export const THEME_ASOIAF = {
       hair: 'rgba(232, 220, 196, 0.16)',
     },
     // Rendered by tools/build-map.py from map.js — anchors align by construction.
-    canvas: { background: 'assets/map-asoiaf.webp', x: -25, y: -47, w: 1101, h: 1707 },
+    canvas: { background: 'assets/map-asoiaf.webp', x: -48, y: -47, w: 1124, h: 1745 },
     unitIcons: 'asoiaf', // M2.f.3 symbol set (src/icons.js)
   },
   terms: {

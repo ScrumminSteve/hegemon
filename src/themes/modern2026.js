@@ -16,7 +16,7 @@ export const THEME_2026 = {
       hair: 'rgba(212, 218, 224, 0.14)',
     },
     // Rendered by tools/build-map.py from map.js — anchors align by construction.
-    canvas: { background: 'assets/map-2026.webp', x: -25, y: -47, w: 1101, h: 1707 },
+    canvas: { background: 'assets/map-2026.webp', x: -48, y: -47, w: 1124, h: 1745 },
     unitIcons: 'modern2026', // M2.f.3 symbol set (src/icons.js)
   },
   terms: {
@@ -91,22 +91,22 @@ export const THEME_2026 = {
   },
   regions: {
     // Russia (the North)
-    L01: 'Moscow',            L02: 'Murmansk',           L03: 'Karelia',
-    L04: 'St. Petersburg',    L05: 'Arkhangelsk',        L06: 'Kaliningrad',
-    L07: 'Belarus',           L08: 'The Pripet Marshes', L09: 'Warsaw',
-    L10: 'Gdańsk',            L11: 'Denmark',            L12: 'The Alps',
-    L13: 'Switzerland',       L14: 'Prague',             L15: 'Vienna',
-    L16: 'Frankfurt',         L17: 'The Rhineland',      L18: 'The Netherlands',
+    L01: 'Moscow',            L02: 'Murmansk',           L03: 'Helsinki',
+    L04: 'St. Petersburg',    L05: 'Tallinn',        L06: 'Stockholm',
+    L07: 'Belarus',           L08: 'Copenhagen', L09: 'Warsaw',
+    L10: 'Kyiv',            L11: 'Riga',            L12: 'The Alps',
+    L13: 'Geneva',       L14: 'Prague',             L15: 'Vienna',
+    L16: 'Frankfurt',         L17: 'The Rhineland',      L18: 'Amsterdam',
     L19: 'Brussels',          L20: 'Normandy',           L21: 'Dover',
     L22: 'London',            L23: 'The Caucasus',       L24: 'The Zagros Pass',
-    L25: 'Shiraz',            L26: 'Isfahan',            L27: 'Bandar Abbas',
+    L25: 'Rome',            L26: 'Baghdad',            L27: 'Cairo',
     L28: 'Tehran',            L29: 'The Loire Valley',   L30: 'Paris',
     L31: 'Marseille',         L32: 'Toulouse',           L33: 'Anatolia',
-    L34: 'Brittany',          L35: 'Bordeaux',           L36: 'Berlin',
-    L37: 'Oslo',              L38: 'Svalbard',
+    L34: 'Brittany',          L35: 'Tunis',           L36: 'Berlin',
+    L37: 'Oslo',              L38: 'Hammerfest',
     S01: 'The Barents Sea',   S02: 'The Baltic Sea',     S03: 'The North Sea',
-    S04: 'The English Channel', S05: 'The Caspian Sea',  S06: 'The Persian Gulf',
+    S04: 'The Pacific', S05: 'The Persian Gulf',  S06: 'The Red Sea',
     S07: 'The Mediterranean', S08: 'The Gulf of Lion',   S09: 'The Atlantic',
-    S10: 'The German Bight',  S11: 'The Skagerrak',      S12: 'The Frisian Coast',
+    S10: 'The German Bight',  S11: 'The Skagerrak',      S12: 'The English Channel',
   },
 };

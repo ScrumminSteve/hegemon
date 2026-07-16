@@ -15,7 +15,7 @@ import { ICON_SETS } from '../icons.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm2f3c';
+export const BUILD_ID = 'm2f3d';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -299,10 +299,14 @@ function overlayState(svg) {
       if (o) drawOrderBadge(g, rid, { ...o, faction: stagedFor, revealed: true }, 'ov-order ov-staged');
     }
   }
+  // Defense badges live bottom-LEFT (owner overlap finding, Jul 2026): the
+  // old top-right spot collided with the new castle marks and unit rows;
+  // bottom-center belongs to the control marker. (x-30, y+33) threads every
+  // lane: order badge above-left, icon row inboard, label below, marker center.
   for (const [rid, gar] of Object.entries(game.garrisons)) {
     const { x, y } = posOf(rid);
-    g.appendChild(el('circle', { cx: x + 30, cy: y - 30, r: 10, class: 'ov-garrison', style: `stroke:${fColor(gar.faction)}` }));
-    const t = el('text', { x: x + 30, y: y - 25.5, class: 'ov-num' }); t.textContent = gar.strength; g.appendChild(t);
+    g.appendChild(el('circle', { cx: x - 30, cy: y + 33, r: 10, class: 'ov-garrison', style: `stroke:${fColor(gar.faction)}` }));
+    const t = el('text', { x: x - 30, y: y + 37.5, class: 'ov-num' }); t.textContent = gar.strength; g.appendChild(t);
   }
   // Setup defense bonuses only: one badge per neutral force, styled like the
   // seat garrisons (same size, same numerals), gray ring for "no owner".
@@ -356,6 +360,17 @@ function drawOrderBadge(g, rid, o, cls) {
     const t = el('text', { x: bx + 13, y: by + 3.5, class: 'ov-order-mod' });
     t.textContent = (o.mod ? (o.mod > 0 ? '+' + o.mod : String(o.mod)) : '') + (o.starred ? '★' : '');
     g.appendChild(t);
+  }
+}
+
+/** Castle/citadel marks take the controller's color, brass when unowned
+    (owner request, Jul 2026 — "like units"). Runs each render: control moves. */
+function tintForts() {
+  for (const rg of document.querySelectorAll('#map .region[data-id]')) {
+    const u = rg.querySelector('use.ic-fort');
+    if (!u) continue;
+    const c = controllerOf(game, rg.dataset.id);
+    u.style.color = c ? fColor(c) : 'var(--brass)';
   }
 }
 
@@ -1429,6 +1444,7 @@ function render() {
   scanForStage();
   const svg = $('#map');
   renderMap(svg, theme, { onSelect: handleRegionTap });
+  tintForts();
   overlayState(svg);
   renderTurnPanel();
   renderHouses();

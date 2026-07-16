@@ -1,10 +1,11 @@
 // Map renderer. Pure presentation: reads structure from data, names from theme.
 
 import { injectIcons } from './icons.js';
+import { EDGE_ROUTES } from './data/edgeRoutes.js';
 import { REGIONS, PORTS, EDGES, buildAdjacency } from './data/map.js';
 import { FACTIONS } from './data/factions.js';
 
-const W = 1100, H = 1610;
+const W = 1100, H = 1660; // H bumped: S07 moved to y=1568 (owner, Jul 2026)
 const ADJ = buildAdjacency();
 const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
 
@@ -30,10 +31,10 @@ function iconRow(g, region, cx, cy) {
   for (let i = 0; i < (region.coin || 0); i++) marks.push('coin');
   const total = marks.length;
   if (!total) return;
-  const step = 16, x0 = cx - ((total - 1) * step) / 2;
+  const step = 20, x0 = cx - ((total - 1) * step) / 2; // unit-sized icons (owner, Jul 2026)
   marks.forEach((m, i) => {
     const x = x0 + i * step;
-    const use = svgEl('use', { x: x - 6.5, y: cy - 6.5, width: 13, height: 13,
+    const use = svgEl('use', { x: x - 9, y: cy - 9, width: 18, height: 18,
       class: m === 'supply' ? 'ic-supply' : 'ic-coin' });
     use.setAttribute('href', m === 'supply' ? '#i-supply' : '#i-coin');
     g.appendChild(use);
@@ -251,7 +252,11 @@ export function renderMap(svg, theme, { onSelect } = {}) {
   for (const [a, b] of EDGES) {
     if (!pos[a] || !pos[b]) continue;
     const sea = a.startsWith('S') || b.startsWith('S');
-    const pts = routedPoints(a, b);
+    // Water-routed lanes come precomputed from the build tool's A* over the
+    // land mask (owner: sea connectors travel over sea). JS anchor-avoidance
+    // remains the fallback for land-land edges and unrouted pairs.
+    const routed = EDGE_ROUTES[`${a}|${b}`] || EDGE_ROUTES[`${b}|${a}`];
+    const pts = routed ? routed.map(([x, y]) => ({ x, y })) : routedPoints(a, b);
     const cls = sea ? 'edge edge-sea' : 'edge edge-land';
     if (pts.length === 2) {
       edges.appendChild(svgEl('line', {

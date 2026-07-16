@@ -274,6 +274,36 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
+**m2f3d — owner findings batch 2 (Jul 2026):**
+- **Defense badges relocated** (bottom-left, x-30/y+33): the old top-right
+  spot collided with the f.3 castle marks and unit rows; bottom-center
+  belongs to control markers. Every hex lane inventoried in the comment.
+- **Castle/citadel marks tint by controller** ("like units"): tintForts()
+  runs each render; brass when unowned.
+- **West Summer Sea (S07)** moved SW outside the Arbor (418,1530 → 82,1568);
+  **Blackwater Bay (S12)** moved south toward Kingswood, west toward Storm's
+  End (836,827 → 800,905). Mask re-verified; canvas grew to
+  {x:-48,y:-47,w:1124,h:1745} (both themes updated); map viewBox H 1610→1660.
+- **Sea lanes routed over WATER**: tools/build-map.py runs A* on the
+  downsampled land mask for every edge touching a sea (land nearly
+  impassable for sea-sea lanes; sea-land lanes may make landfall only near
+  their destination). 46 routes emitted to generated src/data/edgeRoutes.js;
+  map-view draws them smoothed, falling back to JS anchor-avoidance for
+  land-land edges. Rebuild after any map change.
+- **Stony Shore rivers with an estuary**: L03|L06 and L03|L08 rivers flow
+  INTO the Bay of Ice via a new `mouth` field on barriers — the two courses
+  merge and reach open water, "part of the bay" as ruled. (Pairs verified
+  non-adjacent; no rules change.)
+- **Power is a flexed arm** (all three icon sets, single-silhouette path) in
+  bright yellow #FFD34D; **supply is wood-brown** #9A6B3F; both unit-sized
+  (18px) in the icon rows.
+- **2026 rename batch (17)**: The Pacific (ex English Channel), The English
+  Channel (ex Frisian Coast), Rome, The Red Sea, The Persian Gulf (ex
+  Caspian), Baghdad, Cairo, Stockholm, Helsinki, Copenhagen, Kyiv,
+  Amsterdam, Riga, Tallinn, Tunis, Geneva, Hammerfest.
+- BUILD_ID → m2f3d. Next: **f.4 mobile & polish** opens the following
+  engine session (stage bottom-sheet proper, touch targets, safe areas).
+
 **m2f3c — the invisibility incident, root-caused (owner screenshot):** the
 f.3 build was CRASHING on deploy, not cached — `injectIcons` was called in
 map-view but never imported (the patch's import-line replace silently

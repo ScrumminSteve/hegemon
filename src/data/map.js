@@ -58,12 +58,12 @@ export const REGIONS = [
   { id: 'S04', kind: 'maritime', x: 941, y: 979 },
   { id: 'S05', kind: 'maritime', x: 784, y: 1285 },
   { id: 'S06', kind: 'maritime', x: 946, y: 1507 },
-  { id: 'S07', kind: 'maritime', x: 418, y: 1530 },
+  { id: 'S07', kind: 'maritime', x: 82, y: 1568 }, // moved SW of the Arbor (owner, Jul 2026)
   { id: 'S08', kind: 'maritime', x: 240, y: 1373 },
   { id: 'S09', kind: 'maritime', x: 105,  y: 770 },
   { id: 'S10', kind: 'maritime', x: 187, y: 946 },
   { id: 'S11', kind: 'maritime', x: 320, y: 615 },
-  { id: 'S12', kind: 'maritime', x: 836, y: 827 },
+  { id: 'S12', kind: 'maritime', x: 800, y: 905 }, // south toward Kingswood, west toward Storm's End (owner, Jul 2026)
 ];
 
 // Ports: sub-areas joining one land region and one maritime region.

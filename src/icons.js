@@ -31,7 +31,7 @@ export const ICON_SETS = {
 <symbol id="i-fort-citadel" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3"/><rect x="9.5" y="9.5" width="5" height="5" fill="currentColor"/></symbol>
 <symbol id="i-port" viewBox="0 0 24 24"><rect x="7.2" y="7.2" width="9.6" height="9.6" transform="rotate(45 12 12)" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
 <symbol id="i-supply" viewBox="0 0 24 24"><rect x="7" y="5" width="10" height="14" rx="3" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><path d="M7 9.5 H17 M7 14.5 H17" stroke="var(--ink)" stroke-width="1.3"/></symbol>
-<symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><circle cx="12" cy="12" r="2.4" fill="var(--ink)"/></symbol>`,
+<symbol id="i-coin" viewBox="0 0 24 24"><path d="M4 19.5 C4 13 6.5 9.8 10.5 9.8 C12.6 9.8 14.1 11 14.8 12.8 L14.8 8.2 C14.8 6 16 4.6 17.6 4.6 C19.3 4.6 20.5 5.9 20.5 7.6 L20.5 19.5 Z" fill="currentColor" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/></symbol>`,
   },
 
   asoiaf: {
@@ -45,7 +45,7 @@ export const ICON_SETS = {
 <symbol id="i-fort-citadel" viewBox="0 0 24 24"><path d="M3.5 21 V9.5 H4.9 V7.5 H6.3 V9.5 H7.7 V7.5 H9.1 V9.5 V13 H14.9 V9.5 H16.3 V7.5 H17.7 V9.5 H19.1 V7.5 H20.5 V21 Z M9.1 13 V21 M14.9 13 V21" fill="currentColor" stroke="var(--ink)" stroke-width="0.9" stroke-linejoin="round"/><rect x="10.9" y="16" width="2.2" height="5" fill="var(--ink)"/></symbol>
 <symbol id="i-port" viewBox="0 0 24 24"><path d="M12 8.2 V19 M7.4 11.2 H16.6 M5.4 14.6 C7 18.4 17 18.4 18.6 14.6 M5.4 14.6 L3.8 13.1 M5.4 14.6 L7.5 14 M18.6 14.6 L20.2 13.1 M18.6 14.6 L16.5 14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="5.6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.9"/></symbol>
 <symbol id="i-supply" viewBox="0 0 24 24"><rect x="7" y="4.8" width="10" height="14.4" rx="3.4" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><path d="M7 9.3 H17 M7 14.7 H17" stroke="var(--ink)" stroke-width="1.3"/></symbol>
-<symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><path d="M8.6 13.8 L10 10.4 L12 12.6 L14 10.4 L15.4 13.8 Z" fill="var(--ink)"/></symbol>`,
+<symbol id="i-coin" viewBox="0 0 24 24"><path d="M4 19.5 C4 13 6.5 9.8 10.5 9.8 C12.6 9.8 14.1 11 14.8 12.8 L14.8 8.2 C14.8 6 16 4.6 17.6 4.6 C19.3 4.6 20.5 5.9 20.5 7.6 L20.5 19.5 Z" fill="currentColor" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/></symbol>`,
   },
 
   modern2026: {
@@ -59,7 +59,7 @@ export const ICON_SETS = {
 <symbol id="i-fort-citadel" viewBox="0 0 24 24"><polygon points="12,3.5 21,10 17.5,20.5 6.5,20.5 3,10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><polygon points="12,9 15.6,11.6 14.2,15.8 9.8,15.8 8.4,11.6" fill="currentColor"/></symbol>
 <symbol id="i-port" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9 V17.4 M8.6 11.3 H15.4 M7.3 14.4 C8.6 17.2 15.4 17.2 16.7 14.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="7" r="1.7" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
 <symbol id="i-supply" viewBox="0 0 24 24"><rect x="5.8" y="6.8" width="12.4" height="12.4" rx="1.4" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><path d="M8 6.8 V4.4 H13.4" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M6.4 18.4 L17.6 7.6" stroke="var(--ink)" stroke-width="1.4"/></symbol>
-<symbol id="i-coin" viewBox="0 0 24 24"><polygon points="12,4.5 18.6,8.2 18.6,15.8 12,19.5 5.4,15.8 5.4,8.2" fill="currentColor" stroke="var(--ink)" stroke-width="1.1"/><circle cx="12" cy="12" r="2.2" fill="var(--ink)"/></symbol>`,
+<symbol id="i-coin" viewBox="0 0 24 24"><path d="M4 19.5 C4 13 6.5 9.8 10.5 9.8 C12.6 9.8 14.1 11 14.8 12.8 L14.8 8.2 C14.8 6 16 4.6 17.6 4.6 C19.3 4.6 20.5 5.9 20.5 7.6 L20.5 19.5 Z" fill="currentColor" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/></symbol>`,
   },
 };
 
