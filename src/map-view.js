@@ -56,15 +56,15 @@ export function portAnchor(land, sea) {
 // The viewBox is a camera: pan by dragging, zoom by wheel/trackpad-pinch or
 // two-finger touch, persistent across re-renders (every dispatch re-renders,
 // so a per-render reset would snap the view home on each action).
-const CAM = { x: 0, y: 0, w: 0, h: 0, min: 0.5, max: 4 };
+const CAM = { x: 0, y: 0, w: 0, h: 0, min: 0.92, max: 4 };
 function applyCam(svg) {
   svg.setAttribute('viewBox', `${CAM.x} ${CAM.y} ${CAM.w} ${CAM.h}`);
 }
 function clampCam() {
   CAM.w = Math.max(W / CAM.max, Math.min(W / CAM.min, CAM.w));
   CAM.h = CAM.w * (H / W);
-  CAM.x = Math.max(-W * 0.25, Math.min(W * 1.25 - CAM.w, CAM.x));
-  CAM.y = Math.max(-H * 0.25, Math.min(H * 1.25 - CAM.h, CAM.y));
+  CAM.x = Math.max(-W * 0.08, Math.min(W * 1.08 - CAM.w, CAM.x));
+  CAM.y = Math.max(-H * 0.08, Math.min(H * 1.08 - CAM.h, CAM.y));
 }
 export function cameraReset(svg) {
   CAM.x = 0; CAM.y = 0; CAM.w = W; CAM.h = H;
@@ -87,7 +87,11 @@ export function cameraZoomBy(svg, factor, cx = null, cy = null) {
 function camScale(svg) {
   const r = svg.getBoundingClientRect();
   const scale = Math.min(r.width / CAM.w, r.height / CAM.h);
+  // With a fixed camera aspect, the rendered map size in px is constant
+  // across zoom (scale*CAM.w = min(r.w, r.h*W/H)) — so are the letterbox
+  // offsets. That is what makes the anchor solve below exact.
   return { r, scale,
+    rw: CAM.w * scale, rh: CAM.h * scale,
     ox: (r.width - CAM.w * scale) / 2, oy: (r.height - CAM.h * scale) / 2 };
 }
 function svgPoint(svg, clientX, clientY) {
@@ -100,51 +104,80 @@ function bindGestures(svg) {
   if (gesturesBound === svg) return;
   gesturesBound = svg;
   const ptrs = new Map();
-  let panning = false, moved = 0, pinch0 = null;
+  let mode = 'idle';               // 'pan' | 'pinch' | 'idle'
+  let panPrev = null, moved = 0;
+  let pinch = null;                // { d0, w0, anchor } — anchor is a WORLD point
   svg.addEventListener('pointerdown', e => {
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 1) { panning = true; moved = 0; }
-    if (ptrs.size === 2) {
+    if (ptrs.size === 1) {
+      mode = 'pan'; panPrev = { x: e.clientX, y: e.clientY }; moved = 0;
+    } else if (ptrs.size === 2) {
+      // Lock the world point under the finger midpoint ONCE, at gesture
+      // start. Recomputing it through the moving camera each frame (the old
+      // code) is a feedback loop — the source of the mobile chaos.
       const [a, b] = [...ptrs.values()];
-      pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), w: CAM.w };
+      mode = 'pinch';
+      pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, w0: CAM.w,
+                anchor: svgPoint(svg, (a.x + b.x) / 2, (a.y + b.y) / 2) };
+      for (const id of ptrs.keys()) { try { svg.setPointerCapture?.(id); } catch { /* released pointer */ } }
+    } else {
+      mode = 'idle';
     }
   });
   svg.addEventListener('pointermove', e => {
-    const prev = ptrs.get(e.pointerId);
-    if (!prev) return;
-    const cur = { x: e.clientX, y: e.clientY };
-    ptrs.set(e.pointerId, cur);
-    if (ptrs.size === 2 && pinch0) {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (mode === 'pinch' && ptrs.size >= 2 && pinch) {
       const [a, b] = [...ptrs.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-      const mid = svgPoint(svg, (a.x + b.x) / 2, (a.y + b.y) / 2);
-      CAM.w = pinch0.w * (pinch0.d / d); CAM.h = CAM.w * (H / W);
-      CAM.x = mid.x - CAM.w / 2; CAM.y = mid.y - CAM.h / 2;
+      // Damped ratio: soften tiny finger jitter without lagging real intent.
+      const raw = pinch.d0 / d;
+      CAM.w = pinch.w0 * Math.sign(raw) * Math.pow(Math.abs(raw), 0.9);
+      CAM.h = CAM.w * (H / W);
+      clampCam(); // clamp ZOOM first so the anchor solve uses the final size
+      const { r, rw, rh, ox, oy } = camScale(svg);
+      const fu = ((a.x + b.x) / 2 - r.left - ox) / rw;
+      const fv = ((a.y + b.y) / 2 - r.top - oy) / rh;
+      CAM.x = pinch.anchor.x - fu * CAM.w;
+      CAM.y = pinch.anchor.y - fv * CAM.h;
       clampCam(); applyCam(svg);
-    } else if (panning && ptrs.size === 1) {
+    } else if (mode === 'pan' && ptrs.size === 1 && panPrev) {
+      const cur = { x: e.clientX, y: e.clientY };
       const { scale } = camScale(svg);
-      const dx = (cur.x - prev.x) / scale;
-      const dy = (cur.y - prev.y) / scale;
-      moved += Math.abs(cur.x - prev.x) + Math.abs(cur.y - prev.y);
+      moved += Math.abs(cur.x - panPrev.x) + Math.abs(cur.y - panPrev.y);
       if (moved > 6) svg.setPointerCapture?.(e.pointerId); // past tap threshold: it's a pan
-      CAM.x -= dx; CAM.y -= dy;
+      CAM.x -= (cur.x - panPrev.x) / scale;
+      CAM.y -= (cur.y - panPrev.y) / scale;
+      panPrev = cur;
       clampCam(); applyCam(svg);
     }
   });
   const up = e => {
     ptrs.delete(e.pointerId);
-    if (ptrs.size < 2) pinch0 = null;
+    if (mode === 'pinch' && ptrs.size < 2) {
+      // A pinch ends the whole gesture: no pan handoff to the surviving
+      // finger with a stale reference — lift everything to start fresh.
+      mode = 'idle'; pinch = null;
+    }
     if (ptrs.size === 0) {
       if (moved > 6) { // a drag, not a tap: swallow the click on regions
         const stop = ev => { ev.stopPropagation(); svg.removeEventListener('click', stop, true); };
         svg.addEventListener('click', stop, true);
         setTimeout(() => svg.removeEventListener('click', stop, true), 0);
       }
-      panning = false;
+      mode = 'idle'; panPrev = null; moved = 0;
     }
   };
   svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', up);
+  // Safari: keep the BROWSER's pinch off the map. touch-action:none covers
+  // modern engines; the gesture* events catch Safari's page-zoom path; the
+  // non-passive touchmove preventDefault is the final belt-and-suspenders.
+  // (Page zoom elsewhere stays untouched — accessibility intact.)
+  for (const t of ['gesturestart', 'gesturechange', 'gestureend']) {
+    svg.addEventListener(t, e => e.preventDefault());
+  }
+  svg.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   svg.addEventListener('wheel', e => {
     e.preventDefault();
     const pt = svgPoint(svg, e.clientX, e.clientY);

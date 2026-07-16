@@ -274,6 +274,21 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
+**f.2b-fix1 (owner mobile feedback):** the pinch was rebuilt around a WORLD
+anchor locked at gesture start — the old code recomputed the focal point
+through the already-moving camera every frame, a feedback loop causing the
+sporadic shifts, bad centering, and runaway speed. Pinch now solves the
+camera so the anchored point stays under the (moving) finger midpoint —
+combined pan+zoom, stable by construction, with a 0.9-exponent damp on
+finger jitter and both pointers captured. A pinch ends the whole gesture (no
+pan handoff to the surviving finger with a stale reference). Clamps
+tightened: zoom-out floor 0.92× fit, pan margins ±8% (you can no longer get
+lost in the void). Safari page-pinch suppressed over the map three ways
+(touch-action:none, gesturestart/change/end preventDefault, non-passive
+multi-touch touchmove preventDefault) — page zoom elsewhere untouched.
+KNOWN LIMIT: if one finger lands OUTSIDE the map pane, Safari may still zoom
+the page; that one is the browser's call.
+
 **f.2b (shipped):** the viewBox is now a camera — drag to pan, wheel or
 trackpad-pinch to zoom at the cursor, two-finger pinch on touch, +/−/⌂
 controls in the map corner; meet-aware pointer math (letterboxed portrait
