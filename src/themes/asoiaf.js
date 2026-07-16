@@ -17,7 +17,7 @@ export const THEME_ASOIAF = {
     },
     // Rendered by tools/build-map.py from map.js — anchors align by construction.
     canvas: { background: 'assets/map-asoiaf.webp', x: -25, y: -47, w: 1101, h: 1707 },
-    unitIcons: null,
+    unitIcons: 'asoiaf', // M2.f.3 symbol set (src/icons.js)
   },
   terms: {
     threat: 'Wildling Threat',

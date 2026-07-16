@@ -24,7 +24,7 @@ function hexPath(cx, cy, r) {
 
 function iconRow(g, region, cx, cy) {
   const marks = [];
-  for (let i = 0; i < region.muster; i++) marks.push('muster');
+  // muster tier is carried by the seat mark (castle/citadel) — not repeated here
   for (let i = 0; i < (region.supply || 0); i++) marks.push('supply');
   for (let i = 0; i < (region.coin || 0); i++) marks.push('coin');
   const total = marks.length;
@@ -32,9 +32,10 @@ function iconRow(g, region, cx, cy) {
   const step = 16, x0 = cx - ((total - 1) * step) / 2;
   marks.forEach((m, i) => {
     const x = x0 + i * step;
-    if (m === 'muster') g.appendChild(svgEl('rect', { x: x - 5.5, y: cy - 5.5, width: 11, height: 11, class: 'ic-muster' }));
-    else if (m === 'supply') g.appendChild(svgEl('rect', { x: x - 5, y: cy - 6, width: 10, height: 12, rx: 3, class: 'ic-supply' }));
-    else g.appendChild(svgEl('circle', { cx: x, cy, r: 5.5, class: 'ic-coin' }));
+    const use = svgEl('use', { x: x - 6.5, y: cy - 6.5, width: 13, height: 13,
+      class: m === 'supply' ? 'ic-supply' : 'ic-coin' });
+    use.setAttribute('href', m === 'supply' ? '#i-supply' : '#i-coin');
+    g.appendChild(use);
   });
 }
 
@@ -190,6 +191,7 @@ export function renderMap(svg, theme, { onSelect } = {}) {
   if (!CAM.w) cameraReset(null);
   applyCam(svg);
   bindGestures(svg);
+  injectIcons(svg, theme.visuals?.unitIcons || 'core'); // M2.f.3 themed symbols
   const pos = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 
   // M2.f.2 — painted theme canvas. The art is composited by
@@ -244,10 +246,11 @@ export function renderMap(svg, theme, { onSelect } = {}) {
       if (home) poly.style.stroke = home.color;
       g.appendChild(poly);
       if (r.muster > 0) {
-        // Interim fortified marker (owner request, Jul 2026): a second inner
-        // ring makes muster-value regions readable at a glance in every
-        // theme. Replaced by themed castle/citadel icons in M2.f.3.
-        g.appendChild(svgEl('polygon', { points: hexPath(r.x, r.y, 39), class: 'hex-fort' }));
+        // M2.f.3 — themed seat marks: castle (muster 1) vs citadel (muster 2),
+        // distinguishable at a glance (owner request). Replaces the interim ring.
+        const fort = svgEl('use', { x: r.x + 12, y: r.y - 46, width: 21, height: 21, class: 'ic-fort' });
+        fort.setAttribute('href', r.muster >= 2 ? '#i-fort-citadel' : '#i-fort-castle');
+        g.appendChild(fort);
       }
       if (home) {
         // Grander seat seal (owner P2, Jul 2026): larger disc, ceremonial ring.
@@ -284,9 +287,9 @@ export function renderMap(svg, theme, { onSelect } = {}) {
     const { x: mx, y: my } = portAnchor(pos[p.landId], pos[p.seaId]);
     const g = svgEl('g', { class: 'region port', 'data-id': p.id, tabindex: 0, role: 'button' });
     g.appendChild(svgEl('rect', { x: mx - 12, y: my - 12, width: 24, height: 24, class: 'shape port-diamond', transform: `rotate(45 ${mx} ${my})` }));
-    const pl = svgEl('text', { x: mx, y: my + 3.5, class: 'port-mark' });
-    pl.textContent = '⚓';
-    g.appendChild(pl);
+    const pm = svgEl('use', { x: mx - 8, y: my - 8, width: 16, height: 16, class: 'ic-port' });
+    pm.setAttribute('href', '#i-port');
+    g.appendChild(pm);
     g.addEventListener('click', () => onSelect?.(p.id));
     g.addEventListener('mouseenter', () => highlight(svg, p.id, true));
     g.addEventListener('mouseleave', () => highlight(svg, p.id, false));

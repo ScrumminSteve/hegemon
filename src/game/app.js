@@ -10,6 +10,7 @@ import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
+import { ICON_SETS } from '../icons.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -151,16 +152,15 @@ const posOf = rid => {
   return portAnchor(byId[r.landId], byId[r.seaId]); // must match the diamond
 };
 
+/** M2.f.3 — themed unit silhouette. The symbol set is swapped per theme by
+    injectIcons(); ids are stable, so this never cares which theme is live.
+    currentColor = the faction tint; symbol-internal details use var(--ink). */
 function unitGlyph(u, x, y) {
-  const color = fColor(u.faction);
-  const attrs = { fill: color, stroke: 'var(--ink)', 'stroke-width': 1 };
-  let g;
-  if (u.type === 'cavalry') g = el('polygon', { ...attrs, points: `${x},${y - 6} ${x - 6},${y + 5} ${x + 6},${y + 5}` });
-  else if (u.type === 'warship') g = el('rect', { ...attrs, x: x - 8, y: y - 3.5, width: 16, height: 7, rx: 3 });
-  else if (u.type === 'siege_engine') g = el('rect', { ...attrs, x: x - 5, y: y - 5, width: 10, height: 10, transform: `rotate(45 ${x} ${y})` });
-  else g = el('circle', { ...attrs, cx: x, cy: y, r: 5 });
-  if (u.routed) g.setAttribute('opacity', '0.4');
-  return g;
+  const use = el('use', { x: x - 9, y: y - 9, width: 18, height: 18, class: 'unit-ic' });
+  use.setAttribute('href', `#i-unit-${u.type}`);
+  use.style.color = fColor(u.faction);
+  if (u.routed) use.setAttribute('opacity', '0.45');
+  return use;
 }
 
 function marchCandidates(fid, from) {
@@ -313,22 +313,38 @@ function overlayState(svg) {
  * physical table, the face is not. Revealed orders get a labeled token with a
  * full-name tooltip; staged picks render dashed (not yet committed).
  */
+/** M2.f.3 — themed order tokens (owner "graphics" item, banked from m2e).
+    The token FRAME follows the theme (round for chart/parchment, square chip
+    for 2026); the FACE is a glyph symbol, not an initial — "Consolidate
+    Influence" no longer collides with anything in any language. Face-down
+    tokens keep the blank-back secrecy contract (P1, Rules p.12). */
 function drawOrderBadge(g, rid, o, cls) {
   const { x, y } = posOf(rid);
   const isPort = region(rid).kind === 'port';
   const bx = isPort ? x : x - 34, by = isPort ? y + 16 : y - 19;
   const back = cls.includes('ov-order-back');
-  const badge = el('rect', { x: bx - 15, y: by - 9, width: 30, height: 18, rx: 4,
-    class: cls, style: `stroke:${fColor(o.faction)}` });
+  const square = (ICON_SETS[theme.visuals?.unitIcons]?.token || 'circle') === 'square';
+  const frame = square
+    ? el('rect', { x: bx - 10, y: by - 10, width: 20, height: 20, rx: 3, class: cls + ' tok', style: `stroke:${fColor(o.faction)}` })
+    : el('circle', { cx: bx, cy: by, r: 11, class: cls + ' tok', style: `stroke:${fColor(o.faction)}` });
   const tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
   tip.textContent = back ? `${fName(o.faction)} — order placed (face-down)`
     : `${fName(o.faction)} — ${orderName(o.type)}${o.mod ? (o.mod > 0 ? ' +' + o.mod : ' ' + o.mod) : ''}${o.starred ? ' ★' : ''}`;
-  badge.appendChild(tip);
-  g.appendChild(badge);
-  const t = el('text', { x: bx, y: by + 4, class: 'ov-order-txt' });
-  t.textContent = back ? '🂠'
-    : orderName(o.type)[0] + (o.mod ? (o.mod > 0 ? '+' + o.mod : o.mod) : '') + (o.starred ? '★' : '');
-  g.appendChild(t);
+  frame.appendChild(tip);
+  g.appendChild(frame);
+  const face = el('use', { x: bx - 6.5, y: by - 6.5, width: 13, height: 13, class: back ? 'tok-back' : 'tok-face' });
+  face.setAttribute('href', back ? '#i-ord-back' : `#i-ord-${o.type}`);
+  g.appendChild(face);
+  if (!back && (o.mod || o.starred)) {
+    const t = el('text', { x: bx + 13, y: by + 3.5, class: 'ov-order-mod' });
+    t.textContent = (o.mod ? (o.mod > 0 ? '+' + o.mod : String(o.mod)) : '') + (o.starred ? '★' : '');
+    g.appendChild(t);
+  }
+}
+
+/** Inline panel icon: <use> against the map's injected defs. */
+function pic(id, color = 'var(--brass)') {
+  return `<svg class="pic" style="color:${color}"><use href="#${id}"/></svg>`;
 }
 
 /** Fly the camera to a region (owner P2: panel → map sync; now camera-based). */
@@ -484,8 +500,8 @@ function renderInspector() {
     <div class="insp-chips">${game.factions.map(x =>
       `<button class="insp-chip ${x === f ? 'on' : ''}" data-insp="${x}" style="border-left:3px solid ${fColor(x)}">${fGlyph(x)}</button>`).join('')}</div>
     <div class="insp-stats">${fGlyph(f)} <b>${esc(fName(f))}</b> ·
-      ⌂${seatsControlled(game, f)} seats · ⛁${game.supply[f]} supply ·
-      ◈${game.authority[f]} ${esc(theme.terms.authority)} ·
+      ${pic('i-fort-castle')}${seatsControlled(game, f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${game.supply[f]} supply ·
+      ${pic('i-coin')}${game.authority[f]} ${esc(theme.terms.authority)} ·
       ${esc(theme.terms.threat || 'threat')} ${game.threat}/12</div>
     <div class="insp-cards">${hand.map(id => cardChip(id, { withText: false })).join('') || '<span class="dim">no cards in hand</span>'}</div>
     ${discard.length ? `<div class="insp-stats" style="margin-top:6px">spent: ${discard.map(id => esc(theme.cards?.[id] ?? id)).join(', ')}</div>` : ''}`;
@@ -1364,9 +1380,9 @@ function renderHouses() {
   el.innerHTML = game.factions.map(f => `
     <div class="house-row ${active.has(f) ? 'house-active' : ''}" style="border-left-color:${fColor(f)}">
       <span class="house-name">${fGlyph(f)} ${esc(fName(f))}</span>
-      <span title="seats (win at 7)">⌂${seatsControlled(game, f)}</span>
-      <span title="supply">⛁${game.supply[f]}</span>
-      <span title="${esc(theme.terms.authority)}">◈${game.authority[f]}</span>
+      <span title="seats (win at 7)">${pic('i-fort-castle')}${seatsControlled(game, f)}</span>
+      <span title="supply">${pic('i-supply', 'var(--bone-dim)')}${game.supply[f]}</span>
+      <span title="${esc(theme.terms.authority)}">${pic('i-coin')}${game.authority[f]}</span>
     </div>`).join('');
 }
 

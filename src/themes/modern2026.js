@@ -17,7 +17,7 @@ export const THEME_2026 = {
     },
     // Rendered by tools/build-map.py from map.js — anchors align by construction.
     canvas: { background: 'assets/map-2026.webp', x: -25, y: -47, w: 1101, h: 1707 },
-    unitIcons: null,
+    unitIcons: 'modern2026', // M2.f.3 symbol set (src/icons.js)
   },
   terms: {
     threat: 'Crisis Index',

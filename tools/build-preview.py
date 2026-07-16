@@ -12,7 +12,7 @@ FILES = [
   'src/engine/planning.js', 'src/engine/actionPhase.js', 'src/engine/cards.js',
     'src/engine/combat.js', 'src/engine/bidding.js', 'src/engine/invaders.js', 'src/engine/eventPhase.js',
   'src/engine/victory.js', 'src/engine/engine.js', 'src/engine/views.js',
-  'src/map-view.js', 'src/game/app.js',
+  'src/icons.js', 'src/map-view.js', 'src/game/app.js',
 ]
 def mid(path):  # module id
     return 'h/' + os.path.relpath(path, 'src')[:-3].replace(os.sep, '/')

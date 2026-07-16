@@ -18,7 +18,7 @@ export const THEME_CORE = {
       hair: 'rgba(217, 210, 192, 0.14)',
     },
     canvas: null,      // M2.f.2: { w, h, background, anchors }
-    unitIcons: null,   // M2.f.3: per-theme SVG symbol ids
+    unitIcons: 'core', // M2.f.3 symbol set (src/icons.js)   // M2.f.3: per-theme SVG symbol ids
   },
   terms: {
     threat: 'Invader Threat',

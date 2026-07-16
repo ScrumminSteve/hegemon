@@ -2,6 +2,7 @@
 // leak raw ids (or worse, ASOIAF names via fallback) into the UI.
 
 import { THEME_CORE } from '../src/themes/core.js';
+import { ICON_SETS, REQUIRED_ICONS } from '../src/icons.js';
 import { THEME_ASOIAF } from '../src/themes/asoiaf.js';
 import { THEME_2026 } from '../src/themes/modern2026.js';
 import { LEADER_CARDS } from '../src/data/leaderCards.js';
@@ -11,6 +12,17 @@ import { eq, ok } from './assert.js';
 const PACKS = { asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
 
 export const tests = [
+
+  { name: 'every theme names a real, COMPLETE icon set — a missing symbol renders as nothing, silently (M2.f.3)', fn() {
+    for (const [id, pack] of Object.entries({ core: THEME_CORE, ...PACKS })) {
+      const setId = pack.visuals?.unitIcons;
+      ok(ICON_SETS[setId], `${id} names icon set '${setId}'`);
+      for (const icon of REQUIRED_ICONS) {
+        ok(ICON_SETS[setId].defs.includes(`id="${icon}"`), `${setId} defines ${icon}`);
+      }
+      ok(['circle', 'square'].includes(ICON_SETS[setId].token), `${setId} declares a token frame shape`);
+    }
+  }},
 
   { name: 'a theme canvas, when present, carries the full placement contract (M2.f.2)', fn() {
     for (const [id, pack] of Object.entries({ core: THEME_CORE, ...PACKS })) {

@@ -152,7 +152,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
-- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport ✅ · f.3 iconography · f.4 mobile & polish.
+- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport ✅ · f.3 iconography ✅ · f.4 mobile & polish.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -274,6 +274,32 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
+**f.3 — iconography (shipped):** `src/icons.js` holds three complete symbol
+sets under ONE stable id namespace (#i-unit-infantry, #i-fort-citadel,
+#i-ord-march…) — `injectIcons()` swaps the <defs> per theme and no caller
+ever cares which set is live. Inside a symbol, `currentColor` is the tint
+(faction color on units via style on the <use>) and `var(--ink)` draws
+details; everything is authored 24×24 and verified legible at 14px
+(cairosvg-rendered preview sheet, owner-visual review pending in-game).
+Sets: core = the M1 abstract geometry as symbols; asoiaf = kite shield,
+chess-knight, longship (redrawn with a proper sail), trebuchet, crenellated
+tower/twin-tower citadel, anchor, barrel, crown-coin; modern2026 = NATO
+APP-6-inspired frames (rect+X infantry, rect+ellipse armor, hull+block
+warship, rect+dot artillery, pentagon forts, anchor-in-square, crate,
+hex chip). Integration: fort marks replace the interim inner ring (castle
+muster 1 / citadel muster 2, top-right of hex, drop-shadowed over painted
+canvases); icon rows use themed supply/coin (muster tier now carried by the
+seat mark alone); port diamonds bear the themed anchor; unit clusters render
+themed silhouettes with routed at 0.45 opacity; ORDER TOKENS are the big
+one — themed frame (round for chart/parchment, square chip for 2026) with a
+GLYPH face instead of an initial (the "Consolidate Influence → C" collision
+is gone), mod/star beside the token, face-down backs preserving the P1
+secrecy contract, dashed staged state and tooltips intact; panel vitals and
+the seat inspector use the same symbols inline via <use> against the map's
+defs. Golden: every theme names a real set containing every REQUIRED_ICONS
+id plus a declared token frame shape — a missing symbol would render as
+nothing, silently, so completeness is enforced. Banked f.3 scope: none.
+
 **f.2b-fix1 (owner mobile feedback):** the pinch was rebuilt around a WORLD
 anchor locked at gesture start — the old code recomputed the focal point
 through the already-moving camera every frame, a feedback loop causing the

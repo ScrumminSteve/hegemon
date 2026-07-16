@@ -378,3 +378,17 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
   border: 1px solid var(--hair); color: var(--bone); cursor: pointer;
 }
 #zoom-controls button:hover { border-color: var(--brass); }
+
+/* ---------- M2.f.3 — iconography ---------- */
+.ic-fort { color: var(--brass); pointer-events: none; }
+.ic-port { color: var(--brass); pointer-events: none; }
+.ic-supply { color: var(--bone-dim); pointer-events: none; }
+.ic-coin { color: var(--brass); pointer-events: none; }
+.unit-ic { pointer-events: none; }
+.tok { fill: var(--ink-2); stroke-width: 2; }
+.ov-order-back.tok { fill: var(--slate-2, #1c2430); opacity: 0.92; }
+.tok-face { color: var(--bone); pointer-events: none; }
+.tok-back { color: var(--bone-dim); pointer-events: none; }
+.ov-order-mod { fill: var(--bone); font: 600 9px "IBM Plex Mono", ui-monospace, monospace; pointer-events: none; }
+.pic { width: 13px; height: 13px; vertical-align: -2px; display: inline-block; }
+.has-canvas .ic-fort, .has-canvas .ic-port { filter: drop-shadow(0 0 2px rgba(0,0,0,0.85)); }
