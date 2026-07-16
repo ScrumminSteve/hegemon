@@ -9,7 +9,7 @@ import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
-import { renderMap, portAnchor } from '../map-view.js';
+import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -331,17 +331,12 @@ function drawOrderBadge(g, rid, o, cls) {
   g.appendChild(t);
 }
 
-/** Scroll the map pane so a region sits centered (owner P2: panel → map sync). */
+/** Fly the camera to a region (owner P2: panel → map sync; now camera-based). */
 function centerMap(rid) {
-  const pane = document.querySelector('.map-pane');
   const svg = $('#map');
-  if (!pane || !svg) return;
-  const vb = svg.viewBox.baseVal;
-  const rect = svg.getBoundingClientRect();
+  if (!svg) return;
   const { x, y } = posOf(rid);
-  const sx = rect.width / vb.width, sy = rect.height / vb.height;
-  pane.scrollTo({ left: x * sx - pane.clientWidth / 2 + (rect.left + pane.scrollLeft - pane.getBoundingClientRect().left),
-    top: y * sy - pane.clientHeight / 2, behavior: 'smooth' });
+  cameraCenterOn(svg, x, y);
 }
 
 // ---------- region taps feed the active form ----------
@@ -1441,6 +1436,9 @@ function init() {
     if (raw && Number.isFinite(+raw)) newGame(+raw);
   });
   $('#btn-undo').addEventListener('click', undo);
+  $('#zoom-in')?.addEventListener('click', () => cameraZoomBy($('#map'), 1.35));
+  $('#zoom-out')?.addEventListener('click', () => cameraZoomBy($('#map'), 1 / 1.35));
+  $('#zoom-home')?.addEventListener('click', () => cameraReset($('#map')));
   $('#btn-quiet').addEventListener('click', e => {
     stageState.quiet = !stageState.quiet;
     if (stageState.quiet) stageState.batch = null;

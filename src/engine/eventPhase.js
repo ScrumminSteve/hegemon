@@ -83,7 +83,10 @@ function reshuffleDeck(state, deckId, includeCardId) {
 
 export function advanceThreat(state, by) {
   if (state.threat >= 12) return;
-  state.threat = Math.min(12, state.threat + 1);
+  // One SPACE per icon on a seven-space track (0/2/4…12) = +2 strength
+  // (Rules p.22; owner board check Jul 2026 — the +1 stepping ran the
+  // invader subsystem at half pressure).
+  state.threat = Math.min(12, state.threat + 2);
   state.log.push({ round: state.round, event: 'threatAdvanced', threat: state.threat, card: by });
   if (state.threat >= 12) {
     // Reaching 12 triggers an immediate incursion, resolved BEFORE any of the

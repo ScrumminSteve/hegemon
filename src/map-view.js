@@ -52,9 +52,111 @@ export function portAnchor(land, sea) {
   return { x: land.x + (dx / d) * 62, y: land.y + (dy / d) * 62 };
 }
 
+// ---------- M2.f.2b — camera ----------
+// The viewBox is a camera: pan by dragging, zoom by wheel/trackpad-pinch or
+// two-finger touch, persistent across re-renders (every dispatch re-renders,
+// so a per-render reset would snap the view home on each action).
+const CAM = { x: 0, y: 0, w: 0, h: 0, min: 0.5, max: 4 };
+function applyCam(svg) {
+  svg.setAttribute('viewBox', `${CAM.x} ${CAM.y} ${CAM.w} ${CAM.h}`);
+}
+function clampCam() {
+  CAM.w = Math.max(W / CAM.max, Math.min(W / CAM.min, CAM.w));
+  CAM.h = CAM.w * (H / W);
+  CAM.x = Math.max(-W * 0.25, Math.min(W * 1.25 - CAM.w, CAM.x));
+  CAM.y = Math.max(-H * 0.25, Math.min(H * 1.25 - CAM.h, CAM.y));
+}
+export function cameraReset(svg) {
+  CAM.x = 0; CAM.y = 0; CAM.w = W; CAM.h = H;
+  if (svg) applyCam(svg);
+}
+export function cameraCenterOn(svg, x, y, zoom = null) {
+  if (zoom) { CAM.w = W / zoom; CAM.h = CAM.w * (H / W); }
+  CAM.x = x - CAM.w / 2; CAM.y = y - CAM.h / 2;
+  clampCam(); applyCam(svg);
+}
+export function cameraZoomBy(svg, factor, cx = null, cy = null) {
+  const px = cx ?? CAM.x + CAM.w / 2, py = cy ?? CAM.y + CAM.h / 2;
+  const rx = (px - CAM.x) / CAM.w, ry = (py - CAM.y) / CAM.h;
+  CAM.w /= factor; CAM.h = CAM.w * (H / W);
+  CAM.x = px - rx * CAM.w; CAM.y = py - ry * CAM.h;
+  clampCam(); applyCam(svg);
+}
+/** Meet-aware: the viewBox letterboxes inside the element, so use the real
+    rendered scale, not the element rect, or pans drift and zooms miss. */
+function camScale(svg) {
+  const r = svg.getBoundingClientRect();
+  const scale = Math.min(r.width / CAM.w, r.height / CAM.h);
+  return { r, scale,
+    ox: (r.width - CAM.w * scale) / 2, oy: (r.height - CAM.h * scale) / 2 };
+}
+function svgPoint(svg, clientX, clientY) {
+  const { r, scale, ox, oy } = camScale(svg);
+  return { x: CAM.x + (clientX - r.left - ox) / scale,
+           y: CAM.y + (clientY - r.top - oy) / scale };
+}
+let gesturesBound = null;
+function bindGestures(svg) {
+  if (gesturesBound === svg) return;
+  gesturesBound = svg;
+  const ptrs = new Map();
+  let panning = false, moved = 0, pinch0 = null;
+  svg.addEventListener('pointerdown', e => {
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) { panning = true; moved = 0; }
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), w: CAM.w };
+    }
+  });
+  svg.addEventListener('pointermove', e => {
+    const prev = ptrs.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    ptrs.set(e.pointerId, cur);
+    if (ptrs.size === 2 && pinch0) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const mid = svgPoint(svg, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      CAM.w = pinch0.w * (pinch0.d / d); CAM.h = CAM.w * (H / W);
+      CAM.x = mid.x - CAM.w / 2; CAM.y = mid.y - CAM.h / 2;
+      clampCam(); applyCam(svg);
+    } else if (panning && ptrs.size === 1) {
+      const { scale } = camScale(svg);
+      const dx = (cur.x - prev.x) / scale;
+      const dy = (cur.y - prev.y) / scale;
+      moved += Math.abs(cur.x - prev.x) + Math.abs(cur.y - prev.y);
+      if (moved > 6) svg.setPointerCapture?.(e.pointerId); // past tap threshold: it's a pan
+      CAM.x -= dx; CAM.y -= dy;
+      clampCam(); applyCam(svg);
+    }
+  });
+  const up = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch0 = null;
+    if (ptrs.size === 0) {
+      if (moved > 6) { // a drag, not a tap: swallow the click on regions
+        const stop = ev => { ev.stopPropagation(); svg.removeEventListener('click', stop, true); };
+        svg.addEventListener('click', stop, true);
+        setTimeout(() => svg.removeEventListener('click', stop, true), 0);
+      }
+      panning = false;
+    }
+  };
+  svg.addEventListener('pointerup', up);
+  svg.addEventListener('pointercancel', up);
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const pt = svgPoint(svg, e.clientX, e.clientY);
+    cameraZoomBy(svg, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)), pt.x, pt.y);
+  }, { passive: false });
+}
+
 export function renderMap(svg, theme, { onSelect } = {}) {
   svg.innerHTML = '';
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  if (!CAM.w) cameraReset(null);
+  applyCam(svg);
+  bindGestures(svg);
   const pos = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 
   // M2.f.2 — painted theme canvas. The art is composited by

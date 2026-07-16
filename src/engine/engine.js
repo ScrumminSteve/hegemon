@@ -139,7 +139,12 @@ export function stateHash(state) {
 //    supply toll, routed-only order sweep). Episodes with rulesRevision < 2
 //    (or without the field) may contain over-capacity ports and garrison
 //    sacrifices that the current engine correctly forbids.
-export const RULES_REVISION = 2;
+// 3: threat-track granularity (owner board check Jul 2026) — icons advance
+//    +2 (one space on the seven-space 0/2/4…12 track) and invader victory
+//    sets the token back two spaces (-4). Episodes with rulesRevision < 3
+//    ran the invader subsystem at half pressure: threat trajectories and
+//    incursion strengths are systematically low.
+export const RULES_REVISION = 3;
 
 export function episodeRecord(state, meta = {}) {
   return {

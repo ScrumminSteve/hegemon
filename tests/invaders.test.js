@@ -47,11 +47,13 @@ function runRound(s) {
 const act = (s, a) => applyAction(s, a).state;
 
 /** Reach open incursion bids: threat rigged, invader top card rigged. */
-function toIncursion({ seed = 11, threat = null, invaderTop = null, decks = null } = {}) {
+function toIncursion({ seed = 11, threat = 0, invaderTop = null, decks = null } = {}) {
   let s = createGame(6, { seed });
   rig(s, decks || { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
   if (invaderTop) rigInvader(s, invaderTop);
-  if (threat != null) s.threat = threat;
+  // Base rigged so the default two icons (+2 each) land at strength 4 —
+  // the suite's canonical small attack. Breach tests pass threat: 6 → 10.
+  s.threat = threat;
   return runRound(s);
 }
 /** Seal every pending incursion bid from a {fid: amount} table (default 0). */
@@ -69,9 +71,9 @@ function myUnits(s, fid, type = null) {
   return out;
 }
 
-// Rigged decks put threat at 4 when the incursion card turns (start 2 + two icons).
-// A defenders' hold: one faction bids the full strength. A breach: threat
-// raised to 8 pre-round (10 at the bid) so honest small bids still fall short.
+// Rigged decks put threat at 4 when the incursion card turns (base 0 + two
+// icons at +2). A defenders' hold: one faction bids the full strength. A
+// breach: threat 6 pre-round (10 at the bid) so small bids still fall short.
 
 export const tests = [
 
@@ -107,10 +109,10 @@ export const tests = [
   }},
 
   { name: 'total < strength breaches the wall: threat falls 2 (min 0); penalties run lowest first, then initiative order (FAQ)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-skinchanger' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-skinchanger' });
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 }); // F3 lowest at 0, total 5 < 10
     ok(s.log.some(e => e.event === 'incursionOutcome' && e.outcome === 'invaders'));
-    eq(s.threat, 8, 'the threat token falls back 2 from 10');
+    eq(s.threat, 6, 'the token falls back two spaces (-4) from 10');
     const hits = s.log.filter(e => e.event === 'incursionAuthorityLost').map(e => e.faction);
     eq(hits[0], 'F3', 'the lowest bidder suffers first');
     eq(hits.slice(1), s.tracks.initiative.filter(f => f !== 'F3'), 'the rest suffer in initiative order');
@@ -150,7 +152,7 @@ export const tests = [
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     rigInvader(s, 'W-silence');
-    s.threat = 11;
+    s.threat = 10; // one space below the break
     s = runRound(s);
     eq(s.pendingQueries.find(q => q.type === 'invaderBid').strength, 12, 'the break comes at full strength');
     s = bidAll(s, { F2: 5, F3: 4, F4: 3 }); // 12 >= 12: held, F2 uniquely highest
@@ -163,7 +165,7 @@ export const tests = [
   // ---------- the nine cards ----------
 
   { name: 'W-skinchanger: lowest loses all authority, others lose 2; victory refunds the highest bid (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-skinchanger' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-skinchanger' });
     const before = { ...s.authority };
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 }); // F3 lowest
     eq(s.authority.F3, 0, 'the lowest purse is emptied');
@@ -177,7 +179,7 @@ export const tests = [
   }},
 
   { name: 'W-rattleshirt: supply falls 2 for the lowest and 1 for the rest (min 0); victory raises the highest bidder 1 (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-rattleshirt' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-rattleshirt' });
     const sup = { ...s.supply };
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     eq(s.supply.F3, Math.max(0, sup.F3 - 2), 'the lowest starves twice');
@@ -194,7 +196,7 @@ export const tests = [
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     rigInvader(s, 'W-rattleshirt');
-    s.threat = 8;
+    s.threat = 6; // strength 10 at the bid (two icons at +2)
     // Give F3 a second sizeable army so supply 1 -> 0 cannot hold it.
     const home = Object.keys(s.unitsByRegion).find(r => (s.unitsByRegion[r] || []).some(u => u.faction === 'F3'));
     s.unitsByRegion[home].push({ faction: 'F3', type: 'infantry', routed: false },
@@ -212,7 +214,7 @@ export const tests = [
   }},
 
   { name: 'W-mammoth: lowest destroys 3 units anywhere, others 2, each choosing their own (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-mammoth' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-mammoth' });
     const before = myUnits(s, 'F3').length;
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     let q = s.pendingQueries.find(x => x.type === 'incursionUnits');
@@ -230,6 +232,7 @@ export const tests = [
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     rigInvader(s, 'W-mammoth');
+    s.threat = 0; // strength 4 at the bid — the suite's canonical hold
     const spent = s.leaderHands.F2[0];
     s.leaderHands.F2 = s.leaderHands.F2.slice(1);
     s.leaderDiscards.F2 = [spent];
@@ -243,7 +246,7 @@ export const tests = [
   }},
 
   { name: 'W-massing: the lowest discards every card tied for their highest strength; others choose one to discard (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-massing' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-massing' });
     const top = Math.max(...s.leaderHands.F3.map(id => LEADER_CARDS[id].strength));
     const doomed = s.leaderHands.F3.filter(id => LEADER_CARDS[id].strength === top);
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
@@ -260,6 +263,7 @@ export const tests = [
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-incursion' });
     rigInvader(s, 'W-massing');
+    s.threat = 0; // strength 4 at the bid — the suite's canonical hold
     const spent = s.leaderHands.F2.slice(0, 2);
     s.leaderHands.F2 = s.leaderHands.F2.slice(2);
     s.leaderDiscards.F2 = spent;
@@ -355,7 +359,7 @@ export const tests = [
   }},
 
   { name: 'W-kingBeyond defeat: the lowest falls to the bottom of every track; others drop on prowess or command, their choice (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-kingBeyond' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-kingBeyond' });
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     for (const t of ['initiative', 'prowess', 'command']) {
       eq(s.tracks[t][s.tracks[t].length - 1], 'F3', `F3 is last on ${t}`);
@@ -370,7 +374,7 @@ export const tests = [
   }},
 
   { name: 'W-preemptive defeat: the lowest picks their poison — 2 units, or 2 places on their best track (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-preemptive' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-preemptive' });
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     const q = s.pendingQueries.find(x => x.type === 'incursionOption' && x.faction === 'F3');
     ok(q, 'the lowest must choose');
@@ -402,7 +406,7 @@ export const tests = [
   }},
 
   { name: 'W-silence: nothing happens on defeat, for lowest and others alike (card text)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-silence' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-silence' });
     const units = s.factions.map(f => myUnits(s, f).length);
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     eq(s.factions.map(f => myUnits(s, f).length), units, 'not a soul is touched');
@@ -424,15 +428,15 @@ export const tests = [
     // replay from (config, actions) — that IS the contract.
     let s = createGame(6, { seed: 14 });
     s = runRound(s);
-    ok(s.pendingQueries.some(x => x.type === 'invaderBid'), 'the horde arrives unprompted');
-    s = bidAll(s, { F2: 3 }); // 3 >= 3: held, F2 uniquely highest, supply reward is automatic
+    ok(s.pendingQueries.some(x => x.type === 'invaderBid'), 'the horde arrives unprompted'); // seed 14: one icon, strength 2+2=4
+    s = bidAll(s, { F2: 4 }); // 4 >= 4: held, F2 uniquely highest, supply reward is automatic
     eq(s.phase, 'planning');
     const replayed = replayGame(s.config, s.actionLog);
     eq(stateHash(replayed), stateHash(s), 'the transcript rebuilds the exact state');
   }},
 
   { name: 'a paused incursion survives serialization (architecture invariant)', fn() {
-    let s = toIncursion({ threat: 8, invaderTop: 'W-mammoth' });
+    let s = toIncursion({ threat: 6, invaderTop: 'W-mammoth' });
     s = bidAll(s, { F1: 1, F2: 1, F4: 1, F5: 1, F6: 1 });
     ok(s.pendingQueries.some(x => x.type === 'incursionUnits'), 'paused mid-effect');
     s = JSON.parse(JSON.stringify(s));

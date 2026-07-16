@@ -152,7 +152,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
-- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport/calibration · f.3 iconography · f.4 mobile & polish.
+- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport ✅ · f.3 iconography · f.4 mobile & polish.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -274,20 +274,33 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
-**Remaining f.2b:** pan/pinch-zoom viewport; anchor micro-calibration tool;
-sea-shoal repeat break-up; optional drier rock swatch + second stamp sheet
-(only 4 mountain / 5 hill stamps survived extraction).
+**f.2b (shipped):** the viewBox is now a camera — drag to pan, wheel or
+trackpad-pinch to zoom at the cursor, two-finger pinch on touch, +/−/⌂
+controls in the map corner; meet-aware pointer math (letterboxed portrait
+maps pan true); camera persists across dispatch re-renders; taps and drags
+discriminated by a 6px threshold so panning never fires a region select;
+panel→map sync now flies the camera instead of scrolling. Sea tile repeat
+decorrelated (second mirrored pass at 0.47 scale, 45% blend — the swatch's
+shoal patches no longer echo). Anchor calibration tool DEMOTED to on-demand:
+art built from the anchors aligns by construction. Optional art still
+welcome: drier rock swatch; second stamp sheet ("widely spaced, not
+touching" — only 4 mountain / 5 hill stamps survived extraction).
 
-## AWAITING OWNER — threat-track granularity (from episode audit)
+## Threat-track granularity — RETUNED (owner board check, Jul 2026)
 
-Icon counting is verified perfect (episode r1–r4: 6/6 icons, zero missed,
-zero phantom). But the engine steps +1 strength per icon while the physical
-board moves one SPACE (= +2) on a 7-space track — the invader subsystem runs
-at half pressure (owner's round-6 11/12 with an icon-lucky 9 draws; a
-threat-max attack is near-impossible in 10 rounds). Pending owner's two
-board checks: (1) seven spaces 0/2/4…12? (2) invader-victory setback = 2
-SPACES (−4)? On confirmation: advanceThreat +2, setback −4, golden updates,
-RULES_REVISION → 3.
+Icon counting was verified perfect against the owner's episode (r1–r4: 6/6
+icons, zero missed, zero phantom); the pace was the modeling. Owner
+confirmed the physical track: start 2, one SPACE per icon on the seven-space
+0/2/4…12 track. Now: `advanceThreat` steps **+2 per icon** (cap 12), and
+invader victory sets the token back two spaces (**−4**, min 0;
+`invaderWinSetback: 4` — from the owner's "token back 2" card transcription
+read in spaces; flag if the card literally says "reduce by 2"). Defender
+victory still resets to 0. Threat values are now always even in normal play.
+**RULES_REVISION → 3**: episodes recorded earlier ran the invader subsystem
+at half pressure — threat trajectories and incursion strengths in them are
+systematically low. Goldens retuned across events/invaders suites (rig
+baselines adjusted so canonical strengths 4/10/12 are preserved; the
+suite-wide bid tables were untouched).
 
 ## M3 information-access contract (banked Jul 2026)
 

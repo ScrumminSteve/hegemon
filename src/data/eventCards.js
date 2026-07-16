@@ -53,7 +53,7 @@ export const EVENT_DECKS = {
 export const INCURSION_RULES = Object.freeze({
   maxThreat: 12,                 // reaching 12 triggers an immediate incursion
   defenderWinReset: 0,           // defender victory: threat token to 0
-  invaderWinSetback: 2,          // invader victory: token back 2 (min 0)
+  invaderWinSetback: 4,          // invader victory: token back two SPACES = -4 (min 0; owner board check Jul 2026)
   buryUsedCard: 'bottomOfDeck',  // used invader card goes facedown under the deck
   tieBreaker: 'sovereignHolder', // bid ties decided by the Initiative-token holder
   penaltyOrder: 'lowestFirstThenInitiative', // FAQ errata

@@ -301,6 +301,11 @@ def render_asoiaf(m, zones, icons):
     relief = m.filter(ImageFilter.GaussianBlur(30)).filter(ImageFilter.EMBOSS).filter(ImageFilter.GaussianBlur(4))
     land = ImageChops.multiply(land, ImageOps.colorize(relief, black=(162, 154, 138), white=(255, 255, 255)).convert('RGB'))
     sea = ImageOps.colorize(tiled_L(SRC / 'tex-sea.png', 0.7), black=(20, 22, 26), white=(72, 82, 88), mid=(42, 50, 55))
+    # Break up the tile repeat (owner note: the swatch's shoal patches echo):
+    # a second, mirrored, differently-scaled pass at half strength decorrelates
+    # the pattern without losing the wave grain.
+    sea2 = ImageOps.colorize(ImageOps.mirror(tiled_L(SRC / 'tex-sea.png', 0.47)), black=(20, 22, 26), white=(72, 82, 88), mid=(42, 50, 55))
+    sea = Image.blend(sea, sea2, 0.45)
     sea = Image.composite(ImageOps.colorize(Image.new('L', (W, H), 255), black=(0, 0, 0), white=(206, 188, 142)), sea, waterline(m, [56, 38, 24, 14]).point(lambda v: min(v, 46)))
     out = Image.composite(land, sea, m).convert('RGBA')
     scatter(out, m, zones, icons, [

@@ -364,3 +364,17 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 .has-canvas .port-diamond { fill: rgba(0, 0, 0, 0.35); }
 .has-canvas .hex-fort { stroke-opacity: 0.75; }
 .has-canvas .label { fill: #f2ead6; }
+
+/* ---------- M2.f.2b — camera viewport ---------- */
+.map-pane { overflow: hidden; position: relative; }
+#map { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#map:active { cursor: grabbing; }
+#zoom-controls {
+  position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 20;
+}
+#zoom-controls button {
+  width: 34px; height: 34px; border-radius: 6px; font: 600 17px/1 inherit;
+  background: color-mix(in srgb, var(--ink-2) 88%, var(--brass) 12%);
+  border: 1px solid var(--hair); color: var(--bone); cursor: pointer;
+}
+#zoom-controls button:hover { border-color: var(--brass); }

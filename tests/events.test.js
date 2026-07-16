@@ -98,11 +98,11 @@ export const tests = [
     eq(s.round, 2);
   }},
 
-  { name: 'the threat token advances once per revealed invader icon (Rules p.22)', fn() {
+  { name: 'the threat token advances one SPACE (+2) per revealed invader icon (Rules p.22; owner board check)', fn() {
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-banRaid' }); // icons: I ✓, II ✓, III ✓
     s = runRound(s);
-    eq(s.threat, 5, 'start 2 + three icons:');
+    eq(s.threat, 8, 'start 2 + three icons at +2 each');
     eq(s.log.filter(e => e.event === 'threatAdvanced').length, 3);
   }},
 
@@ -248,7 +248,7 @@ export const tests = [
   { name: 'reaching threat 12 triggers an immediate incursion before card effects (Rules p.22)', fn() {
     let s = createGame(6, { seed: 11 });
     rig(s, { I: 'E1-nothing', II: 'E2-nothing', III: 'E3-banRaid' });
-    s.threat = 11;
+    s.threat = 10; // one space below the break
     s = runRound(s);
     eq(s.threat, 12);
     ok(s.log.some(e => e.event === 'incursionBegan' && e.trigger === 'threatMax'));
