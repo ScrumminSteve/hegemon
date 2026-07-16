@@ -12,8 +12,9 @@ import { tests as themeTests } from './themes.test.js';
 import { tests as biddingTests } from './bidding.test.js';
 import { tests as invaderTests } from './invaders.test.js';
 import { tests as victoryTests } from './victory.test.js';
+import { tests as uiSmokeTests } from './ui-smoke.test.js';
 
-const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests], ['bidding', biddingTests], ['invaders', invaderTests], ['victory', victoryTests]];
+const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests], ['bidding', biddingTests], ['invaders', invaderTests], ['victory', victoryTests], ['ui-smoke', uiSmokeTests]];
 let pass = 0, fail = 0;
 for (const [suite, tests] of suites) {
   for (const t of tests) {

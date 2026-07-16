@@ -1,5 +1,6 @@
 // Map renderer. Pure presentation: reads structure from data, names from theme.
 
+import { injectIcons } from './icons.js';
 import { REGIONS, PORTS, EDGES, buildAdjacency } from './data/map.js';
 import { FACTIONS } from './data/factions.js';
 

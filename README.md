@@ -274,6 +274,24 @@ enforced); map-view renders the art under the graph, and over art the region
 shapes become tap halos (invisible until hover/tap) while seals, forts,
 ports, icon rows, unit clusters, order badges, and top-layer labels ride
 above. Core theme stays vector by design (reference/debug skin).
+**m2f3c — the invisibility incident, root-caused (owner screenshot):** the
+f.3 build was CRASHING on deploy, not cached — `injectIcons` was called in
+map-view but never imported (the patch's import-line replace silently
+no-opped because the real import also carried `buildAdjacency`), and the
+"parse check" only caught SYNTAX errors, so the ReferenceError sailed
+through two drops. The blank map + empty panels + missing seed line were
+one throw in renderMap killing everything downstream. Fixes, both permanent:
+(1) the import, anchored on the file's actual first import line rather than
+an assumed string; (2) a **UI boot smoke suite** (tests/ui-smoke.test.js,
+jsdom devDependency) that boots game.html + app.js in a real DOM and
+asserts the map renders, region nodes populate, the themed icon defs are
+injected, seat/port marks are placed, setup units render as themed
+silhouettes, and the build stamp is written — `npm test` can no longer pass
+on a build with a blank map. (Skips gracefully with a single pass when
+jsdom isn't installed, so the golden runner stays hermetic offline.)
+BUILD_ID → m2f3c. Earlier "am I missing anything" report: you were missing
+nothing; the build was broken and my checks lied to both of us.
+
 **m2f-fb5 — owner findings batch (Jul 2026):**
 - **[P1-grade, engine] Harbor adjacency was one-way** — ports knew their sea
   and land, but never the reverse. Consequences fixed: sea->port marches now

@@ -7,6 +7,6 @@
     "test": "node tests/run.js"
   },
   "devDependencies": {
-    "jsdom": "^29.1.1"
+    "jsdom": "^24.0.0"
   }
 }
