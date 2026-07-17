@@ -13,6 +13,7 @@
 // full config, both seeds, per-seat agent ids, rulesRevision, transcript,
 // result, state hash.
 
+import { pathToFileURL } from 'node:url';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning, stateHash, RULES_REVISION } from '../src/engine/engine.js';
@@ -64,7 +65,10 @@ export function playGame(seed, botSeed, seatCount = 6, mix = 'random') {
   return { state: s, steps, agents };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows-safe CLI detection (owner bug report, Jul 2026): `file://` +
+// argv[1] never matches on Windows paths (C:\ + backslashes) — the tool
+// loaded, matched nothing, and exited silently with a 0-byte redirect.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [games = 10, seed0 = 1000, seats = 6] = process.argv.slice(2, 5).map(Number);
   const mix = process.argv[5] || 'random';
   mkdirSync(new URL('../episodes/', import.meta.url), { recursive: true });

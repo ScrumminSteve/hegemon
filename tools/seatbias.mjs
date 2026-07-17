@@ -8,6 +8,7 @@
 // Wilson CIs keep small-N honest. Feeds the per-faction delta decision
 // (schema already live in effectiveWeights).
 
+import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
@@ -32,7 +33,10 @@ export function playSymmetricGame(seed) {
   return { winner: over.standings[0], standings: over.standings, rounds: s.round };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows-safe CLI detection (owner bug report, Jul 2026): `file://` +
+// argv[1] never matches on Windows paths (C:\ + backslashes) — the tool
+// loaded, matched nothing, and exited silently with a 0-byte redirect.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i === -1 ? d : process.argv[i + 1]; };
   const games = Number(arg('games', 60)), seedBase = Number(arg('seed', 300000));
   const t0 = Date.now();

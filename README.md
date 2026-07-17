@@ -304,6 +304,18 @@ loud refusal of unknown query types.
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
 
+## M3.d.3 — Windows CLI fix (build m3d3)
+
+**Owner bug report:** every tools/ CLI exited instantly on Windows with
+zero output (0-byte redirect). Root cause: the run-directly detection
+compared `import.meta.url` against `` `file://` + process.argv[1] `` —
+matches on POSIX paths, never on `C:\...` backslash paths, so the tool
+loaded, matched nothing, and exited silently. Fixed with the proper
+cross-platform idiom (`pathToFileURL(process.argv[1]).href`) across
+eval.mjs, tune.mjs, seatbias.mjs, and selfplay.mjs; every CLI re-verified
+firing on Linux. Lesson banked: CLIs developed on Linux get a Windows
+smoke before the owner burns a run on them.
+
 ## M3.d.2 — the transport menu (build m3d2)
 
 **Owner insight while reading the seat-bias study: the two lagging factions

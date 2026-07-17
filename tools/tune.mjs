@@ -25,6 +25,7 @@
 // held-out seeds at larger N — the honest number (best-so-far over noisy
 // evals flatters itself; winner's curse is priced in, not ignored).
 
+import { pathToFileURL } from 'node:url';
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { WEIGHTS } from '../src/agents/heuristic.js';
 import { evaluate } from './eval.mjs';
@@ -150,7 +151,10 @@ export async function tune(path, cfg = {}) {
 }
 
 // ---------------------------------------------------------------------------
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows-safe CLI detection (owner bug report, Jul 2026): `file://` +
+// argv[1] never matches on Windows paths (C:\ + backslashes) — the tool
+// loaded, matched nothing, and exited silently with a 0-byte redirect.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = (kk, d) => { const i = process.argv.indexOf(`--${kk}`); return i === -1 ? d : process.argv[i + 1]; };
   const path = arg('resume', null) || arg('run', null);
   if (!path) { console.error('usage: node tools/tune.mjs --run runs/x.json | --resume runs/x.json'); process.exit(1); }

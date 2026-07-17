@@ -17,6 +17,7 @@
 // rank, mean rounds (a degenerate staller shows up here), and rejections —
 // which are a HARD ABORT, never a statistic (the zero-rejection contract).
 
+import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { writeFileSync } from 'node:fs';
 import { createGame } from '../src/engine/state.js';
@@ -126,7 +127,10 @@ export async function evaluate(challengerCfg, opts = {}) {
 }
 
 // ---------------------------------------------------------------------------
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows-safe CLI detection (owner bug report, Jul 2026): `file://` +
+// argv[1] never matches on Windows paths (C:\ + backslashes) — the tool
+// loaded, matched nothing, and exited silently with a 0-byte redirect.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i === -1 ? d : process.argv[i + 1]; };
   const games = Number(arg('games', 60)), seedBase = Number(arg('seed', 7000));
   const incumbent = arg('incumbent', 'v1');
