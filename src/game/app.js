@@ -19,7 +19,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3b2';
+export const BUILD_ID = 'm3c1';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -30,6 +30,69 @@ export const BUILD_ID = 'm3b2';
 // personality), a toggle, nothing else.
 // ---------------------------------------------------------------------------
 const spectate = { on: false, timer: null, agents: null, policy: null, rng: null };
+
+// ---------------------------------------------------------------------------
+// Mixed-seat mode (M3.c, owner decisions Jul 2026): ONE human seat, bots play
+// the rest. The entire display path reads shown() — viewFor(game, humanSeat)
+// whenever a bot is at the table — so hidden information (unrevealed order
+// faces, sealed bids, foreign peeks, pre-reveal card picks) is masked by the
+// same code path that protects it from AI seats. Architectural, not audited:
+// the render layer CANNOT leak what it never receives. Table mode (no bots)
+// renders raw state exactly as before — the operator-trust exception stays
+// the exception, per the banked information-access contract.
+// ---------------------------------------------------------------------------
+const mixed = { human: null, policy: 'heuristic', agents: null, key: null, rng: null, timer: null };
+const isBotSeat = fid => !!mixed.human && fid !== mixed.human;
+
+let _viewCache = null;
+function shown() {
+  if (!game || !mixed.human) return game;
+  return (_viewCache ||= viewFor(game, mixed.human));
+}
+
+/** The pending queries this operator may see and answer. */
+function visibleQueries() {
+  const all = shown()?.pendingQueries || [];
+  return mixed.human ? all.filter(q => q.faction === mixed.human) : all;
+}
+
+function mixedAgents() {
+  const seed = game.config?.seed ?? 1;
+  const key = `${mixed.policy}|${seed}|${mixed.human}`;
+  if (mixed.agents && mixed.key === key) return mixed.agents;
+  mixed.key = key;
+  const jitterBase = (seed * 131) | 0;
+  mixed.agents = Object.fromEntries(game.factions.map((fid, i) =>
+    [fid, isBotSeat(fid)
+      ? (mixed.policy === 'heuristic'
+          ? createHeuristicAgent({ jitterSeed: jitterBase + i })
+          : createRandomAgent())
+      : null]));
+  return mixed.agents;
+}
+
+/** Bots answer their pending queries on the spectate-slider cadence (owner
+    decision). Human queries stop the pump; dispatch → render → pump chains. */
+function botPump() {
+  clearTimeout(mixed.timer); mixed.timer = null;
+  if (!mixed.human || !game || game.phase === 'gameOver' || spectate.on) return;
+  const q = game.pendingQueries.find(x => isBotSeat(x.faction));
+  if (!q) return; // the table waits on you
+  const ms = Number($('#spectate-speed')?.value || 600);
+  mixed.timer = setTimeout(() => {
+    mixed.timer = null;
+    const q2 = game.pendingQueries.find(x => isBotSeat(x.faction));
+    if (!q2 || spectate.on || game.phase === 'gameOver') return;
+    try {
+      const menu = legalActions(game, q2);
+      mixed.rng = mixed.rng || botRng((((game.config?.seed ?? 1) * 977) + 41) | 0);
+      dispatch(mixedAgents()[q2.faction].decide(viewFor(game, q2.faction), q2, menu, mixed.rng));
+    } catch (e) {
+      console.error('bot halted:', e);
+      flash(`Bot error (${q2.faction}): ${e.message}`);
+    }
+  }, ms);
+}
 
 function spectateAgents() {
   const policy = $('#spectate-policy')?.value || 'heuristic';
@@ -69,6 +132,7 @@ function toggleSpectate(onOff) {
   }
   const btn = $('#btn-spectate');
   if (btn) btn.textContent = spectate.on ? 'Spectating…' : 'Spectate';
+  if (!spectate.on) botPump(); // mixed games resume when spectate ends (M3.c)
 }
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, episodeRecord } from '../engine/engine.js';
@@ -127,12 +191,19 @@ function rName(rid) {
   return r.kind === 'port' ? `${theme.terms.port} of ${theme.regions[r.landId]}` : (theme.regions[rid] || rid);
 }
 const orderName = t => ({ march: 'March', defend: 'Defend', support: 'Support', raid: 'Raid', rally: theme.terms.orderRally }[t]);
-const tokenLabel = o => `${orderName(o.type)}${o.mod ? (o.mod > 0 ? ` +${o.mod}` : ` ${o.mod}`) : ''}${o.starred ? ' ★' : ''}`;
+const tokenLabel = o => o?.hidden ? 'face-down order' : `${orderName(o.type)}${o.mod ? (o.mod > 0 ? ` +${o.mod}` : ` ${o.mod}`) : ''}${o.starred ? ' ★' : ''}`;
 const unitName = t => ({ infantry: theme.terms.unitInfantry, cavalry: theme.terms.unitCavalry, warship: theme.terms.unitWarship, siege_engine: theme.terms.unitSiege }[t]);
 
 // ---------- lifecycle ----------
 function newGame(seed) {
   resetTelemetry();
+  // Seat assignment takes effect on New game (M3.c): 'table' = classic
+  // all-seats operator mode; a faction id = you vs five bots.
+  const seatSel = $('#seat-select')?.value || 'table';
+  mixed.human = seatSel === 'table' ? null : seatSel;
+  mixed.policy = $('#spectate-policy')?.value || 'heuristic';
+  mixed.agents = null; mixed.key = null; mixed.rng = null;
+  clearTimeout(mixed.timer); mixed.timer = null;
   if (Number.isFinite(seed)) {
     game = createGame(6, { seed: Math.floor(seed) });
     beginPlanning(game);
@@ -161,6 +232,7 @@ function dispatch(action) {
   try {
     const r = applyAction(game, action);
     game = r.state;
+    _viewCache = null;
     // Aligned by transcript index: timings[i] annotates actionLog[i].
     telemetry.timings.push({ i: game.actionLog.length - 1, type: action.type, faction: action.faction, thinkMs });
     history.push(serialize(game));
@@ -174,14 +246,43 @@ function dispatch(action) {
   }
 }
 
+
+function restoreFromText(text) {
+  const parsed = JSON.parse(text);
+  if (parsed && parsed.save === 'hegemon-save/2') {
+    game = deserialize(JSON.stringify(parsed.engine));
+    mixed.human = parsed.controllers?.human ?? null;
+    mixed.policy = parsed.controllers?.policy ?? 'heuristic';
+  } else {
+    game = deserialize(text);
+    mixed.human = null; // raw saves restore as table mode
+  }
+  mixed.agents = null; mixed.key = null; mixed.rng = null;
+  clearTimeout(mixed.timer); mixed.timer = null;
+  _viewCache = null;
+  history = [serialize(game)];
+  ui = {};
+  resetTelemetry();
+}
+
 function undo() {
   if (history.length < 2) return;
-  history.pop();
-  game = deserialize(history[history.length - 1]);
-  // Keep the sidecar aligned with the shrunken transcript — but record the
-  // retraction itself: hesitation is signal even when the move is erased.
-  const undone = telemetry.timings.pop();
-  telemetry.undos.push({ atAction: game.actionLog.length, undone: undone ? { type: undone.type, faction: undone.faction } : null });
+  // Mixed mode (M3.c): rewind THROUGH intervening bot actions back to before
+  // your own last decision — undoing onto a bot's turn would just watch the
+  // pump replay it. Bots re-decide forward from your changed move (the bot
+  // RNG stream is not rewound, so they may reconsider — noted in README).
+  do {
+    const undoneAction = game.actionLog[game.actionLog.length - 1];
+    history.pop();
+    game = deserialize(history[history.length - 1]);
+    _viewCache = null;
+    // Keep the sidecar aligned with the shrunken transcript — but record the
+    // retraction itself: hesitation is signal even when the move is erased.
+    const undone = telemetry.timings.pop();
+    telemetry.undos.push({ atAction: game.actionLog.length, undone: undone ? { type: undone.type, faction: undone.faction } : null });
+    if (!mixed.human) break;
+    if (undoneAction && undoneAction.faction === mixed.human) break;
+  } while (history.length >= 2);
   ui = {};
   stageState.seen = game.log.length; // never re-stage the rewound past
   stageState.batch = null;
@@ -224,14 +325,14 @@ function unitGlyph(u, x, y) {
 
 function marchCandidates(fid, from) {
   const out = { peaceful: [], battle: [] };
-  const units = (game.unitsByRegion[from] || []).filter(u => u.faction === fid && !u.routed);
+  const units = (shown().unitsByRegion[from] || []).filter(u => u.faction === fid && !u.routed);
   if (!units.length) return out;
   const hasLand = units.some(u => u.type !== 'warship');
   const hasShips = units.some(u => u.type === 'warship');
   const cand = new Set([...(ADJ[from] || [])]);
   if (hasLand) {
     for (const r of REGIONS) {
-      if (r.kind === 'land' && r.id !== from && transportReachable(game, fid, from, r.id)) cand.add(r.id);
+      if (r.kind === 'land' && r.id !== from && transportReachable(shown(), fid, from, r.id)) cand.add(r.id);
     }
   }
   for (const rid of cand) {
@@ -246,16 +347,16 @@ function marchCandidates(fid, from) {
       if (!hasShips) continue;
       const pdef = PORTS.find(pp => pp.id === rid);
       if (!pdef || pdef.seaId !== from) continue;
-      if (controllerOf(game, pdef.landId) !== fid) continue;
-      if ((game.unitsByRegion[rid] || []).length >= 3) continue;
+      if (controllerOf(shown(), pdef.landId) !== fid) continue;
+      if ((shown().unitsByRegion[rid] || []).length >= 3) continue;
       out.peaceful.push(rid);
       continue;
     }
-    const n = game.neutrals?.[rid];
+    const n = shown().neutrals?.[rid];
     if (n?.insurmountable) continue;
-    const there = game.unitsByRegion[rid] || [];
+    const there = shown().unitsByRegion[rid] || [];
     const enemyUnits = there.some(u => u.faction !== fid);
-    const enemyGarrison = game.garrisons[rid] && game.garrisons[rid].faction !== fid && !there.some(u => u.faction === fid);
+    const enemyGarrison = shown().garrisons[rid] && shown().garrisons[rid].faction !== fid && !there.some(u => u.faction === fid);
     if (enemyUnits || enemyGarrison || n) out.battle.push(rid);
     else out.peaceful.push(rid);
   }
@@ -265,16 +366,18 @@ function marchCandidates(fid, from) {
 function overlayHighlights(g) {
   // #1 — spotlight the decider whose panel is OPEN (during planning all six
   // seats hold queries at once; follow the tab the operator selected).
-  const qs = game.pendingQueries;
+  // Mixed mode (M3.c): the tab list is the HUMAN's queries only — index
+  // parity with the panel is what keeps the spotlight honest.
+  const qs = visibleQueries();
   const activeQ = ui.activeQuery != null ? qs[Math.min(ui.activeQuery, qs.length - 1)] : qs[0];
   const focus = activeQ?.faction;
   if (focus) {
     const held = new Set();
-    for (const [rid, units] of Object.entries(game.unitsByRegion)) {
+    for (const [rid, units] of Object.entries(shown().unitsByRegion)) {
       if ((units || []).some(u => u.faction === focus)) held.add(rid);
     }
     for (const r of REGIONS) {
-      if (r.kind === 'land' && controllerOf(game, r.id) === focus) held.add(r.id);
+      if (r.kind === 'land' && controllerOf(shown(), r.id) === focus) held.add(r.id);
     }
     for (const rid of held) {
       const { x, y } = posOf(rid);
@@ -306,7 +409,7 @@ function overlayHighlights(g) {
     const { x, y } = posOf(src);
     g.appendChild(el('circle', { cx: x, cy: y, r: 50, class: 'ov-raider' }));
     for (const rid of ADJ[src] || []) {
-      const o = game.ordersByRegion[rid];
+      const o = shown().ordersByRegion[rid];
       if (o && o.faction !== activeQ.faction) {
         const p = posOf(rid);
         g.appendChild(el('circle', { cx: p.x, cy: p.y, r: 46, class: 'ov-battle' }));
@@ -316,8 +419,8 @@ function overlayHighlights(g) {
   // Battle presentation (owner P2): every participating territory reads at a
   // glance — battlefield (pulsing ring exists below), the attacker's origin,
   // and each declared supporter tinted by the side it backs.
-  if (game.combat) {
-    const c = game.combat;
+  if (shown().combat) {
+    const c = shown().combat;
     const o = posOf(c.origin);
     g.appendChild(el('circle', { cx: o.x, cy: o.y, r: 50, class: 'ov-origin',
       style: `stroke:${fColor(c.attacker)}` }));
@@ -334,7 +437,7 @@ function overlayState(svg) {
   const g = el('g', { class: 'game-overlay' });
   overlayHighlights(g);
 
-  for (const [rid, units] of Object.entries(game.unitsByRegion)) {
+  for (const [rid, units] of Object.entries(shown().unitsByRegion)) {
     const { x, y } = posOf(rid);
     const isPort = region(rid).kind === 'port';
     const step = 15, x0 = x - ((units.length - 1) * step) / 2;
@@ -342,8 +445,8 @@ function overlayState(svg) {
     units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - (isPort ? 19 : 32))));
   }
   const staged = (ui.mode === 'planning' && ui.assignments) ? ui.assignments : null;
-  const stagedFor = staged ? game.pendingQueries[Math.min(ui.activeQuery ?? 0, game.pendingQueries.length - 1)]?.faction : null;
-  for (const [rid, o] of Object.entries(game.ordersByRegion)) {
+  const stagedFor = staged ? visibleQueries()[Math.min(ui.activeQuery ?? 0, Math.max(0, visibleQueries().length - 1))]?.faction : null;
+  for (const [rid, o] of Object.entries(shown().ordersByRegion)) {
     if (staged && rid in staged) continue; // the live pick supersedes any committed badge
     drawOrderBadge(g, rid, o, o.revealed ? 'ov-order' : 'ov-order-back');
   }
@@ -357,26 +460,26 @@ function overlayState(svg) {
   // old top-right spot collided with the new castle marks and unit rows;
   // bottom-center belongs to the control marker. (x-30, y+33) threads every
   // lane: order badge above-left, icon row inboard, label below, marker center.
-  for (const [rid, gar] of Object.entries(game.garrisons)) {
+  for (const [rid, gar] of Object.entries(shown().garrisons)) {
     const { x, y } = posOf(rid);
     g.appendChild(el('circle', { cx: x - 30, cy: y + 33, r: 10, class: 'ov-garrison', style: `stroke:${fColor(gar.faction)}` }));
     const t = el('text', { x: x - 30, y: y + 37.5, class: 'ov-num' }); t.textContent = gar.strength; g.appendChild(t);
   }
   // Setup defense bonuses only: one badge per neutral force, styled like the
   // seat garrisons (same size, same numerals), gray ring for "no owner".
-  for (const [rid, n] of Object.entries(game.neutrals)) {
+  for (const [rid, n] of Object.entries(shown().neutrals)) {
     const { x, y } = posOf(rid);
     g.appendChild(el('circle', { cx: x, cy: y - 32, r: 10, class: 'ov-neutral' }));
     const t = el('text', { x, y: y - 27.5, class: 'ov-num' });
     t.textContent = n.insurmountable ? '~' : n.strength;
     g.appendChild(t);
   }
-  for (const [rid, fid] of Object.entries(game.controlMarkers)) {
+  for (const [rid, fid] of Object.entries(shown().controlMarkers)) {
     const { x, y } = posOf(rid);
     g.appendChild(el('rect', { x: x - 6, y: y + 22, width: 12, height: 12, rx: 2, style: `fill:${fColor(fid)}`, class: 'ov-marker' }));
   }
-  if (game.combat) {
-    const { x, y } = posOf(game.combat.region);
+  if (shown().combat) {
+    const { x, y } = posOf(shown().combat.region);
     g.appendChild(el('circle', { cx: x, cy: y, r: 54, class: 'ov-battle' }));
   }
   svg.appendChild(g);
@@ -423,7 +526,7 @@ function tintForts() {
   for (const rg of document.querySelectorAll('#map .region[data-id]')) {
     const u = rg.querySelector('use.ic-fort');
     if (!u) continue;
-    const c = controllerOf(game, rg.dataset.id);
+    const c = controllerOf(shown(), rg.dataset.id);
     u.style.color = c ? fColor(c) : 'var(--brass)';
   }
 }
@@ -452,9 +555,9 @@ function handleRegionTap(rid) {
     const naval = kind !== 'land';
     const assigned = {};
     for (const mv of ui.moves) for (const [t, n] of Object.entries(mv.units)) assigned[t] = (assigned[t] || 0) + n;
-    const q = game.pendingQueries[ui.activeQuery != null ? Math.min(ui.activeQuery, game.pendingQueries.length - 1) : 0];
+    const q = shown().pendingQueries[ui.activeQuery != null ? Math.min(ui.activeQuery, shown().pendingQueries.length - 1) : 0];
     const units = {};
-    for (const u of (game.unitsByRegion[ui.region] || [])) {
+    for (const u of (shown().unitsByRegion[ui.region] || [])) {
       if (u.faction !== q?.faction || u.routed) continue;
       if (naval !== (u.type === 'warship')) continue;
       units[u.type] = (units[u.type] || 0) + 1;
@@ -472,19 +575,28 @@ function handleRegionTap(rid) {
 function renderTurnPanel() {
   overlayState($('#map'));
   const panel = $('#turn-panel');
-  if (!game) { panel.innerHTML = ''; return; }
+  if (!shown()) { panel.innerHTML = ''; return; }
 
   renderBatchCard($('#stage')); // cheap; overwritten below if a decision takes the stage
-  if (game.phase === 'gameOver') {
-    const over = game.log.find(e => e.event === 'gameOver');
-    panel.innerHTML = `<div class="victory">👑 ${esc(fName(game.winner))} rules the realm
-      <span>(${seatsControlled(game, game.winner)} seats · ${over?.reason === 'seats' ? 'instant victory' : 'won on standings, round ' + game.round})</span></div>` +
+  if (shown().phase === 'gameOver') {
+    const over = shown().log.find(e => e.event === 'gameOver');
+    panel.innerHTML = `<div class="victory">👑 ${esc(fName(shown().winner))} rules the realm
+      <span>(${seatsControlled(shown(), shown().winner)} seats · ${over?.reason === 'seats' ? 'instant victory' : 'won on standings, round ' + shown().round})</span></div>` +
       (over?.standings ? `<div class="hint">${over.standings.map((f, i) => `${i + 1}. ${fGlyph(f)} ${esc(fName(f))} (${over.seats?.[f] ?? 0})`).join(' · ')}</div>` : '');
     return;
   }
 
-  const qs = game.pendingQueries;
-  if (!qs.length) { panel.innerHTML = '<p class="hint">No pending decisions.</p>'; return; }
+  const qsAll = shown().pendingQueries;
+  const qs = visibleQueries();
+  if (!qsAll.length) { panel.innerHTML = '<p class="hint">No pending decisions.</p>'; return; }
+  if (mixed.human && !qs.length) {
+    // Bots hold the table (M3.c). Their queries NEVER render as forms — the
+    // sealed-bid slip, the card pick, the peek all stay off this screen.
+    const thinking = [...new Set(qsAll.map(q => q.faction))];
+    panel.innerHTML = `<div class="hint bot-wait">⏳ ${thinking.map(f =>
+      `<span class="fchip" style="background:${fColor(f)}"></span> ${esc(fName(f))}`).join(' · ')} deciding…</div>`;
+    return;
+  }
 
   // Active query: explicit selection, else the first.
   const active = ui.activeQuery != null ? qs[Math.min(ui.activeQuery, qs.length - 1)] : qs[0];
@@ -539,9 +651,9 @@ function renderTurnPanel() {
 // replay and to headless agents.
 const BATCH_SKIP = new Set(['eventCardRevealed', 'eventPhaseBegan', 'planningBegan']);
 function scanForStage() {
-  if (!game) return;
-  const fresh = game.log.slice(stageState.seen);
-  stageState.seen = game.log.length;
+  if (!shown()) return;
+  const fresh = shown().log.slice(stageState.seen);
+  stageState.seen = shown().log.length;
   if (stageState.quiet) return;
   const beganAt = fresh.findIndex(e => e.event === 'eventPhaseBegan');
   if (beganAt === -1) return;
@@ -578,17 +690,17 @@ function renderBatchCard(stageEl) {
 // mixed human/bot games (M3.c) will scope this to viewFor.
 function renderInspector() {
   const el = $('#inspector-body');
-  if (!el || !game) return;
+  if (!el || !shown()) return;
   const f = inspectorFid;
-  const hand = game.leaderHands[f] || [];
-  const discard = game.leaderDiscards[f] || [];
+  const hand = shown().leaderHands[f] || [];
+  const discard = shown().leaderDiscards[f] || [];
   el.innerHTML = `
-    <div class="insp-chips">${game.factions.map(x =>
+    <div class="insp-chips">${shown().factions.map(x =>
       `<button class="insp-chip ${x === f ? 'on' : ''}" data-insp="${x}" style="border-left:3px solid ${fColor(x)}">${fGlyph(x)}</button>`).join('')}</div>
     <div class="insp-stats">${fGlyph(f)} <b>${esc(fName(f))}</b> ·
-      ${pic('i-fort-castle')}${seatsControlled(game, f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${game.supply[f]} supply ·
-      ${pic('i-coin')}${game.authority[f]} ${esc(theme.terms.authority)} ·
-      ${esc(theme.terms.threat || 'threat')} ${game.threat}/12</div>
+      ${pic('i-fort-castle')}${seatsControlled(shown(), f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]} supply ·
+      ${pic('i-coin')}${shown().authority[f]} ${esc(theme.terms.authority)} ·
+      ${esc(theme.terms.threat || 'threat')} ${shown().threat}/12</div>
     <div class="insp-cards">${hand.map(id => cardChip(id, { withText: false })).join('') || '<span class="dim">no cards in hand</span>'}</div>
     ${discard.length ? `<div class="insp-stats" style="margin-top:6px">spent: ${discard.map(id => esc(theme.cards?.[id] ?? id)).join(', ')}</div>` : ''}`;
   el.querySelectorAll('[data-insp]').forEach(b => b.addEventListener('click', () => {
@@ -657,7 +769,7 @@ function eventChoiceForm(q) {
 
 function reconcileForm(q) {
   const rows = q.regions.map(rid => {
-    const units = (game.unitsByRegion[rid] || []).filter(u => u.faction === q.faction);
+    const units = (shown().unitsByRegion[rid] || []).filter(u => u.faction === q.faction);
     const types = [...new Set(units.map(u => u.type))];
     return `<div class="stepper-row"><b>${esc(rName(rid))}</b> (${units.length} units): ` +
       types.map(t => `<button class="opt" data-region="${rid}" data-unit="${t}">destroy ${esc(unitName(t) || t)}</button>`).join(' ') +
@@ -716,9 +828,9 @@ function musterForm(q) {
   // Offer only destinations the engine will accept: seas holding another
   // faction's ships are closed to mustering (Rules p.25 — owner P1, Jul 2026).
   const seas = [...(ADJ[q.region] || [])].filter(x => region(x).kind === 'maritime'
-    && !(game.unitsByRegion[x] || []).some(u => u.faction !== q.faction));
-  const harborOpen = port && !(game.unitsByRegion[port.id] || []).some(u => u.faction !== q.faction);
-  const hasInf = (game.unitsByRegion[q.region] || [])
+    && !(shown().unitsByRegion[x] || []).some(u => u.faction !== q.faction));
+  const harborOpen = port && !(shown().unitsByRegion[port.id] || []).some(u => u.faction !== q.faction);
+  const hasInf = (shown().unitsByRegion[q.region] || [])
     .filter(u => u.faction === q.faction && u.type === 'infantry' && !u.routed).length
     > staged.filter(b => b.type === 'upgrade').length;
   const btn = (label, cost, data, on = true) =>
@@ -743,10 +855,10 @@ function battleless() { return ''; }
 
 // ---------- incursion (M2.d) ----------
 function incursionBanner() {
-  const inc = game.eventPhase?.incursion;
+  const inc = shown().eventPhase?.incursion;
   if (!inc) return '';
   const sealed = inc.phase === 'sealed';
-  const bidders = game.factions.filter(f => !inc.excluded.includes(f));
+  const bidders = shown().factions.filter(f => !inc.excluded.includes(f));
   const cell = f => sealed
     ? `<span class="card-chip ghost">${fGlyph(f)} ${inc.bids[f] !== undefined ? '✊' : '…'}</span>`
     : `<span class="card-chip">${fGlyph(f)} <b>${inc.bids[f] ?? 0}</b></span>`;
@@ -797,7 +909,7 @@ function incursionUnitsForm(q) {
   const picks = ui.incUnits || [];
   const lockRegion = q.constraint === 'singleRegion' && picks.length ? picks[0].region : null;
   const rows = [];
-  for (const [rid, units] of Object.entries(game.unitsByRegion)) {
+  for (const [rid, units] of Object.entries(shown().unitsByRegion)) {
     if (q.regions && !q.regions.includes(rid)) continue;
     const mine = units.filter(u => u.faction === q.faction && (!q.unitType || u.type === q.unitType));
     if (!mine.length) continue;
@@ -916,7 +1028,7 @@ function abilityForm(q) {
 }
 
 function targetLabel(q, t) {
-  if (t === 'embattled') return `The embattled area — ${rName(game.combat.region)}`;
+  if (t === 'embattled') return `The embattled area — ${rName(shown().combat.region)}`;
   if (['initiative', 'prowess', 'command'].includes(t)) {
     return theme.terms['track' + t[0].toUpperCase() + t.slice(1)] ?? t;
   }
@@ -936,9 +1048,9 @@ function targetForm(q) {
 function planningForm(q) {
   if (ui.mode !== 'planning' || ui.faction !== q.faction) {
     ui = { activeQuery: ui.activeQuery, mode: 'planning', faction: q.faction, assignments: {} };
-    for (const rid of orderableRegions(game, q.faction)) ui.assignments[rid] = null;
+    for (const rid of orderableRegions(shown(), q.faction)) ui.assignments[rid] = null;
   }
-  const limit = starLimit(game, q.faction);
+  const limit = starLimit(shown(), q.faction);
   // The row being re-picked returns its token to the pool (mirrors the
   // click handler exactly — index parity is what makes picks WYSIWYG).
   const poolBasis = Object.entries(ui.assignments)
@@ -956,7 +1068,7 @@ function planningForm(q) {
   }
   html += `</div>`;
   if (ui.awaitTokenFor) {
-    const banned = game.roundFlags.bannedOrders || [];
+    const banned = shown().roundFlags.bannedOrders || [];
     html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div><div class="token-grid">` + remaining.map((t, i) => {
       const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
       return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
@@ -969,7 +1081,7 @@ function planningForm(q) {
   // bans + the star limit leave fewer legal tokens than occupied areas, the
   // commit target drops to the placeable maximum — the operator chooses which
   // areas go without, exactly as the validator now demands.
-  const requiredN = maxPlaceableOrders(game, q.faction);
+  const requiredN = maxPlaceableOrders(shown(), q.faction);
   const placedN = Object.values(ui.assignments).filter(Boolean).length;
   const complete = placedN === requiredN;
   if (requiredN < Object.keys(ui.assignments).length) {
@@ -998,7 +1110,7 @@ function remainingTokens(used) {
 function courierForm(q) {
   let html = header(q, theme.terms.tokenCourier);
   if (ui.mode === 'courier-swap') {
-    const mine = Object.entries(game.ordersByRegion).filter(([, o]) => o.faction === q.faction);
+    const mine = Object.entries(shown().ordersByRegion).filter(([, o]) => o.faction === q.faction);
     if (!ui.swapRegion) {
       html += `<p class="hint">Replace which order?</p><div class="btn-col">` + mine.map(([rid, o]) =>
         `<button data-swapr="${rid}">${esc(rName(rid))} · ${esc(tokenLabel(o))}</button>`).join('') + `</div>`;
@@ -1006,7 +1118,7 @@ function courierForm(q) {
       const used = mine.filter(([rid]) => rid !== ui.swapRegion).map(([, o]) => o);
       html += `<p class="hint">New order for ${esc(rName(ui.swapRegion))}:</p><div class="token-grid">` +
         remainingTokens(used).map((t, i) => {
-          const banned = game.roundFlags.bannedOrders || [];
+          const banned = shown().roundFlags.bannedOrders || [];
           const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
           return `<button class="token" data-swapt="${i}" ${ban ? 'disabled title="forbidden this round (event card)"' : ''}>${esc(tokenLabel(t))}${ban ? ' ⃠' : ''}</button>`;
         }).join('') + `</div>`;
@@ -1031,12 +1143,12 @@ function raidForm(q) {
   }
   html += `<button data-repick>↩ choose a different raid</button>`;
   const targets = [...ADJ[ui.region]].filter(rid => {
-    const o = game.ordersByRegion[rid];
+    const o = shown().ordersByRegion[rid];
     return o && o.faction !== q.faction;
   }).sort();
   html += `<p class="hint">Raiding from <b>${esc(rName(ui.region))}</b></p><div class="btn-col">` +
-    targets.map(rid => `<button data-target="${rid}">${esc(rName(rid))} · ${esc(tokenLabel(game.ordersByRegion[rid]))}
-      <span class="fchip" style="background:${fColor(game.ordersByRegion[rid].faction)}"></span></button>`).join('') +
+    targets.map(rid => `<button data-target="${rid}">${esc(rName(rid))} · ${esc(tokenLabel(shown().ordersByRegion[rid]))}
+      <span class="fchip" style="background:${fColor(shown().ordersByRegion[rid].faction)}"></span></button>`).join('') +
     `<button data-target="" class="ghost">Spend with no target</button></div>`;
   return html;
 }
@@ -1051,7 +1163,7 @@ function marchForm(q) {
   }
   const avail = {};
   if (q.regions.length > 1) html += `<button data-repick>↩ choose a different march</button>`;
-  for (const u of game.unitsByRegion[ui.region] || []) {
+  for (const u of shown().unitsByRegion[ui.region] || []) {
     if (u.faction === q.faction && !u.routed) avail[u.type] = (avail[u.type] || 0) + 1;
   }
   const committed = {};
@@ -1085,9 +1197,9 @@ function rallyForm(q) {
     html += `<div class="btn-col">` + q.regions.map(r => `<button data-pick="${r}">${esc(rName(r))}</button>`).join('') + `</div>`;
     return html;
   }
-  const o = game.ordersByRegion[ui.region];
+  const o = shown().ordersByRegion[ui.region];
   const r = region(ui.region);
-  const pts = r.kind === 'land' ? regionProps(game, ui.region).muster : 0;
+  const pts = r.kind === 'land' ? regionProps(shown(), ui.region).muster : 0;
   const canMuster = o?.starred && pts > 0;
   const why = !o?.starred ? 'requires the ★ order'
     : pts <= 0 ? `no ${theme.terms.fort.toLowerCase()} here (Rules p.22)` : '';
@@ -1099,8 +1211,8 @@ function rallyForm(q) {
 
 // --- combat forms ---
 function battleBanner() {
-  const c = game.combat;
-  const s = combatStrengths(game);
+  const c = shown().combat;
+  const s = combatStrengths(shown());
   return `<div class="battle">
     <div class="battle-side" style="border-color:${fColor(c.attacker)}">${fGlyph(c.attacker)} ${esc(fName(c.attacker))}<b>${s.attacker}</b></div>
     <div class="battle-vs">⚔ ${esc(rName(c.region))}</div>
@@ -1123,7 +1235,7 @@ function battleCards(c) {
 }
 
 function supportForm(q) {
-  const c = game.combat;
+  const c = shown().combat;
   const who = f => q.faction === f ? 'yourself' : fName(f);
   return battleBanner() + header(q, `support from ${rName(q.region)}`) + `<div class="btn-col">
     <button data-support="attacker">Back the attacker — ${fGlyph(c.attacker)} ${esc(who(c.attacker))}</button>
@@ -1280,7 +1392,7 @@ function bindForm(panel, q) {
   }));
   panel.querySelectorAll('[data-swapr]').forEach(b => b.addEventListener('click', () => { ui.swapRegion = b.dataset.swapr; renderTurnPanel(); }));
   panel.querySelectorAll('[data-swapt]').forEach(b => b.addEventListener('click', () => {
-    const mine = Object.entries(game.ordersByRegion).filter(([, o]) => o.faction === q.faction);
+    const mine = Object.entries(shown().ordersByRegion).filter(([, o]) => o.faction === q.faction);
     const used = mine.filter(([rid]) => rid !== ui.swapRegion).map(([, o]) => o);
     const t = remainingTokens(used)[+b.dataset.swapt];
     dispatch({ type: 'courierDecision', faction: q.faction, decision: 'swapOrder',
@@ -1348,7 +1460,7 @@ function bindForm(panel, q) {
 function stepUnits(key, delta, q) {
   const [mi, t] = key.split(':');
   const mv = ui.moves[+mi];
-  const availTotal = (game.unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction && u.type === t && !u.routed).length;
+  const availTotal = (shown().unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction && u.type === t && !u.routed).length;
   const elsewhere = ui.moves.reduce((n, m, i) => n + (i === +mi ? 0 : (m.units[t] || 0)), 0);
   mv.units[t] = Math.max(0, Math.min(availTotal - elsewhere, (mv.units[t] || 0) + delta));
   renderTurnPanel();
@@ -1379,7 +1491,7 @@ function logLine(e) {
       : `${F(e.faction)} held recruitment at ${esc(rName(e.region))}.`;
     case 'rallyMusterOpened': return `${F(e.faction)}'s ★ rally raises banners at ${esc(rName(e.region))}.`;
     case 'biddingOpened': return `Sealed bids open for the ${esc(trackName(e.track))} track.`;
-    case 'bidsRevealed': return `Bids revealed — ${game.factions.map(f => `${fGlyph(f)} ${e.bids[f] ?? 0}`).join(' · ')}.`;
+    case 'bidsRevealed': return `Bids revealed — ${shown().factions.map(f => `${fGlyph(f)} ${e.bids[f] ?? 0}`).join(' · ')}.`;
     case 'tieBroken': return `${F(e.by)} orders the tie: ${e.order.map(f => fGlyph(f)).join(' → ')}.`;
     case 'trackRebuilt': return `The ${esc(trackName(e.track))} track stands anew: ${e.order.map(f => fGlyph(f)).join(' → ')}${e.passed ? ` — the ${esc(theme.terms['token' + e.token[0].toUpperCase() + e.token.slice(1)] ?? e.token)} passes to ${F(e.holder)}` : ''}.`;
     case 'biddingClosed': return `<em>The auction closes; the new order of powers holds.</em>`;
@@ -1433,7 +1545,6 @@ function logLine(e) {
     case 'attackerRepelled': return `The assault on ${esc(rName(e.region))} is repelled.`;
     case 'siegeDestroyedRetreating': return `A ${esc(unitName('siege_engine'))} is abandoned in the retreat.`;
     case 'routedUnitDestroyed': return `A routed unit is cut down mid-retreat.`;
-    case 'destroyedForSupply': return `${F(e.faction)} disbands a unit at ${esc(rName(e.region))} (supply).`;
     case 'portShipsRemoved': return `Enemy ${esc(theme.terms.unitWarship)}s burned at ${esc(rName(e.port))}.`;
     case 'portShipsReplaced': return `${F(e.faction)} refits ${e.count} ${esc(theme.terms.unitWarship)}(s) at ${esc(rName(e.port))}.`;
     case 'rallied': return `${F(e.faction)} gains ${e.gain} ${esc(theme.terms.authority)} at ${esc(rName(e.region))}.`;
@@ -1457,14 +1568,14 @@ function logLine(e) {
     case 'cleanUp': return `— Round ${e.round} ends —`;
     case 'eventPhasePending': return `(${esc(theme.terms.eventPhase)} arrives in M2 — straight to planning.)`;
     case 'actionPhaseBegan': return `— The armies move —`;
-    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the game ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
+    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the shown() ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
     default: return null;
   }
 }
 
 function renderLog() {
   const box = $('#log');
-  box.innerHTML = game.log.map(logLine).filter(Boolean).map(l => `<div>${l}</div>`).join('');
+  box.innerHTML = shown().log.map(logLine).filter(Boolean).map(l => `<div>${l}</div>`).join('');
   box.scrollTop = box.scrollHeight;
 }
 
@@ -1472,13 +1583,13 @@ function renderLog() {
 function renderHouses() {
   const el = $('#houses-panel');
   if (!el) return;
-  const active = new Set(game.pendingQueries.map(q => q.faction));
-  el.innerHTML = game.factions.map(f => `
+  const active = new Set(shown().pendingQueries.map(q => q.faction));
+  el.innerHTML = shown().factions.map(f => `
     <div class="house-row ${active.has(f) ? 'house-active' : ''}" style="border-left-color:${fColor(f)}">
       <span class="house-name">${fGlyph(f)} ${esc(fName(f))}</span>
-      <span title="seats (win at 7)">${pic('i-fort-castle')}${seatsControlled(game, f)}</span>
-      <span title="supply">${pic('i-supply', 'var(--bone-dim)')}${game.supply[f]}</span>
-      <span title="${esc(theme.terms.authority)}">${pic('i-coin')}${game.authority[f]}</span>
+      <span title="seats (win at 7)">${pic('i-fort-castle')}${seatsControlled(shown(), f)}</span>
+      <span title="supply">${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]}</span>
+      <span title="${esc(theme.terms.authority)}">${pic('i-coin')}${shown().authority[f]}</span>
     </div>`).join('');
 }
 
@@ -1490,12 +1601,12 @@ function renderTracks() {
     ['prowess',    theme.terms.trackProwess,    'blade',     theme.terms.tokenBlade],
     ['command',    theme.terms.trackCommand,    'courier',   theme.terms.tokenCourier],
   ];
-  const stars = STAR_ALLOWANCE[game.ruleset.seatCount] || [];
+  const stars = STAR_ALLOWANCE[shown().ruleset.seatCount] || [];
   el.innerHTML = rows.map(([track, label, token, tokenName]) => {
-    const seats = game.tracks[track].map((f, i) => {
+    const seats = shown().tracks[track].map((f, i) => {
       const star = track === 'command' && stars[i] ? `<sup>${'★'.repeat(stars[i])}</sup>` : '';
       const holder = i === 0 ? `<span class="tok-dot" title="${esc(tokenName)}">●</span>` : '';
-      const hot = game.pendingQueries.some(q => q.faction === f) ? ' seat-active' : '';
+      const hot = shown().pendingQueries.some(q => q.faction === f) ? ' seat-active' : '';
       return `<span class="track-seat${hot}" style="border-color:${fColor(f)}" title="${esc(fName(f))} — position ${i + 1}">${fGlyph(f)}${star}${holder}</span>`;
     }).join('');
     return `<div class="track-row"><span class="track-name" title="${esc(tokenName)} to the leader">${esc(label)}</span>${seats}</div>`;
@@ -1503,6 +1614,7 @@ function renderTracks() {
 }
 
 function render() {
+  _viewCache = null; // one fresh viewFor per state change (M3.c)
   lastRenderAt = performance.now();
   applyThemeVisuals();
   scanForStage();
@@ -1518,17 +1630,17 @@ function render() {
   const sl = $('#seed-line');
   if (sl) sl.textContent = `seed ${game.config?.seed ?? '—'} · build ${BUILD_ID}`;
   const phaseNames = { planning: 'Planning', action: 'Action', event: 'Event Phase', gameOver: 'Game over' };
-  $('#status-line').textContent = `Round ${game.round} of ${game.scenario.maxRounds ?? 10} · ${phaseNames[game.phase] || game.phase}`;
+  $('#status-line').textContent = `Round ${shown().round} of ${shown().scenario.maxRounds ?? 10} · ${phaseNames[shown().phase] || shown().phase}`;
   // P2 (owner, Jul 2026): threat and standings get their own strips instead
   // of riding in the round/phase sentence.
   const vit = $('#vitals-panel');
   if (vit) {
-    const t = game.threat ?? 0;
-    const board = game.factions.slice().sort((a, b) =>
-      (seatsControlled(game, b) - seatsControlled(game, a)) ||
-      (landAreasControlled(game, b) - landAreasControlled(game, a)) ||
-      (game.supply[b] - game.supply[a]) ||
-      (game.tracks.initiative.indexOf(a) - game.tracks.initiative.indexOf(b)));
+    const t = shown().threat ?? 0;
+    const board = shown().factions.slice().sort((a, b) =>
+      (seatsControlled(shown(), b) - seatsControlled(shown(), a)) ||
+      (landAreasControlled(shown(), b) - landAreasControlled(shown(), a)) ||
+      (shown().supply[b] - shown().supply[a]) ||
+      (shown().tracks.initiative.indexOf(a) - shown().tracks.initiative.indexOf(b)));
     vit.innerHTML = `
       <div class="vital-row" title="${esc(theme.terms.threat || 'Threat')} — incursion at 12">
         <span class="vital-name">${esc(theme.terms.threat || 'Threat')}</span>
@@ -1536,13 +1648,24 @@ function render() {
         <span class="vital-num">${t}/12</span></div>
       <div class="vital-row" title="standings: seats · land · supply · initiative (Rules p.25)">
         <span class="vital-name">Standing</span>
-        <span class="board-row">${board.map((f, i) => `<span class="board-seat" style="border-color:${fColor(f)}" title="${esc(fName(f))} — ${seatsControlled(game, f)} seats">${i === 0 ? '👑' : ''}${fGlyph(f)}</span>`).join('')}</span></div>`;
+        <span class="board-row">${board.map((f, i) => `<span class="board-seat" style="border-color:${fColor(f)}" title="${esc(fName(f))} — ${seatsControlled(shown(), f)} seats">${i === 0 ? '👑' : ''}${fGlyph(f)}</span>`).join('')}</span></div>`;
   }
+  botPump(); // M3.c: after every repaint, hand the table to any waiting bot
 }
 
 // ---------- chrome ----------
+function fillSeatSelect() {
+  const sel = $('#seat-select');
+  if (!sel) return;
+  const cur = sel.value || 'table';
+  sel.innerHTML = `<option value="table">table mode (all seats)</option>` +
+    FACTIONS.map(f => `<option value="${f.id}">play ${esc(fName(f.id))}</option>`).join('');
+  sel.value = [...sel.options].some(o => o.value === cur) ? cur : 'table';
+}
+
 function init() {
-  $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value]; render(); });
+  fillSeatSelect();
+  $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value]; fillSeatSelect(); render(); });
   $('#btn-new').addEventListener('click', () => newGame());
   $('#seed-line').addEventListener('click', () => {
     const raw = prompt('Start a new game with a specific seed (blank cancels):');
@@ -1561,7 +1684,15 @@ function init() {
     renderTurnPanel();
   });
   $('#btn-save').addEventListener('click', () => {
-    const blob = new Blob([serialize(game)], { type: 'application/json' });
+    // Table-mode saves stay RAW engine state (a raw save is an unsealed
+    // episode — keep that true). Mixed games wrap seat config in a v2
+    // envelope so Restore puts the same bots back at the table.
+    const payload = mixed.human
+      ? JSON.stringify({ save: 'hegemon-save/2',
+          controllers: { human: mixed.human, policy: mixed.policy },
+          engine: JSON.parse(serialize(game)) })
+      : serialize(game);
+    const blob = new Blob([payload], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `hegemon-round${game.round}.json`;
@@ -1573,7 +1704,8 @@ function init() {
     const notes = title ? (prompt('Notes (optional):') || '') : '';
     const ep = episodeRecord(game, {
       title, notes, recordedAt: new Date().toISOString(),
-      seatControllers: Object.fromEntries(game.factions.map(f => [f, 'human'])), // robots will self-declare (M3)
+      seatControllers: Object.fromEntries(game.factions.map(f =>
+        [f, mixed.human ? (f === mixed.human ? 'human' : mixedAgents()[f].id) : 'human'])), // M3.c: bots self-declare
     });
     ep.telemetry = telemetry; // Tier-2 sidecar: latency/undo/rejection observations
     const blob = new Blob([JSON.stringify(ep, null, 1)], { type: 'application/json' });
@@ -1590,10 +1722,7 @@ function init() {
     const f = e.target.files?.[0];
     if (!f) return;
     try {
-      game = deserialize((await f.text()).trim());
-      history = [serialize(game)];
-      ui = {};
-      resetTelemetry();
+      restoreFromText((await f.text()).trim());
       $('#load-box').classList.add('hidden');
       render();
       flash(`Restored ${f.name}.`);
@@ -1602,9 +1731,7 @@ function init() {
   });
   $('#btn-load-confirm').addEventListener('click', () => {
     try {
-      game = deserialize($('#load-text').value.trim());
-      history = [serialize(game)];
-      ui = {};
+      restoreFromText($('#load-text').value.trim());
       $('#load-box').classList.add('hidden');
       render();
     } catch (e) { flash(`Could not restore: ${e.message}`); }

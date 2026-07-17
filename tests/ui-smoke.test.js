@@ -74,3 +74,43 @@ export const tests = skipped ? [
     ok(sl && /build m\d\w*/.test(sl.textContent), `seed line stamps the build (got: ${sl?.textContent})`);
   }},
 ];
+
+// --- M3.c: mixed-seat mode smoke -------------------------------------------
+// The leak-regression tests: pick a seat, start a game, and assert the
+// operator surface shows ONLY the human's decisions while bot hidden info
+// renders as face-down backs — the viewFor routing proven in the DOM.
+
+if (!skipped) tests.push(
+  { name: 'mixed-seat controls exist: seat select is populated with all six factions plus table mode (M3.c)', fn() {
+    const sel = dom.window.document.querySelector('#seat-select');
+    ok(sel, 'seat select present');
+    ok(sel.options.length === 7, `7 options (got ${sel.options.length})`);
+    ok(sel.options[0].value === 'table', 'table mode is the default');
+  }},
+
+  { name: 'mixed game: the panel renders ONLY the human seat\'s form — no tabs, bids, or picks for bot seats (M3.c leak regression)', async fn() {
+    const doc = dom.window.document;
+    doc.querySelector('#seat-select').value = 'F2';
+    doc.querySelector('#btn-new').click();
+    await new Promise(r => setTimeout(r, 30));
+    const panel = doc.querySelector('#turn-panel');
+    ok(!panel.querySelector('.query-tabs'), 'no multi-seat tab strip in mixed mode');
+    const chips = panel.querySelectorAll('[data-row]');
+    ok(chips.length > 0, 'the human seat\'s planning territories render');
+    ok(!panel.textContent.includes('undefined'), 'no undefined leaks in the form');
+  }},
+
+  { name: 'mixed game: bots act on the pump and their committed orders render as face-down backs, zero faces (M3.c)', async fn() {
+    const doc = dom.window.document;
+    // Speed the pump up so the smoke stays fast.
+    const slider = doc.querySelector('#spectate-speed');
+    slider.value = '120';
+    doc.querySelector('#seat-select').value = 'F2';
+    doc.querySelector('#btn-new').click();
+    await new Promise(r => setTimeout(r, 1400)); // ≥5 bot decisions at 120ms + render slack
+    const backs = doc.querySelectorAll('#map .ov-order-back').length;
+    const faces = doc.querySelectorAll('#map .ov-order:not(.ov-staged)').length;
+    ok(backs > 0, `bot orders landed as backs (got ${backs})`);
+    ok(faces === 0, `no order FACE is visible before the reveal (got ${faces})`);
+  }},
+);

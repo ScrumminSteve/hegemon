@@ -153,7 +153,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
 - **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
-- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select.
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -303,6 +303,68 @@ loud refusal of unknown query types.
 **M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
+
+## M3.c — mixed-seat table mode (this drop, build m3c1)
+
+**You vs five bots, and the operator-trust exception ends the moment a bot
+sits down.** Pick a seat in the toolbar (themed faction names; "table mode"
+remains the default and is byte-identical to the old behavior), hit New
+game, and the other five seats go to bots (policy from the shared select —
+heuristic default with per-faction seeded jitter, random available), pacing
+on the spectate speed slider (owner decisions, this session).
+
+**The viewFor seam — architectural, not audited.** Every display read in
+app.js (overlays, panels, tracks, Chronicle, inspectors, vitals) now goes
+through `shown()`: raw state in table mode, `viewFor(game, humanSeat)` the
+moment any bot is at the table — cached per state change, invalidated on
+dispatch/undo/restore. The render layer cannot leak what it never receives:
+unrevealed bot orders arrive as `{faction, hidden}` and the m2e blank-back
+renderer draws them face-down; sealed bids arrive as 'sealed'; a bot
+courier's peek card never enters the view. The turn panel filters to the
+human's queries only — bot queries NEVER render as forms (the sealed-bid
+slip, the card pick, the peek all stay off the screen) — with a "deciding…"
+card naming who holds the table. Overlay spotlight and staged-order
+attribution share the same visible-queries list, so panel indices and map
+highlights can never disagree. Hidden info in a mixed game is now REAL
+hidden info for the first time: you genuinely don't know what the bots
+ordered until the reveal.
+
+**The pump.** Bots answer any pending bot query on the slider cadence
+through the SAME dispatch path as a human (log, stage, telemetry, undo
+history, episode machinery all live); a human query stops the pump, your
+dispatch restarts it. Simultaneous sealed phases work naturally: bots slip
+their bids in while you think. Spectate still overrides everything (bots
+take your seat too) and hands back to the pump on exit.
+
+**Undo rewinds through bot turns** to before YOUR last decision — undoing
+onto a bot's turn would just watch the pump replay it. The bot RNG stream
+is not rewound, so bots may legitimately reconsider their replies to your
+changed move; the transcript stays valid either way (same property spectate
+always had).
+
+**Saves:** table-mode saves stay RAW engine state (a raw save is an
+unsealed episode — that stays true). Mixed games save a
+`hegemon-save/2` envelope carrying seat config; Restore (file or paste)
+detects both formats and puts the same bots back at the table. **Episode
+exports now self-declare seat controllers truthfully** (`human` /
+`heuristic-v1+jN` / `random-v1`) — today's corpus can never be confused
+with robot play, per the telemetry doctrine.
+
+**Hygiene in passing:** `tokenLabel` renders masked orders as "face-down
+order" instead of `undefined`; the duplicated `destroyedForSupply`
+Chronicle case (shipped in m3a2) deduped. NOTED, not touched: esbuild
+flags four pre-existing duplicate object keys (`setup.js victoryTarget`,
+`core.js`/`asoiaf.js leaderCard`, `state.js victory`) — harmless
+last-key-wins today, worth a cleanup pass.
+
+**Goldens:** three ui-smoke additions run a REAL mixed game in jsdom —
+seat controls populate, the panel renders only the human's form (no tab
+strip, no bot forms), and after the pump runs, bot orders stand on the map
+as face-down backs with ZERO faces visible pre-reveal — the leak
+regression proven in the DOM. Suite total: **227**.
+
+**Banked for M3.c2 (owner decision):** multi-human hot-seat + bots with
+pass-the-device privacy screens.
 
 ## M3.b — heuristic bots (this drop, build m3b1)
 
