@@ -498,3 +498,30 @@ tests.push(
       `the army actually landed at ${pick.moves[0].to}`);
   }},
 );
+
+tests.push(
+  { name: 'SUPPLY AT DECLARATION: an attack whose victory would field an illegal army is refused at march time; the menu still offers alternatives (Rules p.8, FAQ; seed 99893)', fn() {
+    // F4 at supply 1 (limits [3,2]): a parked 3-stack is army #1 at its cap.
+    // Attacking L36 with 3 cavalry would, on full-survival victory, stand up
+    // a SECOND size-3 army — illegal. The march must die at declaration,
+    // never in the defender's retreat.
+    const s = stage({
+      strip: ['L30', 'L33', 'S08'],
+      plants: {
+        L30: [['F4', 'infantry'], ['F4', 'infantry'], ['F4', 'infantry']],
+        L34: [['F4', 'cavalry'], ['F4', 'cavalry'], ['F4', 'cavalry']],
+      },
+      orders: { F4: { L34: M(0) } },
+    }, 11);
+    s.supply.F4 = 1;
+    const r = driveToMarch(s, 'F4', 'L34');
+    throws(() => applyAction(structuredClone(r), { type: 'resolveMarch', faction: 'F4', region: 'L34',
+      moves: [{ to: 'L36', units: { cavalry: 3 } }] }),
+      /supply|army/, 'the doomed attack is refused before combat exists');
+    const q = r.pendingQueries.find(x => x.type === 'resolveOrder' && x.step === 'march' && x.faction === 'F4');
+    const menu = legalActions(r, q);
+    ok(menu.length > 0, 'the menu survives: stand-down and smaller moves remain');
+    ok(!menu.some(a => a.moves.some(mv => mv.to === 'L36' && (mv.units.cavalry || 0) === 3)),
+      'no menu item offers the illegal full-stack assault');
+  }},
+);

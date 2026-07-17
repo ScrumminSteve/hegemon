@@ -332,6 +332,25 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
   delete state.ordersByRegion[rid];
 
   if (combatMove) {
+    // A combat march must satisfy supply ASSUMING FULL SURVIVAL (Rules p.8;
+    // FAQ v2.0 — you may not declare an attack your supply could not sustain
+    // on victory). The attacking stack rides in combat limbo, invisible to
+    // the board, so without this trial the violation materializes at victory
+    // placement — INSIDE the defender's retreat action, deadlocking it.
+    // Found by the owner's first overnight baseline (seed 99893, Jul 2026).
+    // The trial runs on a SHADOW state (movers relocated origin → target);
+    // the real state is never touched, so no restore and no ordering hazards.
+    const need = { ...combatMove.units };
+    const shadowOrigin = (state.unitsByRegion[rid] || []).filter(u => {
+      if (u.faction === fid && !u.routed && need[u.type] > 0) { need[u.type]--; return false; }
+      return true;
+    });
+    const movers = Object.entries(combatMove.units).flatMap(([t, n]) =>
+      Array.from({ length: n }, () => ({ faction: fid, type: t, routed: false })));
+    const shadow = { ...state, unitsByRegion: { ...state.unitsByRegion,
+      [rid]: shadowOrigin,
+      [combatMove.to]: [...(state.unitsByRegion[combatMove.to] || []), ...movers] } };
+    checkSupply(shadow, fid);
     initiateCombat(state, {
       attacker: fid, origin: rid, target: combatMove.to,
       units: combatMove.units, mod: order.mod, leaveControl,

@@ -100,6 +100,9 @@ export const tests = [
     // Owner repro: one march, two prongs — cav+inf into the enemy at L17,
     // one inf into own L18 which bears the S+1 backing that very battle.
     let s = createGame(6, { seed: 7 });
+    s.supply.F3 = 4; // headroom: since m3d4 combat marches supply-check at
+                     // declaration (full-survival) — this rig's subject is
+                     // prong ordering, and defaults + two prongs = 4 armies.
     s.unitsByRegion['L19'] = [{ faction: 'F3', type: 'cavalry', routed: false },
                               { faction: 'F3', type: 'infantry', routed: false },
                               { faction: 'F3', type: 'infantry', routed: false }];

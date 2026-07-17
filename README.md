@@ -304,6 +304,25 @@ loud refusal of unknown query types.
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
 
+## M3.d.4 — supply at declaration (build m3d4)
+
+**[P1, RULES_REVISION → 8] Found by the owner's first overnight baseline
+(seed 99893):** an unanswerable `retreat` query. Chain: the attacking stack
+rides in combat LIMBO, invisible to the board, so combat marches skipped
+the supply check that peaceful marches get — a doomed attack formed
+legally, and the violation only materialized at victory placement, INSIDE
+the defender's retreat action, rejecting every retreat option the engine
+itself had blessed. Fix per Rules p.8 / FAQ v2.0: **a combat march is
+supply-checked at declaration on a full-survival basis** — you may not
+declare an attack your supply could not sustain on victory. Implemented as
+a non-mutating SHADOW-state trial (movers relocated origin → target; the
+real state untouched, no restore, no ordering hazards — the first draft
+mutated-and-restored and double-counted the movers, caught by 10 goldens
+before it ever shipped). The M3.a menu prunes doomed assaults while
+stand-down and smaller prongs survive. One test rig legitimately updated
+(the split-prong golden needed supply headroom; its subject is prong
+ordering). Entire 120-game baseline block re-swept clean. Suite: **237**.
+
 ## M3.d.3 — Windows CLI fix (build m3d3)
 
 **Owner bug report:** every tools/ CLI exited instantly on Windows with
