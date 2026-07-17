@@ -65,3 +65,16 @@ export const tests = [
     ok(stepped[0] > 0 && stepped[1] < 0, 'the step climbs toward the better perturbation');
   }},
 ];
+
+tests.push(
+  { name: 'WEIGHTS-v2 bake: V1 frozen as the anchor, V2 active with provenance, orderings the behavior goldens rely on preserved (m3d7)', async fn() {
+    const { WEIGHTS, WEIGHTS_V1, WEIGHTS_V2 } = await import('../src/agents/heuristic.js');
+    eq(WEIGHTS_V1.wSeat, 8, 'V1 is the hand-set anchor, byte-frozen');
+    eq(WEIGHTS_V1.vCavalry, 2.2, 'V1 untouched by the bake');
+    ok(WEIGHTS === WEIGHTS_V2, 'the active default is v2');
+    ok(Math.abs(WEIGHTS_V2.wSeat - 7.7052) < 1e-3, 'v2 carries the verified night1 vector');
+    ok(Object.keys(WEIGHTS_V2).length === Object.keys(WEIGHTS_V1).length, 'same key set — the tuning surface is stable');
+    ok(WEIGHTS_V2.vCavalry > WEIGHTS_V2.vInfantry, 'casualty ordering holds under v2');
+    ok(WEIGHTS_V2.muSpend > 0 && WEIGHTS_V2.invThreatScale > 0, 'behavioral scorer signs hold under v2');
+  }},
+);

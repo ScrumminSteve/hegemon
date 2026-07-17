@@ -153,7 +153,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
 - **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
-- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor. **M3.d shipped:** the eval harness, the first learning loop (SPSA), the seat-bias study, two P1 engine fixes its fuzz surfaced, and the transport-menu fix (m3d2) the study's island signal exposed.
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor. **M3.d COMPLETE (m3d7):** eval harness, SPSA loop, seat-bias study, three P1 engine fixes, transport-menu fix — and WEIGHTS-v2 shipped: the first learned vector, verified on 720 held-out games.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -303,6 +303,81 @@ loud refusal of unknown query types.
 **M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
+
+## M3.d.7 — WEIGHTS-v2 ships (build m3d7)
+
+**The first learned weights are live.** Pooled verification across both
+owner batches: **141/720 wins on held-out seeds = 19.58% [16.85–22.64]**
+against the 16.67% null — the pre-registered ship bar (CI lower bound
+above null) is MET; guardrails green (mean rank 3.41 vs 3.72, worst seat
+4.73 vs 5.0). Honest sizing: batch two shrank from batch one (21.25% →
+18.75%), classic winner's-curse regression; the pooled +2.9pp is the real
+gain. Provenance baked into heuristic.js alongside the vector.
+
+Mechanics of the bake: `WEIGHTS_V1` is the hand-set vector, FROZEN FOREVER
+as the non-regression anchor; `WEIGHTS_V2` carries the night1 vector with
+full provenance; `WEIGHTS` (the active default every bot constructs from —
+spectate, mixed-seat, selfplay, tournament) now points at V2, jitter still
+layered on top. tools/eval.mjs `--incumbent v1` is pinned to the FROZEN
+anchor (not the active default), so every future candidate faces the same
+opponent v2 faced; `--incumbent current` fields whatever ships. tune.mjs
+now climbs from v2. Golden locks the freeze, the provenance, and the
+orderings the behavior goldens rely on. Suite: **238**.
+
+Per-seat note: tuned shared weights did nothing for F3 (5/120 pooled —
+matches its structural 4%), as expected — the shared vector can't fix a
+seat; that's the per-faction delta / opening-book track, fed by the
+owner's F3/F6 showcase games (doctrine below).
+
+## Post-run verdicts & queue (m3d6, doc-only)
+
+**Overnight results are in (owner's desktop, night1 + seatbias-600):**
+- **Tune run night1:** verified 21.25% [16.55–26.86] vs 16.7% null over 240
+  held-out games; guardrails green (mean rank 3.72→3.30, worst seat
+  5.0→4.53). Misses the pre-registered ship bar (CI lower bound > null) by
+  0.12pp — verdict: UNDERPOWERED, not failed. **Pending:** owner runs a
+  480-game verification extension (candidate.json, seeds 2000000+); pooled
+  720-game CI decides WEIGHTS-v2. SPSA note: best at iter 15, one
+  guardrail revert after, weight moves all ±4% — local refinement, not a
+  regime change. A second run with a different --run-seed remains open.
+- **Seat bias at N=600 — structural, confirmed:** F1 24.2%↑ F2 22.7%↑
+  F4 24.0%↑ F5 17.5%· F6 7.7%↓ **F3 4.0%↓**. Island capitals disfavored
+  even after the transport fix.
+- **[OWNER DOCTRINE — EMBRACE ASYMMETRY]:** no map or setup rebalance,
+  ever, for seat fairness. Faction difficulty is part of the game. The fix
+  is better AI: per-faction weight deltas, and above all LEARNING FROM
+  HUMAN PLAY — the owner will play F3/F6 and win with them; each win is
+  exported as an episode and becomes per-faction opening-book material
+  (M3.e) and demonstration data (M3.f).
+
+**Human corpus opened:** episode-1st-human-victory (F2/Germany, r5 instant
+7-seat win, rulesRevision 8, hash-verified replay). Analysis: human fought
+8/11 battles, attacker in 7, zero stand-downs, one multi-prong march; bots
+attacked rarely and never split a march. Bot failure mode named: NO TEMPO —
+the heuristic scores positions but never presses initiative. M3.e/f target.
+
+**UI feedback queue (owner screenshots, mobile, next build session):**
+1. [P2] Leave-control checkbox offered on marches that don't vacate
+   controlled ground (Prague repro) — show only when control would lapse.
+2. [P2] Cancel-ability decision (Canaris/Tyrion-class) renders WITHOUT the
+   opponent's revealed card — decision-critical info; render the revealed
+   card in the ability panel.
+3. [P3] Seat pentagon colors too similar at phone size (unclaimed blue vs
+   claimed outlines) — needs stronger differentiation.
+4. [P2] Order-badge collision near ports (Oslo/S11 repro) — extend the
+   M2.d portAnchor spacing to order badges.
+
+## M3.d.5 — crash diagnosability (build m3d5)
+
+The owner's second seatbias attempt died with the m3d4-class retreat
+signature — near-certainly stale m3d3 code (the first 120 seatbias seeds
+sweep clean on m3d4) — but proving that took build-stamp forensics because
+tool crashes named no seed and the stdout redirect swallowed all signs of
+life. Hardened: seatbias reports progress every 25 games and stamps crashes
+with their seed ON STDERR (a `> file.txt` redirect captures stdout only, so
+both always reach the console); eval.mjs stamps every engine error with
+[seed, step, round]. Any future field crash is reproducible from the
+screenshot alone. Suite: **237**.
 
 ## M3.d.4 — supply at declaration (build m3d4)
 

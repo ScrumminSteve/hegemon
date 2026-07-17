@@ -23,7 +23,7 @@ import { botRng } from './random.js';
 
 const ADJ = adjacency();
 
-export const WEIGHTS = Object.freeze({
+export const WEIGHTS_V1 = Object.freeze({
   // unit values (casualty / supply-loss avoidance; muster preference)
   vInfantry: 1.0, vCavalry: 2.2, vWarship: 1.5, vSiege: 2.6,
   // territory value
@@ -70,6 +70,75 @@ export const WEIGHTS = Object.freeze({
   peekBury: 1.0,       // threat peek: prefer bottom
   portShips: 0.8,      // per replaced port ship
 });
+
+/**
+ * WEIGHTS-v2 — the first LEARNED vector (SPSA run night1, Jul 2026).
+ * Provenance: runSeed 267783951, 60 iterations x paired 40-game blocks on
+ * the owner's desktop (15 workers), best at iteration 15; VERIFIED on 720
+ * held-out games pooled across two batches: 141 wins, 19.58% [16.85-22.64]
+ * vs the 16.67% null (ship bar: CI lower bound above null — MET). Guardrails
+ * green: mean rank 3.41 vs 3.72 v1 baseline, worst-seat 4.73 vs 5.0.
+ * WEIGHTS_V1 stays frozen forever as the non-regression anchor; every
+ * future candidate must beat it on this same harness.
+ */
+export const WEIGHTS_V2 = Object.freeze({
+  vInfantry: 0.991,
+  vCavalry: 2.255,
+  vWarship: 1.5008,
+  vSiege: 2.6871,
+  wSeat: 7.7052,
+  wCitadelBonus: 3.09,
+  wIcons: 0.9845,
+  wLand: 1.5547,
+  wSea: 0.811,
+  pDefend: 1.632,
+  pSupport: 1.1091,
+  pMarch: 1.3983,
+  pRally: 1.24,
+  pRaid: 0.8891,
+  pRallyFort: 1.4675,
+  pStarBonus: 0.396,
+  mAttackMargin: 1.6092,
+  mOverreach: 2.1889,
+  mStandDown: 0.3013,
+  mAbandonSeat: 2.962,
+  mLeaveControl: 0.802,
+  rMusterPoint: 2.0222,
+  rAuthority: 1.0069,
+  muSpend: 2.0296,
+  muCavalry: 0.5,
+  muShip: 0.3981,
+  raidHit: 1.9746,
+  raidSupport: 1.0031,
+  raidConsolidate: 0.5964,
+  bidSpendFrac: 0.4072,
+  bidReserve: 1.9725,
+  bidOverspend: 1.4747,
+  bidInitiative: 0.9954,
+  bidProwess: 0.7775,
+  bidCommand: 0.9243,
+  invSpendFrac: 0.4906,
+  invReserve: 0.9961,
+  invThreatScale: 0.9714,
+  invOverspend: 1.1498,
+  cStakeScale: 1.0081,
+  cHoard: 0.5005,
+  cSwords: 0.5982,
+  cForts: 0.5095,
+  cBlade: 1.003,
+  cAbility: 0.9762,
+  rtSafety: 1.4523,
+  rtHome: 1.2136,
+  courierPeek: 1.1916,
+  courierPass: 1.0152,
+  courierSwap: 0.2986,
+  peekBury: 1.0089,
+  portShips: 0.7837,
+});
+
+/** The ACTIVE default vector — what shipped bots play. */
+export const WEIGHTS = WEIGHTS_V2;
+
 
 /** Seeded multiplicative jitter over a weight vector (M3.b owner decision):
     every seat gets its own personality; same jitterSeed = same personality,

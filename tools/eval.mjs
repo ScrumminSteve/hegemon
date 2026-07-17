@@ -24,7 +24,7 @@ import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, effectiveWeights } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, effectiveWeights, WEIGHTS_V1 } from '../src/agents/heuristic.js';
 import { createRandomAgent, botRng } from '../src/agents/random.js';
 
 const MAX_ACTIONS = 6000;
@@ -48,17 +48,27 @@ export function playEvalGame({ seed, challengerSeat, challengerCfg = null, incum
   const agents = {};
   for (const fid of s.factions) {
     if (fid === hero) agents[fid] = createHeuristicAgent({ weights: effectiveWeights(challengerCfg, fid) });
-    else agents[fid] = incumbent === 'random' ? createRandomAgent() : createHeuristicAgent({});
+    // 'v1' is the FROZEN anchor (WEIGHTS_V1) — never the active default,
+    // which moved to v2 in m3d7. 'current' fields whatever ships today.
+    else agents[fid] = incumbent === 'random' ? createRandomAgent()
+      : incumbent === 'current' ? createHeuristicAgent({})
+      : createHeuristicAgent({ weights: { ...WEIGHTS_V1 } });
   }
   const rng = botRng(seed * 31 + 7);
   let steps = 0;
   while (s.phase !== 'gameOver') {
     if (++steps > MAX_ACTIONS) throw new Error(`eval seed ${seed}: stuck after ${steps} actions`);
     const q = currentQuery(s);
-    const menu = legalActions(s, q);
-    // Any applyAction throw aborts the whole run — an engine bug found by
-    // eval is a P1, not a data point to average over.
-    s = applyAction(s, agents[q.faction].decide(viewFor(s, q.faction), q, menu, rng)).state;
+    try {
+      const menu = legalActions(s, q);
+      // Any throw aborts the whole run — an engine bug found by eval is a
+      // P1, not a data point to average over.
+      s = applyAction(s, agents[q.faction].decide(viewFor(s, q.faction), q, menu, rng)).state;
+    } catch (e) {
+      // Diagnosability (owner runs, Jul 2026): every crash NAMES its seed.
+      e.message = `[eval seed ${seed}, step ${steps}, round ${s.round}] ${e.message}`;
+      throw e;
+    }
   }
   const over = s.log.filter(e => e.event === 'gameOver').pop();
   return {
@@ -140,7 +150,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const t0 = Date.now();
   const stats = await evaluate(challengerCfg, { games, seedBase, incumbent, workers });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  console.log(`challenger ${challengerFile || 'v1 (stock)'} vs ${incumbent} — ${games} games, ${workers} worker(s), ${secs}s`);
+  console.log(`challenger ${challengerFile || 'current (v2)'} vs ${incumbent} — ${games} games, ${workers} worker(s), ${secs}s`);
   console.log(`win rate ${(stats.winRate * 100).toFixed(1)}% [${(stats.ci.lo * 100).toFixed(1)}–${(stats.ci.hi * 100).toFixed(1)}] (null 16.7%)`);
   console.log(`mean rank ${stats.meanRank} · worst seat ${stats.worstSeatMeanRank} · mean rounds ${stats.meanRounds}`);
   console.log('per seat:', Object.entries(stats.seatStats).map(([f, s]) => `${f} ${s.wins}/${s.games} r${s.meanRank}`).join('  '));

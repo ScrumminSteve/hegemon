@@ -43,7 +43,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const wins = {}, rankSum = {};
   let factions = null;
   for (let i = 0; i < games; i++) {
-    const r = playSymmetricGame(seedBase + i);
+    let r;
+    try { r = playSymmetricGame(seedBase + i); }
+    catch (e) {
+      // Diagnosability (owner runs, Jul 2026): a crash NAMES its seed, and it
+      // lands on stderr so a stdout redirect never swallows it.
+      console.error(`\nCRASH at seed ${seedBase + i} (game ${i + 1}/${games}) — report this seed:\n${e.message}`);
+      process.exit(1);
+    }
+    if ((i + 1) % 25 === 0) console.error(`…${i + 1}/${games} games (seed ${seedBase + i})`);
     factions = factions || [...r.standings].sort();
     wins[r.winner] = (wins[r.winner] || 0) + 1;
     r.standings.forEach((f, idx) => { rankSum[f] = (rankSum[f] || 0) + idx + 1; });

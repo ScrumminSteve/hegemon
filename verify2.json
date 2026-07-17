@@ -1,0 +1,45 @@
+{
+ "games": 480,
+ "wins": 90,
+ "winRate": 0.1875,
+ "ci": {
+  "p": 0.1875,
+  "lo": 0.15511381469584962,
+  "hi": 0.22484855315346303
+ },
+ "meanRank": 3.458,
+ "worstSeatMeanRank": 4.838,
+ "meanRounds": 9.94,
+ "seatStats": {
+  "F2": {
+   "games": 80,
+   "wins": 17,
+   "meanRank": 3.35
+  },
+  "F4": {
+   "games": 80,
+   "wins": 20,
+   "meanRank": 2.85
+  },
+  "F3": {
+   "games": 80,
+   "wins": 3,
+   "meanRank": 4.838
+  },
+  "F6": {
+   "games": 80,
+   "wins": 6,
+   "meanRank": 4.25
+  },
+  "F5": {
+   "games": 80,
+   "wins": 25,
+   "meanRank": 2.6
+  },
+  "F1": {
+   "games": 80,
+   "wins": 19,
+   "meanRank": 2.862
+  }
+ }
+}
