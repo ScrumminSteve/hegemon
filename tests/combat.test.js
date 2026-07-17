@@ -470,3 +470,31 @@ tests.push(
     eq(r.unitsByRegion['P04'].filter(u => u.faction === 'F4').length, 1, 'a single-ship refit sails');
   }},
 );
+
+// --- M3.d.2 (owner insight, Jul 2026): the march menu must offer transports --
+// The validator has accepted ship-transported marches since M1; the M3.a menu
+// never offered them, so no bot ever shipped an army — structurally strangling
+// island-capital factions (the seat-bias study's F3/F6 signal).
+
+tests.push(
+  { name: 'TRANSPORT MENU: an island army with a friendly warship chain is OFFERED sea-borne marches, and they apply (Rules p.15; M3.d.2)', fn() {
+    const s = stage({
+      strip: ['L22', 'S04'],
+      plants: {
+        L22: [['F3', 'infantry'], ['F3', 'infantry']], // an island army
+        S04: [['F3', 'warship']],                      // the ferry
+      },
+      orders: { F3: { L22: M(0) } },
+    }, 13);
+    const r = driveToMarch(s, 'F3', 'L22');
+    const q = r.pendingQueries.find(x => x.type === 'resolveOrder' && x.step === 'march' && x.faction === 'F3');
+    const menu = legalActions(r, q);
+    const dests = new Set(menu.flatMap(a => a.moves.map(mv => mv.to)));
+    const transported = [...dests].filter(d => d !== 'S04' && d !== 'P08' && d.startsWith('L'));
+    ok(transported.length > 0, `sea-borne land destinations are on the menu (got: ${[...dests].join(', ')})`);
+    const pick = menu.find(a => a.moves.length === 1 && transported.includes(a.moves[0].to));
+    const applied = applyAction(structuredClone(r), pick).state;
+    ok((applied.unitsByRegion[pick.moves[0].to] || []).some(u => u.faction === 'F3'),
+      `the army actually landed at ${pick.moves[0].to}`);
+  }},
+);

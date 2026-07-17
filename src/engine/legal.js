@@ -24,6 +24,7 @@
 
 import { applyAction } from './engine.js';
 import { orderableRegions, ORDER_TOKENS, starLimit, orderClasses, maxPlaceableOrders } from './planning.js';
+import { transportReachable } from './actionPhase.js';
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 
 const ADJ = buildAdjacency();
@@ -156,7 +157,20 @@ const GENERATORS = {
         const mine = (state.unitsByRegion[rid] || []).filter(u => u.faction === q.faction && !u.routed);
         const byType = {};
         for (const u of mine) byType[u.type] = (byType[u.type] || 0) + 1;
+        // Destinations: adjacency PLUS ship-transported land targets (Rules
+        // p.15) — the validator accepted transport chains since M1, but this
+        // menu never offered them, so no bot ever shipped an army (owner
+        // insight, Jul 2026: island-capital factions F3/F6 were structurally
+        // strangled by the gap; found while reading the seat-bias study).
         const dests = [...(ADJ[rid] || [])];
+        if (regionById[rid]?.kind === 'land' && mine.some(u => u.type !== 'warship')) {
+          for (const r2 of REGIONS) {
+            if (r2.kind === 'land' && r2.id !== rid && !ADJ[rid].has(r2.id) &&
+                transportReachable(state, q.faction, rid, r2.id)) {
+              dests.push(r2.id);
+            }
+          }
+        }
         for (const to of dests) {
           if (!regionById[to]) continue;
           for (const lc of [false, true]) {

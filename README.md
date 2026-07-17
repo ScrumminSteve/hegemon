@@ -153,7 +153,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
 - **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
-- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor. **M3.d shipped:** the eval harness, the first learning loop (SPSA), and the seat-bias study — with two P1 engine fixes its fuzz surfaced.
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor. **M3.d shipped:** the eval harness, the first learning loop (SPSA), the seat-bias study, two P1 engine fixes its fuzz surfaced, and the transport-menu fix (m3d2) the study's island signal exposed.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -303,6 +303,27 @@ loud refusal of unknown query types.
 **M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
+
+## M3.d.2 — the transport menu (build m3d2)
+
+**Owner insight while reading the seat-bias study: the two lagging factions
+(F3, F6) are the ISLAND capitals.** Mechanism check found a smoking gun —
+the validator has accepted ship-transported marches since M1
+(`transportReachable`, Rules p.15), but the M3.a march MENU built
+destinations from plain adjacency, so **no bot ever shipped an army**.
+Mainland factions barely noticed; island capitals were structurally
+strangled. Fixed in the generator: land armies are now offered every
+transport-reachable land destination alongside adjacency (validator
+unchanged — it was right all along). Measured on the identical 15
+seat-bias seeds: **F6 0/15 → 3/15 wins (mean rank 5.00 → 3.20); F2's
+FAVORED flag vanished (53% → 20%).** F3 remains at 0/15 (rank 5.7) — the
+overnight N=600 study now decides whether that's residual map structure or
+a valuation gap, and F3 is the prime candidate for the first per-faction
+weight delta. A cautionary tale banked: never tune weights against an
+unverified menu — deltas would have baked compensation for this bug.
+Golden: an island army with a warship chain is OFFERED sea-borne marches
+and they apply. Suite: **236**. Fuzz: 8 all-heuristic games post-change,
+zero rejections.
 
 ## M3.d — eval harness & the first learning loop (this drop, build m3d1)
 
