@@ -3,6 +3,7 @@
 import { createGame, serialize, deserialize, controllerOf } from '../src/engine/state.js';
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { combatStrengths, legalRetreats } from '../src/engine/combat.js';
+import { legalActions } from '../src/engine/legal.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
 import { PORTS, EDGES, buildAdjacency } from '../src/data/map.js';
@@ -379,3 +380,93 @@ export const tests = [
   }},
 
 ];
+
+// --- P1 (owner screenshot, Jul 2026): support terrain gate (Rules p.18) -----
+// Land never backs a sea battle; dockbound ships (ports) never back a land
+// battle. Sea backs both; ports back only their connected sea.
+
+tests.push(
+  { name: 'TERRAIN GATE: a sea battle calls sea and port supporters, never adjacent land (Rules p.18; P1)', fn() {
+    let s = stage({
+      strip: ['S02', 'S03', 'S04', 'L04', 'L05', 'P02'],
+      plants: {
+        S03: [['F1', 'warship']],                 // defender fleet
+        S02: [['F2', 'warship'], ['F2', 'warship']], // attacker fleet
+        S04: [['F3', 'warship']],                 // sea supporter — eligible
+        P02: [['F5', 'warship']],                 // port supporter — eligible (its sea)
+        L04: [['F5', 'infantry']],                // F5 owns the land, so the dock is F5's
+        L05: [['F4', 'infantry']],                // land supporter — NOT eligible
+      },
+      orders: {
+        F2: { S02: M(0) },
+        F3: { S04: SU(0) },
+        F4: { L05: SU(0) },
+        F5: { P02: SU(0) },
+      },
+    });
+    s = driveToMarch(s, 'F2', 'S02');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F2', region: 'S02', moves: [{ to: 'S03', units: { warship: 2 } }] }).state;
+    ok(s.combat && s.combat.region === 'S03', 'sea battle began at S03');
+    const calls = s.pendingQueries.filter(q => q.type === 'declareSupport').map(q => q.region).sort();
+    eq(JSON.stringify(calls), JSON.stringify(['P02', 'S04']),
+      'exactly the fleet supporters are called; L04/L05 land support orders stay silent');
+  }},
+
+  { name: 'TERRAIN GATE: a land battle calls land and sea supporters, never the port (Rules p.18; P1)', fn() {
+    let s = stage({
+      strip: ['S03', 'L04', 'L05', 'L07', 'P02'],
+      plants: {
+        L04: [['F1', 'infantry']],                // defender — who also owns the dock
+        L05: [['F2', 'infantry'], ['F2', 'infantry']], // attacker
+        L07: [['F3', 'infantry']],                // land supporter — eligible
+        S03: [['F4', 'warship']],                 // sea supporter — eligible (shore bombardment)
+        P02: [['F1', 'warship']],                 // the DEFENDER'S OWN dock — still not eligible
+      },
+      orders: {
+        F2: { L05: M(0) },
+        F3: { L07: SU(0) },
+        F4: { S03: SU(0) },
+        F1: { P02: SU(0) },
+      },
+    });
+    s = driveToMarch(s, 'F2', 'L05');
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F2', region: 'L05', moves: [{ to: 'L04', units: { infantry: 2 } }] }).state;
+    ok(s.combat && s.combat.region === 'L04', 'land battle began at L04');
+    const calls = s.pendingQueries.filter(q => q.type === 'declareSupport').map(q => q.region).sort();
+    eq(JSON.stringify(calls), JSON.stringify(['L07', 'S03']),
+      'land and sea supporters are called; even the defender\'s own P02 dock stays out of the fight');
+  }},
+);
+
+tests.push(
+  { name: 'SUPPLY GATE: refitted port ships are new units — a refit that fields an illegal army is refused (Rules p.8; M3.d eval fuzz, seed 7016)', fn() {
+    // F4 at supply 1 (limits [3,2]): post-march the 3-cavalry stack at L36
+    // is army #1 (size 3) and the parked pair at L02 is army #2 (size 2) —
+    // exactly at cap. Two enemy ships sit in P04 — refitting BOTH would
+    // stand up a third army; refitting ONE ship (not an army) is fine.
+    const s = stage({
+      strip: ['L30', 'L33', 'S08'], // F4's default stacks — the rig owns the count
+      plants: {
+        L34: [['F4', 'cavalry'], ['F4', 'cavalry'], ['F4', 'cavalry'], ['F4', 'infantry']],
+        L02: [['F4', 'infantry'], ['F4', 'infantry']],
+        P04: [['F2', 'warship'], ['F2', 'warship']],
+      },
+      orders: { F4: { L34: M(0) } },
+    }, 11);
+    s.supply.F4 = 1;
+    let r = applyAction(s, { type: 'resolveMarch', faction: 'F4', region: 'L34',
+      moves: [{ to: 'L36', units: { cavalry: 3 } }] }).state;
+    const rq = r.pendingQueries.find(x => x.type === 'retreat');
+    r = applyAction(r, { type: 'retreat', faction: 'F2', to: rq.options[0] }).state;
+    const q = r.pendingQueries.find(x => x.type === 'replacePortShips');
+    eq(q.max, 2, 'two ships were burned, two may be refit — physically');
+    // The menu the engine offers must already respect the gate (M3.a contract):
+    const menu = legalActions(r, q);
+    const counts = menu.map(a => a.count).sort();
+    eq(JSON.stringify(counts), JSON.stringify([0, 1]), 'count 2 is pruned from the menu; the menu is not empty');
+    throws(() => applyAction(structuredClone(r), { type: 'replacePortShips', faction: 'F4', count: 2 }),
+      /supply|armies/, 'the two-ship refit is refused loudly');
+    r = applyAction(r, { type: 'replacePortShips', faction: 'F4', count: 1 }).state;
+    eq(r.unitsByRegion['P04'].filter(u => u.faction === 'F4').length, 1, 'a single-ship refit sails');
+  }},
+);

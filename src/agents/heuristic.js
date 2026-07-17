@@ -369,3 +369,20 @@ const SCORERS = {
     return q.purpose === 'upgrade' ? v : -v; // destroy/downgrade cheap; upgrade rich
   },
 };
+
+/**
+ * M3.d weights schema — per-faction-ready (owner decision, Jul 2026):
+ *   { shared: {...full flat vector...}, perFaction: { F1: {...deltas...} } }
+ * The optimizer tunes `shared` first; faction deltas are multiplicative
+ * overrides layered on top when (M3.d seat-bias study permitting) asymmetry
+ * proves real. A flat vector is accepted anywhere a config is, so v1-era
+ * weights files never break.
+ */
+export function effectiveWeights(cfg, fid) {
+  if (!cfg) return { ...WEIGHTS };
+  if (!cfg.shared && !cfg.perFaction) return { ...WEIGHTS, ...cfg }; // legacy flat
+  const out = { ...WEIGHTS, ...(cfg.shared || {}) };
+  const delta = cfg.perFaction?.[fid];
+  if (delta) for (const k of Object.keys(delta)) out[k] = (out[k] ?? 0) * delta[k];
+  return out;
+}

@@ -49,10 +49,20 @@ export function initiateCombat(state, { attacker, origin, target, units, mod, le
 
   // Call for support (Rules p.17–18): every adjacent support order, declared
   // in initiative order. Combatants may support themselves.
+  //
+  // Terrain gate (P1, owner screenshot Jul 2026 — Dragonstone backing a
+  // Shipbreaker Bay sea battle): adjacency alone is NOT eligibility.
+  //   sea battle  <- supported only by adjacent SEA areas and connected
+  //                  ports (armies on shore cannot help fleets);
+  //   land battle <- supported by adjacent LAND and SEA areas (shore
+  //                  bombardment), NEVER by ports (dockbound ships are out
+  //                  of the fight).
+  // Battles never occur IN ports (ships cannot enter enemy docks), so that
+  // case is unreachable; canSupportInto returns false for it defensively.
   const calls = [];
   for (const fid of state.tracks.initiative) {
     for (const [rid, o] of Object.entries(state.ordersByRegion)) {
-      if (o.faction === fid && o.type === 'support' && ADJ[target].has(rid)) {
+      if (o.faction === fid && o.type === 'support' && ADJ[target].has(rid) && canSupportInto(rid, target)) {
         calls.push({ type: 'declareSupport', faction: fid, region: rid, options: ['attacker', 'defender', 'refuse'] });
       }
     }
@@ -62,6 +72,16 @@ export function initiateCombat(state, { attacker, origin, target, units, mod, le
 }
 
 // ---------- support ----------
+
+/** Terrain eligibility for support (Rules p.18; owner ruling Jul 2026):
+    fleets fight fleets — land never backs a sea battle, and dockbound
+    ships (ports) never back a land battle. */
+export function canSupportInto(fromRid, battleRid) {
+  const fk = region(fromRid).kind, bk = region(battleRid).kind;
+  if (bk === 'maritime') return fk === 'maritime' || fk === 'port';
+  if (bk === 'land') return fk === 'land' || fk === 'maritime';
+  return false;
+}
 
 function supportStrength(state, fid, rid, side, embattled) {
   // Siege engines lend support only when backing an attack on a fortified
@@ -808,6 +828,12 @@ export function replacePortShips(state, fid, count) {
   state.pendingQueries.splice(qi, 1);
   state.unitsByRegion[q.port] = state.unitsByRegion[q.port] || [];
   for (let i = 0; i < count; i++) state.unitsByRegion[q.port].push({ faction: fid, type: 'warship', routed: false });
+  // Refitted ships are NEW units and must respect supply like any muster
+  // (Rules p.8) — found by the M3.d eval fuzz (seed 7016): a 2-ship refit
+  // silently fielded a fourth army at supply 2, poisoning the state for
+  // every later validator. Place-then-check is safe: applyAction hands the
+  // caller a fresh state only on success.
+  checkSupply(state, fid);
   if (count) state.log.push({ round: state.round, event: 'portShipsReplaced', port: q.port, faction: fid, count });
   endCombat(state);
 }

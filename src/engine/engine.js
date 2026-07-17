@@ -149,7 +149,7 @@ export function stateHash(state) {
 //    battles, march-in respects the 3-ship cap, and Bordeaux (L35) borders
 //    The Mediterranean (S07). Episodes < 4 were played on a board where
 //    none of those moves existed.
-export const RULES_REVISION = 5; // 5: Rules p.12 Not-Enough-Order-Tokens implemented (partial coverage under decree/star shortage)
+export const RULES_REVISION = 7; // 7: replacePortShips supply check (Rules p.8). 6: support terrain gate (Rules p.18) — land cannot back sea battles, ports cannot back land. 5: Rules p.12 Not-Enough-Order-Tokens
 
 export function episodeRecord(state, meta = {}) {
   return {

@@ -153,7 +153,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
 - **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
-- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor.
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select. **M3.c shipped:** mixed-seat table mode — one human seat vs five bots, the whole display routed through viewFor. **M3.d shipped:** the eval harness, the first learning loop (SPSA), and the seat-bias study — with two P1 engine fixes its fuzz surfaced.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -303,6 +303,76 @@ loud refusal of unknown query types.
 **M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
+
+## M3.d — eval harness & the first learning loop (this drop, build m3d1)
+
+**Learning starts here** (owner decisions: maximize WIN RATE with guardrail
+secondaries; design for unattended overnight runs; one shared vector with
+per-faction deltas schema-ready).
+
+**tools/eval.mjs — the fitness primitive.** The standard matchup: one
+challenger seat vs five v1 incumbents, rotating through all six factions,
+seed advancing per game (null hypothesis 1/6). Common random numbers: a
+(seedBase, games) pair defines an exact block, so two candidates on the
+same block are PAIRED — differences are policy, not draw. Jitter is OFF in
+eval by design. Reports win rate with a Wilson 95% CI plus the guardrails:
+mean rank, worst-seat mean rank, mean rounds, and rejections (a hard abort,
+never a statistic). worker_threads parallelism (--workers, defaults
+cpus−1); serial path is golden-tested for determinism. Null check on the
+real engine: v1-vs-v1 over 18 games = 16.7% exactly.
+
+**tools/tune.mjs — SPSA in log-space.** Two evaluations per iteration
+regardless of ~50 dimensions: multiplicative perturbation of every weight
+(log-space, weights are positive scales), both arms paired on the same
+rotating seed block, step along the difference. Guardrails per owner spec:
+periodic check-evals revert to best-so-far and halve the step on win-rate
+regression or worst-seat breach (demonstrated live in the smoke run).
+Unattended by construction: atomic checkpoint every iteration, --resume
+continues mid-run (proven), and the run ends with a VERIFICATION pass on
+held-out seeds at 2× N — the honest number; winner's curse priced in.
+Overnight recipe: `node tools/tune.mjs --run runs/night1.json --iters 60
+--games 40 --check-games 120 --workers <cores-1>`; ~10k games on 8 cores.
+
+**Weights schema (per-faction-ready):** `effectiveWeights({shared,
+perFaction}, fid)` — shared vector with multiplicative faction deltas
+layered on top; legacy flat configs still resolve. The optimizer tunes
+`shared`; a proven seat bias becomes a config, not a refactor.
+
+**tools/seatbias.mjs — the F6 question.** Identical un-jittered policy in
+all six seats; deviation from 1/6 is pure map/turn-order structure.
+**Preliminary finding (15 games, needs the overnight N≥1000 run): F2
+flagged FAVORED at 53% [30–75] — CI entirely clear of 1/6 — while F3/F6
+mean ranks sit at 5.5/5.0.** The M3.b tournament's F6 losses increasingly
+look like map structure, not policy weakness. [owner-audit: confirm with a
+big run; if it holds, decide between per-faction weight deltas and map
+rebalance.]
+
+**[P1, RULES_REVISION → 6] Support terrain gate (Rules p.18; owner
+screenshot):** adjacency alone was eligibility — Dragonstone (land) was
+called to back a Shipbreaker Bay sea battle. Now: sea battles call only
+sea and connected-port supporters; land battles call land and sea, never
+ports. One exported `canSupportInto` gate at the call-for-support; two
+goldens including the sharp case (the defender's OWN dock stays out of
+its land battle).
+
+**[P1, RULES_REVISION → 7] replacePortShips supply gate (Rules p.8), found
+by the harness fuzz (seed 7016):** refitted port ships were created with
+no supply check — a two-ship refit silently fielded a fourth army at
+supply 2, poisoning the state for every later validator (the empty-menu
+crash was defense-in-depth CATCHING the poison downstream). Refits now
+checkSupply like any muster; the M3.a menu prunes illegal counts while
+count 0 keeps the menu alive. Golden locks menu, refusal, and the legal
+single-ship refit.
+
+**Goldens (tests/harness.test.js):** Wilson known-values and degenerate
+cases, effectiveWeights resolution, aggregate math incl. the worst-seat
+guardrail, harness determinism (same block → identical aggregate), SPSA
+mechanics (roundtrip, deterministic Rademacher, gradient sign). Suite
+total: **235**. runs/ joins episodes/ in .gitignore.
+
+**Next (M3.e):** episode corpus statistics at rulesRevision 7+, and the
+first real overnight tune — the session after that bakes WEIGHTS-v2 if
+verification clears the bar (CI lower bound above 16.7%, guardrails green).
 
 ## M3.c — mixed-seat table mode (this drop, build m3c1)
 
