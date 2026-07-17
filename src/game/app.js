@@ -11,11 +11,49 @@ import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
 import { ICON_SETS } from '../icons.js';
+import { legalActions, currentQuery } from '../engine/legal.js';
+import { createRandomAgent, botRng } from '../agents/random.js';
+import { viewFor } from '../engine/views.js';
 
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm2f3d';
+export const BUILD_ID = 'm3a1';
+
+// ---------------------------------------------------------------------------
+// Spectate (M3.a, owner decision c): random-legal bots play EVERY seat while
+// you watch — same legalActions seam the headless fuzzer proves, same
+// dispatch path a human uses, so the log, stage, and episode machinery all
+// run for free. A speed slider, a toggle, nothing else.
+// ---------------------------------------------------------------------------
+const spectate = { on: false, timer: null, agent: createRandomAgent(), rng: null };
+
+function spectateTick() {
+  if (!spectate.on) return;
+  if (game.phase === 'gameOver') { toggleSpectate(false); return; }
+  const q = currentQuery(game);
+  if (!q) return; // engine settling; next tick
+  try {
+    const menu = legalActions(game, q);
+    dispatch(spectate.agent.decide(viewFor(game, q.faction), q, menu, spectate.rng));
+  } catch (e) {
+    console.error('spectate halted:', e);
+    toggleSpectate(false);
+  }
+}
+
+function toggleSpectate(onOff) {
+  spectate.on = onOff ?? !spectate.on;
+  clearInterval(spectate.timer);
+  spectate.timer = null;
+  if (spectate.on) {
+    spectate.rng = spectate.rng || botRng((game.config?.seed ?? 1) * 977 + 13);
+    const ms = Number($('#spectate-speed')?.value || 600);
+    spectate.timer = setInterval(spectateTick, ms);
+  }
+  const btn = $('#btn-spectate');
+  if (btn) btn.textContent = spectate.on ? 'Spectating…' : 'Spectate';
+}
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
@@ -1485,6 +1523,8 @@ function init() {
     if (raw && Number.isFinite(+raw)) newGame(+raw);
   });
   $('#btn-undo').addEventListener('click', undo);
+  $('#btn-spectate')?.addEventListener('click', () => toggleSpectate());
+  $('#spectate-speed')?.addEventListener('input', () => { if (spectate.on) toggleSpectate(true); });
   $('#zoom-in')?.addEventListener('click', () => cameraZoomBy($('#map'), 1.35));
   $('#zoom-out')?.addEventListener('click', () => cameraZoomBy($('#map'), 1 / 1.35));
   $('#zoom-home')?.addEventListener('click', () => cameraReset($('#map')));

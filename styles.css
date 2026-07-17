@@ -392,3 +392,7 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 .ov-order-mod { fill: var(--bone); font: 600 9px "IBM Plex Mono", ui-monospace, monospace; pointer-events: none; }
 .pic { width: 13px; height: 13px; vertical-align: -2px; display: inline-block; }
 .has-canvas .ic-fort, .has-canvas .ic-port { filter: drop-shadow(0 0 2px rgba(0,0,0,0.85)); }
+
+/* ---------- M3.a — spectate ---------- */
+#spectate-speed { width: 90px; vertical-align: middle; accent-color: var(--brass); }
+#btn-spectate { min-width: 92px; }

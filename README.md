@@ -152,7 +152,8 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 - Track extension: 8th position locked to one faction; star allowance tables per roster.
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
-- **M2.f (presentation) in progress:** f.0 tokens ✅ · f.1 stage layer ✅ · f.2a map compositor ✅ · f.2b viewport ✅ · f.3 iconography ✅ · f.4 mobile & polish.
+- **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -251,6 +252,57 @@ hand, discard, authority, supply, seats, and the threat, for mid-decision
 reference. Quiet toggle suppresses batch cards (Chronicle keeps everything);
 minimize/quiet/batch state survives `ui` resets, and undo advances the
 presentation watermark so the rewound past never re-stages. Suite total: 195.
+
+## M3.a — the enumeration seam, random agents, selfplay, spectate (Jul 2026)
+
+Owner decisions baked in: validator rejections during selfplay are HARD
+FAILURES; episodes accumulate in git-ignored `episodes/`; spectate ships now.
+
+**src/engine/legal.js** — the engine has always validated; now it
+ENUMERATES. `legalActions(state, query)` returns complete action objects
+under one contract: soundness (every item passes applyAction), proven by
+the zero-rejection fuzz. Candidates are built structurally per query type
+and pre-validated by SIMULATION against a log-stripped clone — no rules
+logic duplicated; the engine arbitrates its own menu. Option-carrying
+queries enumerate fully; combinatorial ones (planning assignments, march
+move-sets, musters, casualty splits, unit picks) use bounded, seeded,
+deterministic generation that always includes the simplest legal answers —
+full breadth is an M3.e training concern, not a parity concern. An unknown
+query type or an empty menu throws loudly: silent unanswerable queries are
+forbidden.
+
+**The fuzz caught three bugs in its first hour** (exactly the class it
+exists for): a star-blind order generator producing all-pruned menus when a
+faction's Command allowance is 0; incursionOption answers are INDICES, not
+option objects; and an incursionUnits shape ({purpose:'destroy', regions,
+constraint:'singleRegion'}) no generator knew. All fixed; all now walked by
+every fuzz run.
+
+**src/agents/random.js** — the agent contract: `decide(view, query, menu,
+rng) → action`. Agents receive ONLY the viewFor redaction plus the
+engine-computed menu (the GM offering moves), never state. Two RNG streams
+by design: game seed and bot seed are separate and both recorded — changing
+bot policy never perturbs the deal, and replays are exact.
+
+**tools/selfplay.mjs** — headless runner: `node tools/selfplay.mjs [games]
+[seed0] [seats]`. Full games to completion (~350 actions, 10 rounds,
+~1.8s/game), episodes with config, both seeds, rulesRevision, transcript,
+result, and stateHash. 4/8-seat setups are engine-gated (unverified data —
+future scope), so fuzz at 6.
+
+**Spectate mode** — the Spectate button hands every seat to random-legal
+bots through the SAME dispatch path a human uses (log, stage, telemetry,
+episode machinery all live), with a speed slider (120ms–2s per decision).
+Watch the whole rules engine play itself on the painted map.
+
+**Goldens (tests/agents.test.js):** three full fuzz games in-suite;
+transcript+hash determinism; two-stream independence; viewFor redaction
+(blank order backs, hidden decks, sealed bids); root-menu direct soundness;
+loud refusal of unknown query types.
+
+**M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
+(overlay must route through viewFor) → M3.d eval harness → M3.e training
+corpus (rulesRevision filtering) → M3.f learned policy.
 
 ## M2.f.2a — Map compositor (this drop)
 

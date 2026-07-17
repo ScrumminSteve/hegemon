@@ -65,6 +65,6 @@ export const tests = skipped ? [
   { name: 'the build stamp is written — cache vs code is diagnosable at a glance', fn() {
     ok(!bootError, 'boot ok');
     const sl = dom.window.document.querySelector('#seed-line');
-    ok(sl && /build m2f3\w/.test(sl.textContent), `seed line stamps the build (got: ${sl?.textContent})`);
+    ok(sl && /build m\d\w*/.test(sl.textContent), `seed line stamps the build (got: ${sl?.textContent})`);
   }},
 ];
