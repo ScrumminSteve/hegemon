@@ -13,20 +13,36 @@ import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from
 import { ICON_SETS } from '../icons.js';
 import { legalActions, currentQuery } from '../engine/legal.js';
 import { createRandomAgent, botRng } from '../agents/random.js';
+import { createHeuristicAgent } from '../agents/heuristic.js';
 import { viewFor } from '../engine/views.js';
 
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3a2';
+export const BUILD_ID = 'm3b2';
 
 // ---------------------------------------------------------------------------
-// Spectate (M3.a, owner decision c): random-legal bots play EVERY seat while
-// you watch — same legalActions seam the headless fuzzer proves, same
-// dispatch path a human uses, so the log, stage, and episode machinery all
-// run for free. A speed slider, a toggle, nothing else.
+// Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
+// seat while you watch — same legalActions seam the headless fuzzer proves,
+// same dispatch path a human uses, so the log, stage, and episode machinery
+// all run for free. A speed slider, a policy select (random | heuristic —
+// heuristic seats get seeded per-seat jitter, so each faction has its own
+// personality), a toggle, nothing else.
 // ---------------------------------------------------------------------------
-const spectate = { on: false, timer: null, agent: createRandomAgent(), rng: null };
+const spectate = { on: false, timer: null, agents: null, policy: null, rng: null };
+
+function spectateAgents() {
+  const policy = $('#spectate-policy')?.value || 'heuristic';
+  const seed = game.config?.seed ?? 1;
+  if (spectate.agents && spectate.policy === policy && spectate.seed === seed) return spectate.agents;
+  spectate.policy = policy; spectate.seed = seed;
+  const jitterBase = (seed * 131) | 0;
+  spectate.agents = Object.fromEntries(game.factions.map((fid, i) =>
+    [fid, policy === 'heuristic'
+      ? createHeuristicAgent({ jitterSeed: jitterBase + i })
+      : createRandomAgent()]));
+  return spectate.agents;
+}
 
 function spectateTick() {
   if (!spectate.on) return;
@@ -35,7 +51,7 @@ function spectateTick() {
   if (!q) return; // engine settling; next tick
   try {
     const menu = legalActions(game, q);
-    dispatch(spectate.agent.decide(viewFor(game, q.faction), q, menu, spectate.rng));
+    dispatch(spectateAgents()[q.faction].decide(viewFor(game, q.faction), q, menu, spectate.rng));
   } catch (e) {
     console.error('spectate halted:', e);
     toggleSpectate(false);
@@ -55,7 +71,7 @@ function toggleSpectate(onOff) {
   if (btn) btn.textContent = spectate.on ? 'Spectating…' : 'Spectate';
 }
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
-import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, episodeRecord } from '../engine/engine.js';
+import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
@@ -949,7 +965,16 @@ function planningForm(q) {
     }).join('') + `</div>`;
     if (banned.length) html += `<div class="hint">Event decree: ${banned.map(esc).join(', ')} orders are forbidden this round.</div>`;
   }
-  const complete = Object.values(ui.assignments).every(Boolean);
+  // Shortage-aware gating (Rules p.12 Not Enough Order Tokens): when decree
+  // bans + the star limit leave fewer legal tokens than occupied areas, the
+  // commit target drops to the placeable maximum — the operator chooses which
+  // areas go without, exactly as the validator now demands.
+  const requiredN = maxPlaceableOrders(game, q.faction);
+  const placedN = Object.values(ui.assignments).filter(Boolean).length;
+  const complete = placedN === requiredN;
+  if (requiredN < Object.keys(ui.assignments).length) {
+    html += `<div class="hint">Token shortage: only ${requiredN} of ${Object.keys(ui.assignments).length} areas can receive orders this round — you choose which go without.</div>`;
+  }
   html += `<button class="primary" id="do-submit" ${complete ? '' : 'disabled'}>Commit orders</button>`;
   return html;
 }
@@ -1232,7 +1257,8 @@ function bindForm(panel, q) {
   }
 
   panel.querySelector('#do-submit')?.addEventListener('click', () =>
-    dispatch({ type: 'submitOrders', faction: q.faction, orders: ui.assignments }));
+    dispatch({ type: 'submitOrders', faction: q.faction,
+      orders: Object.fromEntries(Object.entries(ui.assignments).filter(([, o]) => o)) }));
 
   panel.querySelectorAll('[data-row]').forEach(b => b.addEventListener('click', () => {
     centerMap(b.dataset.row);

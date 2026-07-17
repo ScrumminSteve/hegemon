@@ -1,7 +1,7 @@
 // Golden tests — Victory, M2.e (Rules p.25; FAQ v2.0 tie-breaker errata).
 
 import { createGame, seatsControlled, landAreasControlled, controllerOf } from '../src/engine/state.js';
-import { applyAction, beginPlanning, replayGame, stateHash, legalActions } from '../src/engine/engine.js';
+import { applyAction, beginPlanning, replayGame, stateHash, decisionDescriptors } from '../src/engine/engine.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { VICTORY_MODES, checkInstantVictory } from '../src/engine/victory.js';
 import { REGIONS } from '../src/data/map.js';
@@ -130,7 +130,7 @@ export const tests = [
     s = planAndMarch(s, 'F1', from, to);
     eq(s.phase, 'gameOver');
     throws(() => act(s, { type: 'resolveRally', faction: 'F2', region: 'L01' }), 'the table is closed');
-    eq(legalActions(s, 'F2'), [], 'nothing left to decide');
+    eq(decisionDescriptors(s, 'F2'), [], 'nothing left to decide');
   }},
 
   { name: 'an instant win replays byte-identically from its transcript — including the mid-round stop (determinism contract)', fn() {

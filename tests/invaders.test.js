@@ -2,7 +2,7 @@
 
 import { createGame } from '../src/engine/state.js';
 import { viewFor } from '../src/engine/views.js';
-import { applyAction, beginPlanning, replayGame, stateHash, legalActions } from '../src/engine/engine.js';
+import { applyAction, beginPlanning, replayGame, stateHash, decisionDescriptors } from '../src/engine/engine.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { SETUP } from '../src/data/setup.js';
 import { LEADER_CARDS } from '../src/data/leaderCards.js';
@@ -416,9 +416,9 @@ export const tests = [
 
   // ---------- architecture invariants ----------
 
-  { name: 'legalActions surfaces the incursion decision space (M3 parity)', fn() {
+  { name: 'decisionDescriptors surfaces the incursion decision space (M3 parity)', fn() {
     let s = toIncursion();
-    const la = legalActions(s, 'F4');
+    const la = decisionDescriptors(s, 'F4');
     ok(la.some(a => a.type === 'invaderBid' && a.strength === 4), 'an AI seat sees the bid it owes');
   }},
 

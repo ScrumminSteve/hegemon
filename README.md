@@ -153,7 +153,7 @@ Deck IV); per-faction order-token inventories as data (sea orders are more token
 
 - **M2.a–M2.e complete — the base game is playable start to finish.**
 - **M2.f:** f.0–f.3 ✅ · f.4 mobile & polish (HELD with owner's graphics tweaks — resumes after M3.a bot-vs-bot games stress the UI).
-- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode.
+- **M3 (agents) OPEN — M3.a shipped:** the legalActions seam, random-legal agents, headless selfplay, the zero-rejection fuzz, and spectate mode. **M3.b shipped:** heuristic-v1 (10/12 wins vs random tables), seeded per-seat weight jitter, agent mixes in selfplay, tournament tool, spectate policy select.
 
 
 ## M2.d — Invaders & incursions (this drop)
@@ -303,6 +303,86 @@ loud refusal of unknown query types.
 **M3 roadmap from here:** M3.b heuristic bots → M3.c mixed-seat table mode
 (overlay must route through viewFor) → M3.d eval harness → M3.e training
 corpus (rulesRevision filtering) → M3.f learned policy.
+
+## M3.b — heuristic bots (this drop, build m3b1)
+
+**src/agents/heuristic.js** — heuristic-v1, the first policy that WANTS
+something. Same contract as random-v1 (`decide(view, query, menu, rng)`);
+the agent scores every engine-offered menu item and argmaxes, with the bot
+RNG breaking exact ties only — play is deterministic per (game seed, bot
+seed, jitter seed). Two layers: a shared feature extractor over the view
+(seats, region value via `regionProps`, border pressure, army strength via
+`unitStrength` — every read through the same derived helpers the UI uses,
+per the one-lens contract) and per-query scorers covering all 25 query
+types: planning favors defending contested seats and marching on takeable
+ground; marches are margin-scaled and overreach-punished; bids scale with
+track position and protect an authority reserve; invader bids scale with
+attack strength; leader cards spend strength proportional to stakes;
+casualties and supply losses spare the strong; musters spend the budget.
+No lookahead by construction: the view's decks are 'hidden' strings, so
+simulation is impossible — parity with a remote human is preserved.
+`WEIGHTS` is one flat tunable vector — the exact surface M3.d/M3.e
+hill-climbing (banked M3.L design) will perturb. **Seeded per-seat jitter
+(owner decision, this session):** `createHeuristicAgent({jitterSeed})`
+gives every seat its own personality (±20% multiplicative); effective
+weights ride on the agent and jitter seeds are recorded in episode config
+for exact replay.
+
+**Strength proof — tools/tournament.mjs:** one heuristic seat rotating
+through all six factions vs five randoms, 12 seeded games: **10/12 wins
+(83%), mean rank 1.42** against the 3.5 uniform baseline (random seats:
+3.92). Both losses were seat F6 — possible seat/map bias, banked as an
+M3.d eval-harness question. In-suite, the M3.b goldens assert completion,
+determinism, jitter reproducibility, and three behavioral contracts — a
+rank assertion would be a coin-flip golden, so strength lives in the tool.
+
+**[P1-grade engine fix, RULES_REVISION → 5] Not Enough Order Tokens
+(Rules p.12), found live by the heuristic fuzz** (seed 7000, round 8 —
+exactly the state a stronger agent reaches and a random one doesn't): 11
+occupied areas, defend class banned by decree, star allowance 0 → only 8
+legal tokens, and the validator demanded full coverage (the old deferred
+guard covered only the >15-areas case). Worse, the table-mode Commit
+button gated on every row being filled — a HUMAN operator would have
+deadlocked in the same state. One shared accessor fixes all three sites:
+`maxPlaceableOrders(state, faction)` (occupied areas capped by the legal
+supply — inventory minus banned classes, starred usable only up to the
+Command allowance) is now read by the validator (accepts exactly the
+placeable maximum, the player chooses which areas go without), the M3.a
+generator (shuffled region walk samples the choice), and the planning UI
+(shortage hint, Commit target drops, nulls stripped on submit). Second
+latent hole fixed in passing: the generator's ban check compared raw
+types and missed the `marchPlusOne` CLASS ban — same empty-menu failure
+mode under that decree. Episode compatibility: no recorded episode can
+contain the shortage state (it crashed before), so replays are safe; the
+revision bump keeps M3.e corpus filtering honest.
+**[owner-verified, m3b2]** Rules p.12 confirmed on the board: in a
+shortage the player places ALL available legal orders and may then commit —
+not every territory needs an order. Implemented as shipped (must-place-max,
+player chooses which areas go without).
+
+**Rename:** the M1-era descriptor enumerator `engine.js legalActions(state,
+faction)` is now `decisionDescriptors` — it silently shadowed the M3.a menu
+enumerator `legal.js legalActions(state, query)` at import sites (caught
+when a new golden imported the wrong one and tested nothing).
+
+**tools/selfplay.mjs** grows agent mixes: `node tools/selfplay.mjs [games]
+[seed0] [seats] [mix]` where mix is `random` | `heuristic` | a per-seat
+list `h,r,r,h,r,r`. Episode config records per-faction agent ids (jitter
+seed included in the id). Fuzz shake this drop: 20 random + 10 heuristic +
+10 mixed full games, zero rejections.
+
+**Spectate policy select (game.html):** heuristic bots are the default
+spectate policy (per-faction jittered personalities derived from the game
+seed); random-legal remains selectable. Agents rebuild on policy or seed
+change. The ui-smoke suite covers the controls.
+
+**Goldens (tests/heuristic.test.js + planning additions):** heuristic fuzz
+(all-heuristic and mixed tables to completion, every pick a menu item),
+transcript determinism, jitter reproducibility and envelope, casualties
+spare the strong, invader bids scale with strength, musters spend the
+budget; plus three not-enough-tokens goldens locking the p.12 rule at the
+validator, the menu, and the accessor. Suite total: **224** (jsdom now in
+devDependencies, so the five ui-smoke tests run for real).
 
 ## M2.f.2a — Map compositor (this drop)
 

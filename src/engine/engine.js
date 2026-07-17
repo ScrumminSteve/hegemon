@@ -2,7 +2,7 @@
 // applyAction(state, action) -> { state, events }: pure with respect to its
 // inputs (the incoming state is never mutated), deterministic, serializable.
 
-import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderClasses, orderableRegions, starLimit, ORDER_TOKENS } from './planning.js';
+import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders } from './planning.js';
 import { eventChoice, reconcileSupply, muster, bid, bidTieBreak } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
@@ -11,7 +11,7 @@ import { checkInstantVictory } from './victory.js';
 import { invaderBid, invaderTieBreak, incursionUnits, incursionTrack, incursionCard, incursionOption, incursionMusterSite } from './invaders.js';
 import { createGame, seatsControlled, serialize } from './state.js';
 
-export { beginPlanning, beginActionPhase, orderClasses, orderableRegions, starLimit, ORDER_TOKENS };
+export { beginPlanning, beginActionPhase, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders };
 
 const HANDLERS = {
   submitOrders(state, action) {
@@ -149,7 +149,7 @@ export function stateHash(state) {
 //    battles, march-in respects the 3-ship cap, and Bordeaux (L35) borders
 //    The Mediterranean (S07). Episodes < 4 were played on a board where
 //    none of those moves existed.
-export const RULES_REVISION = 4;
+export const RULES_REVISION = 5; // 5: Rules p.12 Not-Enough-Order-Tokens implemented (partial coverage under decree/star shortage)
 
 export function episodeRecord(state, meta = {}) {
   return {
@@ -175,11 +175,13 @@ export function episodeRecord(state, meta = {}) {
 }
 
 /**
- * Enumerate what a faction may do right now — the single interface the UI
- * and (in M3) the AI consume. Descriptors, not exhaustive enumerations:
- * order placement is combinatorial, so we describe the decision space.
+ * Describe a faction's decision space right now — DESCRIPTORS, not complete
+ * action objects. RENAMED from `legalActions` (M3.b): the M3.a menu
+ * enumerator in legal.js owns that name — two same-named exports with
+ * different contracts silently shadowed each other at import sites, which
+ * is exactly how a golden ended up testing the wrong function.
  */
-export function legalActions(state, faction) {
+export function decisionDescriptors(state, faction) {
   if (state.phase === 'gameOver') return []; // nothing left to decide (Rules p.25)
   const out = [];
   for (const q of state.pendingQueries) {

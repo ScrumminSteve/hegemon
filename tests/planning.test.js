@@ -1,7 +1,8 @@
 // Golden tests — M1.b: Planning Phase (Rules p.11–13).
 
 import { createGame, serialize, deserialize } from '../src/engine/state.js';
-import { applyAction, beginPlanning, legalActions, orderableRegions, starLimit } from '../src/engine/engine.js';
+import { applyAction, beginPlanning, decisionDescriptors, orderableRegions, starLimit, maxPlaceableOrders } from '../src/engine/engine.js';
+import { legalActions } from '../src/engine/legal.js';
 import { viewFor } from '../src/engine/views.js';
 import { eq, ok, throws } from './assert.js';
 
@@ -174,15 +175,15 @@ export const tests = [
     ok(!rival.privateKnowledge.F2, 'rivals see no trace of the secret');
   }},
 
-  { name: 'legalActions describes the decision space for the querying faction only', fn() {
+  { name: 'decisionDescriptors describes the decision space for the querying faction only', fn() {
     const g = freshPlanning();
-    const la = legalActions(g, 'F1');
+    const la = decisionDescriptors(g, 'F1');
     eq(la.length, 1);
     eq(la[0].regions, ['L01', 'L04', 'S02']);
     eq(la[0].starLimit, 3);
     const s = submitAll(g);
-    eq(legalActions(s, 'F1'), []);
-    eq(legalActions(s, 'F2')[0].type, 'courierDecision');
+    eq(decisionDescriptors(s, 'F1'), []);
+    eq(decisionDescriptors(s, 'F2')[0].type, 'courierDecision');
   }},
 
   { name: 'mid-planning state serializes and round-trips losslessly', fn() {
@@ -192,3 +193,59 @@ export const tests = [
   }},
 
 ];
+
+// --- M3.b: Not Enough Order Tokens (Rules p.12) ------------------------------
+// Found live by the heuristic fuzz (seed 7000, round 8): 11 occupied areas,
+// defend class banned by decree, star allowance 0 — only 8 legal tokens.
+// The validator must accept exactly the placeable maximum and no other count;
+// the M3.a generator must produce a non-empty menu of exactly that shape.
+
+function riggedShortage() {
+  const g = createGame(6, { seed: 9 });
+  beginPlanning(g);
+  // F1 to the command-track bottom: star allowance 0 (6-seat table).
+  g.tracks.command = g.tracks.command.filter(f => f !== 'F1').concat('F1');
+  // Decree: no defend orders this round (E3-banDefend class ban).
+  g.roundFlags.bannedOrders = ['defend'];
+  // Spread F1 to 11 areas (march/support/raid/rally ×2 = 8 legal tokens).
+  const spread = ['L02', 'L05', 'L06', 'L07', 'L09', 'L10', 'L11', 'L12'];
+  for (const rid of spread) {
+    (g.unitsByRegion[rid] = g.unitsByRegion[rid] || []).push({ faction: 'F1', type: 'infantry', routed: false });
+  }
+  return g;
+}
+
+tests.push(
+  { name: 'not-enough-tokens: maxPlaceableOrders caps at the legal supply (Rules p.12; decree + star limit)', fn() {
+    const g = riggedShortage();
+    eq(orderableRegions(g, 'F1').length, 11, '11 occupied areas');
+    eq(starLimit(g, 'F1'), 0, 'command-track bottom: no stars');
+    eq(maxPlaceableOrders(g, 'F1'), 8, '8 legal tokens: 4 classes x 2 plain each');
+  }},
+
+  { name: 'not-enough-tokens: the validator accepts exactly the placeable maximum, rejects short and full-coverage-with-banned (Rules p.12, p.22)', fn() {
+    const g = riggedShortage();
+    const areas = orderableRegions(g, 'F1');
+    const legal = {};
+    const toks = [M(0), M(-1), SU(0), SU(0), R(false), R(false), CP(false), CP(false)];
+    areas.slice(0, 8).forEach((rid, i) => { legal[rid] = toks[i]; });
+    applyAction(g, { type: 'submitOrders', faction: 'F1', orders: legal }); // must not throw
+    const short = Object.fromEntries(Object.entries(legal).slice(0, 7));
+    throws(() => applyAction(riggedShortage(), { type: 'submitOrders', faction: 'F1', orders: short }),
+      /exactly 8/, 'placing fewer than the max is refused');
+    const withBanned = { ...Object.fromEntries(Object.entries(legal).slice(0, 7)), [areas[8]]: D(1) };
+    throws(() => applyAction(riggedShortage(), { type: 'submitOrders', faction: 'F1', orders: withBanned }),
+      /forbidden this round/, 'a decree-banned token never sneaks in via the shortage');
+  }},
+
+  { name: 'not-enough-tokens: decisionDescriptors serves a sound, non-empty menu at the shortage (M3.a contract regression)', fn() {
+    const g = riggedShortage();
+    const q = g.pendingQueries.find(x => x.type === 'submitOrders' && x.faction === 'F1');
+    const menu = legalActions(g, q);
+    ok(menu.length > 0, 'the seed-7000 crash class: the menu must never be empty here');
+    for (const a of menu) {
+      eq(Object.keys(a.orders).length, 8, 'every item places exactly the maximum');
+      ok(!Object.values(a.orders).some(o => o.type === 'defend'), 'no banned class in any item');
+    }
+  }},
+);

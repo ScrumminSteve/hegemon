@@ -48,6 +48,24 @@ export function orderableRegions(state, faction) {
     .sort();
 }
 
+/**
+ * How many orders this faction can physically place this round: occupied
+ * areas, capped by the LEGAL token supply — inventory minus decree-banned
+ * classes, with starred tokens usable only up to the Command-track allowance.
+ * The one lens for the validator, the M3.a generator, and the planning UI
+ * (Rules p.12 "Not Enough Order Tokens"; ban classes per Rules p.22).
+ */
+export function maxPlaceableOrders(state, faction) {
+  const banned = state.roundFlags.bannedOrders || [];
+  const legal = ORDER_TOKENS.filter(t =>
+    !orderClasses(t).some(c => banned.includes(c)) &&
+    !(banned.includes('starred') && t.starred));
+  const plain = legal.filter(t => !t.starred).length;
+  const starred = legal.length - plain;
+  const cap = plain + Math.min(starred, starLimit(state, faction));
+  return Math.min(orderableRegions(state, faction).length, cap);
+}
+
 /** Max starred orders for a faction from its Command-track position (Rules p.11). */
 export function starLimit(state, faction) {
   const allowance = STAR_ALLOWANCE[state.ruleset.seatCount];
@@ -80,12 +98,17 @@ export function validateOrders(state, faction, orders) {
     }
   }
   // Coverage is mandatory: every area with your units must receive an order
-  // (Rules p.12 "each player must place exactly one Order token on each area").
-  // The "Not Enough Order Tokens" rarity (Rules p.12) cannot trigger before
-  // mustering exists, so it is deferred with an explicit guard.
-  if (keys.length !== eligible.length) {
-    if (eligible.length > ORDER_TOKENS.length) {
-      throw new Error('Not-enough-order-tokens edge case not yet implemented (Rules p.12) — deferred until mustering (M2)');
+  // (Rules p.12 "each player must place exactly one Order token on each area")
+  // — UNLESS the legal token supply falls short (decree bans, star limit, or
+  // more areas than tokens), in which case the player places as many as the
+  // supply allows and chooses which areas go without (Rules p.12 "Not Enough
+  // Order Tokens"; found live by the M3.b heuristic fuzz: 11 areas, defend
+  // banned, star allowance 0 → only 8 legal tokens). [owner-audit: confirm
+  // p.12 wording requires placing the MAXIMUM possible, not "up to".]
+  const required = maxPlaceableOrders(state, faction);
+  if (keys.length !== required) {
+    if (required < eligible.length) {
+      throw new Error(`${faction} must place exactly ${required} orders — ${eligible.length} occupied areas but only ${required} legal tokens after decree bans and the star limit (Rules p.12 Not Enough Order Tokens); got ${keys.length}`);
     }
     const missing = eligible.filter(r => !keys.includes(r));
     throw new Error(`${faction} must order every occupied area; missing: ${missing.join(', ')} (Rules p.12)`);

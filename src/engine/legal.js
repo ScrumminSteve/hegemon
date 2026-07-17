@@ -23,7 +23,7 @@
 // optimizable per-type if RL throughput ever demands it.
 
 import { applyAction } from './engine.js';
-import { orderableRegions, ORDER_TOKENS, starLimit } from './planning.js';
+import { orderableRegions, ORDER_TOKENS, starLimit, orderClasses, maxPlaceableOrders } from './planning.js';
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 
 const ADJ = buildAdjacency();
@@ -92,8 +92,13 @@ const GENERATORS = {
   // ----- planning -----
   submitOrders(state, q, r) {
     const eligible = orderableRegions(state, q.faction);
+    const required = maxPlaceableOrders(state, q.faction);
     const banned = state.roundFlags.bannedOrders || [];
-    const isBanned = t => banned.some(c => c === t.type || (c === 'starred' && t.starred));
+    // Class-aware ban check (orderClasses, same as the validator) — the old
+    // `c === t.type` comparison missed the marchPlusOne class and could
+    // empty the menu under that decree the same way the shortage did.
+    const isBanned = t => orderClasses(t).some(c => banned.includes(c)) ||
+                          (banned.includes('starred') && t.starred);
     // Star-allowance-aware construction (fuzz finding: with allowance 0 a
     // star-blind generator can produce an all-pruned menu on unlucky seeds).
     const allowance = starLimit(state, q.faction);
@@ -101,15 +106,19 @@ const GENERATORS = {
     for (let attempt = 0; attempt < 40 && out.length < 8; attempt++) {
       const pool = shuffled(ORDER_TOKENS.filter(t => !isBanned(t)), r);
       const orders = {};
-      let stars = 0, ok = true;
-      for (const rid of eligible) {
+      let stars = 0, placed = 0;
+      // Shuffled region walk: when tokens run short, WHICH areas go without
+      // is the player's choice (Rules p.12) — sampling must cover it.
+      for (const rid of shuffled(eligible, r)) {
+        if (placed === required) break;
         const idx = pool.findIndex(t => !t.starred || stars < allowance);
-        if (idx === -1) { ok = false; break; }
+        if (idx === -1) break;
         const t = pool.splice(idx, 1)[0];
         if (t.starred) stars++;
         orders[rid] = { type: t.type, mod: t.mod, starred: t.starred };
+        placed++;
       }
-      if (ok) out.push(pick(q, { type: 'submitOrders', orders }));
+      if (placed === required) out.push(pick(q, { type: 'submitOrders', orders }));
     }
     return out; // inventory duplicates remain the simulator's concern
   },
