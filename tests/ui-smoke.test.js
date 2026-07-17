@@ -62,6 +62,12 @@ export const tests = skipped ? [
     ok(svg.querySelectorAll('use.unit-ic').length >= 10, 'setup units render as themed silhouettes');
   }},
 
+  { name: 'the spectate controls exist — a silent markup no-op cannot ship a phantom feature again (m3a2)', fn() {
+    ok(!bootError, 'boot ok');
+    ok(dom.window.document.querySelector('#btn-spectate'), 'Spectate button in the chronicle row');
+    ok(dom.window.document.querySelector('#spectate-speed'), 'speed slider present');
+  }},
+
   { name: 'the build stamp is written — cache vs code is diagnosable at a glance', fn() {
     ok(!bootError, 'boot ok');
     const sl = dom.window.document.querySelector('#seed-line');

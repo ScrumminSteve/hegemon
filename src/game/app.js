@@ -18,7 +18,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3a1';
+export const BUILD_ID = 'm3a2';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c): random-legal bots play EVERY seat while
