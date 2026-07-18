@@ -39,22 +39,47 @@ export function playSymmetricGame(seed) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i === -1 ? d : process.argv[i + 1]; };
   const games = Number(arg('games', 60)), seedBase = Number(arg('seed', 300000));
+  const workers = Math.max(1, Number(arg('workers', 1)));
   const t0 = Date.now();
   const wins = {}, rankSum = {};
-  let factions = null;
-  for (let i = 0; i < games; i++) {
-    let r;
-    try { r = playSymmetricGame(seedBase + i); }
-    catch (e) {
-      // Diagnosability (owner runs, Jul 2026): a crash NAMES its seed, and it
-      // lands on stderr so a stdout redirect never swallows it.
-      console.error(`\nCRASH at seed ${seedBase + i} (game ${i + 1}/${games}) — report this seed:\n${e.message}`);
-      process.exit(1);
-    }
-    if ((i + 1) % 25 === 0) console.error(`…${i + 1}/${games} games (seed ${seedBase + i})`);
+  let factions = null, done = 0;
+  const record = r => {
     factions = factions || [...r.standings].sort();
     wins[r.winner] = (wins[r.winner] || 0) + 1;
     r.standings.forEach((f, idx) => { rankSum[f] = (rankSum[f] || 0) + idx + 1; });
+    if (++done % 25 === 0) console.error(`…${done}/${games} games`);
+  };
+  const crash = (seed, msg) => {
+    // Diagnosability (owner runs, Jul 2026): a crash NAMES its seed, and it
+    // lands on stderr so a stdout redirect never swallows it.
+    console.error(`\nCRASH at seed ${seed} — report this seed:\n${msg}`);
+    process.exit(1);
+  };
+  if (workers === 1) {
+    for (let i = 0; i < games; i++) {
+      try { record(playSymmetricGame(seedBase + i)); }
+      catch (e) { crash(seedBase + i, e.message); }
+    }
+  } else {
+    // m3d10 (owner request: order-of-magnitude scans): worker-pool parallel,
+    // same pattern as eval.mjs — every game independently seeded, so the
+    // aggregate is identical regardless of scheduling.
+    const { Worker } = await import('node:worker_threads');
+    const seeds = Array.from({ length: games }, (_, i) => seedBase + i);
+    await Promise.all(Array.from({ length: workers }, () => new Promise((resolve, reject) => {
+      const w = new Worker(new URL('./seatbias-worker.mjs', import.meta.url));
+      const feed = () => {
+        const seed = seeds.pop();
+        if (seed === undefined) { w.terminate(); resolve(); return; }
+        w.postMessage(seed);
+      };
+      w.on('message', m => {
+        if (m.error) { w.terminate(); crash(m.seed, m.error); reject(); return; }
+        record(m.result); feed();
+      });
+      w.on('error', reject);
+      feed();
+    })));
   }
   console.log(`${games} symmetric games, ${((Date.now() - t0) / 1000).toFixed(1)}s (null: ${(100 / 6).toFixed(1)}% each)\n`);
   for (const f of factions) {

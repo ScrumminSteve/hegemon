@@ -329,6 +329,55 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## M3.d.10 — parallel seatbias for order-of-magnitude scans (build m3d10)
+
+Owner request: 10x scans. seatbias gains --workers (same worker-pool
+pattern as eval; every game independently seeded, so aggregates are
+scheduling-invariant). Purpose of the big runs, banked: (a) an N=6000
+seatbias is the PRE-M3.e ANCHOR — at ±0.6pp it can detect the 2-3pp
+island lifts the opening books are supposed to produce, which two N=600
+studies cannot distinguish from noise; (b) one big-arm SPSA run (300
+games/arm ≈ ±2pp arm noise vs ±6pp at 40) legitimately re-tests the
+"scalar well is tapped" doctrine at a budget where the signal is
+readable — if THAT plateaus too, the structural conclusion is confirmed
+with authority. More iterations at small arms remains pointless (more
+steps in fog). Suite: 240.
+
+## Verdicts: night2 & seatbias-v2 (m3d9, doc-only)
+
+**night2 (v3 candidate) DOES NOT SHIP:** verified 17.08% [12.85–22.35] on
+240 held-out rev-9 games — CI floor far under the 16.7% bar; worst-seat
+degraded to 5.18 (F3 0/40) vs v2's 4.53. Same shape as night1: early best
+(iter 20), plateau after. **Doctrine update: the scalar-weight well is
+tapped at this budget.** Rally-fix gains didn't materialize because weight
+values only reorder what the ≤8-sample M3.a planning menu happens to
+offer, and 40-game SPSA arms carry ±6pp noise vs single-point true signal.
+No further SPSA runs until the structure changes (M3.e menu breadth /
+opening books); v2 remains stock.
+
+**seatbias N=600, v2 weights + rev-9 rules (fresh seeds 400000+):**
+F1 24.5↑ · **F2 31.3↑↑** (22.7 → 31.3: v2's biggest beneficiary) ·
+F3 3.0↓ · F4 18.2 (fell OUT of the favored tier, was 24.0↑) · F5 16.7 ·
+F6 6.3↓. The meta reshuffled; the islands didn't move. Menus offer
+transports; bots can't coordinate them — structural, per doctrine.
+
+**Human corpus (all hash-verified):** (1) F3 aggressive r4 win (rev 8) —
+navy + 3 amphibious prongs; (2) F6 r3 win (rev 9) — 3 transported prongs
+in 5 marches; (3) **F3 non-aggressive r6 win (rev 9)** — DOUBLE-RALLY
+opener (L20 + L22★), support-web midgame (11 SU / 9 raids vs 14 marches),
+defended 5 of 11 battles, 4 warships. Two distinct F3 openers + an F6
+template now on record for the M3.e books. Outstanding requests: a third
+F3 opener; honest losses.
+
+**Next-session plan (owner-approved direction):** short UI pass first
+(4-item queue, Canaris info gap leads — teacher's tools before mining the
+lessons), then **M3.e**: tools/mine.mjs corpus miner (legality-filtered
+under current rules, human-weighted) → per-faction round-1/2 opening
+books consulted before the general heuristic; plus the banked planning
+menu-breadth upgrade (heuristic-guided top-K construction replacing the
+random sampler). Re-run seatbias after; per-faction deltas only once the
+structure settles.
+
 ## M3.d.8 — WEIGHTS-v2 SHIPS · rally leaves the seas (build m3d8)
 
 **WEIGHTS-v2 is live.** Pooled verification: 141/720 held-out games =
