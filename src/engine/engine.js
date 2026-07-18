@@ -2,7 +2,7 @@
 // applyAction(state, action) -> { state, events }: pure with respect to its
 // inputs (the incoming state is never mutated), deterministic, serializable.
 
-import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders } from './planning.js';
+import { beginPlanning, submitOrders, courierDecision, threatPeekPlacement, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt } from './planning.js';
 import { eventChoice, reconcileSupply, muster, bid, bidTieBreak } from './eventPhase.js';
 import { beginActionPhase, resolveRaid, resolveMarch, resolveRally } from './actionPhase.js';
 import { declareSupport, useBlade, retreat, replacePortShips, chooseCasualties, progressCombat, useCardAbility, cardTarget } from './combat.js';
@@ -11,7 +11,7 @@ import { checkInstantVictory } from './victory.js';
 import { invaderBid, invaderTieBreak, incursionUnits, incursionTrack, incursionCard, incursionOption, incursionMusterSite } from './invaders.js';
 import { createGame, seatsControlled, serialize } from './state.js';
 
-export { beginPlanning, beginActionPhase, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders };
+export { beginPlanning, beginActionPhase, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt };
 
 const HANDLERS = {
   submitOrders(state, action) {
@@ -149,7 +149,7 @@ export function stateHash(state) {
 //    battles, march-in respects the 3-ship cap, and Bordeaux (L35) borders
 //    The Mediterranean (S07). Episodes < 4 were played on a board where
 //    none of those moves existed.
-export const RULES_REVISION = 8; // 8: combat marches supply-checked at declaration, full-survival basis (Rules p.8, FAQ). 7: replacePortShips supply check (Rules p.8). 6: support terrain gate (Rules p.18) — land cannot back sea battles, ports cannot back land. 5: Rules p.12 Not-Enough-Order-Tokens
+export const RULES_REVISION = 9; // 9: Consolidate Power banned at sea (Rules p.13). 8: combat marches supply-checked at declaration, full-survival basis (Rules p.8, FAQ). 7: replacePortShips supply check (Rules p.8). 6: support terrain gate (Rules p.18) — land cannot back sea battles, ports cannot back land. 5: Rules p.12 Not-Enough-Order-Tokens
 
 export function episodeRecord(state, meta = {}) {
   return {

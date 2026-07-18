@@ -4,6 +4,12 @@
 // the Courier token holder may act (Rules p.11, p.12 step 3).
 
 import { STAR_ALLOWANCE } from './state.js';
+import { REGIONS, PORTS } from '../data/map.js';
+
+const KIND = Object.fromEntries([...REGIONS.map(r => [r.id, r.kind]), ...PORTS.map(p => [p.id, 'port'])]);
+/** Consolidate Power cannot be placed in sea areas (Rules p.13). Ports are
+    allowed. [owner-audit: confirm p.13 port-CP wording — currently permitted.] */
+export const cpAllowedAt = rid => KIND[rid] !== 'maritime';
 
 // The 15-token order inventory every faction owns (Rules p.12: 10 regular +
 // 5 special "starred" tokens). mod = printed combat modifier.
@@ -60,10 +66,30 @@ export function maxPlaceableOrders(state, faction) {
   const legal = ORDER_TOKENS.filter(t =>
     !orderClasses(t).some(c => banned.includes(c)) &&
     !(banned.includes('starred') && t.starred));
-  const plain = legal.filter(t => !t.starred).length;
-  const starred = legal.length - plain;
-  const cap = plain + Math.min(starred, starLimit(state, faction));
-  return Math.min(orderableRegions(state, faction).length, cap);
+  const eligible = orderableRegions(state, faction);
+  const seaN = eligible.filter(r => !cpAllowedAt(r)).length;
+  const landN = eligible.length - seaN; // 'land' here = anywhere CP may go (incl ports)
+  const allowance = starLimit(state, faction);
+  const count = pred => legal.filter(pred).length;
+  const plainCP = count(t => !t.starred && t.type === 'rally');
+  const starCP = count(t => t.starred && t.type === 'rally');
+  const plainOther = count(t => !t.starred && t.type !== 'rally');
+  const starOther = count(t => t.starred && t.type !== 'rally');
+  // Exact small search over starred usage (Rules p.11 star cap x Rules p.13
+  // CP-terrain): non-CP tokens fill sea first (they're the only tokens that
+  // can), CP takes remaining CP-capable ground — greedy is optimal for this
+  // two-class transversal.
+  let best = 0;
+  for (let a = 0; a <= starOther; a++) {
+    for (let b = 0; b <= starCP && a + b <= allowance; b++) {
+      const otherPool = plainOther + a, cpPool = plainCP + b;
+      const othersAtSea = Math.min(otherPool, seaN);
+      const othersAtLand = Math.min(otherPool - othersAtSea, landN);
+      const cpPlaced = Math.min(cpPool, landN - othersAtLand);
+      best = Math.max(best, othersAtSea + othersAtLand + cpPlaced);
+    }
+  }
+  return Math.min(eligible.length, best);
 }
 
 /** Max starred orders for a faction from its Command-track position (Rules p.11). */
@@ -87,6 +113,13 @@ export function validateOrders(state, faction, orders) {
     for (const [rid, o] of Object.entries(orders)) {
       const hit = orderClasses(o).find(c => banned.includes(c));
       if (hit) throw new Error(`${o.type}${o.starred ? '★' : ''} at ${rid}: ${hit} orders are forbidden this round (event card)`);
+    }
+  }
+  // Terrain: CP never at sea (Rules p.13; owner screenshot Jul 2026 — a bot
+  // wasted its rally on East Summer Sea because nothing forbade it).
+  for (const [rid, o] of Object.entries(orders)) {
+    if (o.type === 'rally' && !cpAllowedAt(rid)) {
+      throw new Error(`Consolidate Power${o.starred ? '★' : ''} cannot be placed at sea (${rid}) (Rules p.13)`);
     }
   }
   const eligible = orderableRegions(state, faction);

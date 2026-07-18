@@ -19,7 +19,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3d7';
+export const BUILD_ID = 'm3d8';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -135,7 +135,7 @@ function toggleSpectate(onOff) {
   if (!spectate.on) botPump(); // mixed games resume when spectate ends (M3.c)
 }
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
-import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, episodeRecord } from '../engine/engine.js';
+import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
@@ -1069,10 +1069,12 @@ function planningForm(q) {
   html += `</div>`;
   if (ui.awaitTokenFor) {
     const banned = shown().roundFlags.bannedOrders || [];
+    const seaRow = !cpAllowedAt(ui.awaitTokenFor);
     html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div><div class="token-grid">` + remaining.map((t, i) => {
       const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
-      return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
-        ${ban ? `title="forbidden this round (event card)"` : ''}>
+      const cpSea = seaRow && t.type === 'consolidate'; // Rules p.13 (m3d8)
+      return `<button class="token" data-tok="${i}" ${ban || cpSea || (t.starred && stars >= limit) ? 'disabled' : ''}
+        ${ban ? `title="forbidden this round (event card)"` : cpSea ? `title="Consolidate Power cannot be placed at sea (Rules p.13)"` : ''}>
         ${esc(tokenLabel(t))}${ban ? ' ⃠' : ''}</button>`;
     }).join('') + `</div>`;
     if (banned.length) html += `<div class="hint">Event decree: ${banned.map(esc).join(', ')} orders are forbidden this round.</div>`;

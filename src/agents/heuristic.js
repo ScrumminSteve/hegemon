@@ -254,7 +254,7 @@ const SCORERS = {
           s += W.pSupport * Math.min(need, mine) * 0.3;
           break;
         }
-        case 'consolidate':
+        case 'rally': // canonical type (the theme may DISPLAY it as Consolidate Power)
           s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (pressure === 0 ? 1 : 0.4);
           break;
         case 'raid': {
@@ -287,7 +287,7 @@ const SCORERS = {
       let s = W.raidHit;
       if (o && !o.hidden) {
         if (o.type === 'support') s += W.raidSupport;
-        if (o.type === 'consolidate') s += W.raidConsolidate;
+        if (o.type === 'rally') s += W.raidConsolidate; // m3d8: was 'consolidate' — dead since M3.b, rally placements scored 0
       }
       return s;
     }

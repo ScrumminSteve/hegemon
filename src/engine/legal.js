@@ -23,7 +23,7 @@
 // optimizable per-type if RL throughput ever demands it.
 
 import { applyAction } from './engine.js';
-import { orderableRegions, ORDER_TOKENS, starLimit, orderClasses, maxPlaceableOrders } from './planning.js';
+import { orderableRegions, ORDER_TOKENS, starLimit, orderClasses, maxPlaceableOrders, cpAllowedAt } from './planning.js';
 import { transportReachable } from './actionPhase.js';
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 
@@ -108,12 +108,19 @@ const GENERATORS = {
       const pool = shuffled(ORDER_TOKENS.filter(t => !isBanned(t)), r);
       const orders = {};
       let stars = 0, placed = 0;
-      // Shuffled region walk: when tokens run short, WHICH areas go without
-      // is the player's choice (Rules p.12) — sampling must cover it.
-      for (const rid of shuffled(eligible, r)) {
+      // Sea regions first, and only non-CP tokens there (Rules p.13) — this
+      // walk mirrors the greedy inside maxPlaceableOrders, so whenever the
+      // required count is feasible, an attempt can always reach it. Within
+      // each group the walk is shuffled: when tokens run short, WHICH areas
+      // go without is the player's choice (Rules p.12) — sampling covers it.
+      const seaFirst = [...shuffled(eligible.filter(rid => !cpAllowedAt(rid)), r),
+                        ...shuffled(eligible.filter(rid => cpAllowedAt(rid)), r)];
+      for (const rid of seaFirst) {
         if (placed === required) break;
-        const idx = pool.findIndex(t => !t.starred || stars < allowance);
-        if (idx === -1) break;
+        const cpOK = cpAllowedAt(rid);
+        const idx = pool.findIndex(t => (!t.starred || stars < allowance) &&
+                                        (cpOK || t.type !== 'rally'));
+        if (idx === -1) continue; // this area goes without; later areas may still place
         const t = pool.splice(idx, 1)[0];
         if (t.starred) stars++;
         orders[rid] = { type: t.type, mod: t.mod, starred: t.starred };

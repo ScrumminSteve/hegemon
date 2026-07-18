@@ -4,6 +4,7 @@ import { createGame, serialize, deserialize, controllerOf } from '../src/engine/
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { combatStrengths, legalRetreats } from '../src/engine/combat.js';
 import { legalActions } from '../src/engine/legal.js';
+import { cpAllowedAt } from '../src/engine/planning.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
 import { PORTS, EDGES, buildAdjacency } from '../src/data/map.js';
@@ -11,6 +12,7 @@ import { PORTS, EDGES, buildAdjacency } from '../src/data/map.js';
 const M  = (mod = 0) => ({ type: 'march', mod, starred: mod === 1 });
 const D  = (mod = 1) => ({ type: 'defend', mod, starred: mod === 2 });
 const SU = (mod = 0) => ({ type: 'support', mod, starred: mod === 1 });
+const R = (starred = false) => ({ type: 'raid', mod: 0, starred });
 const CP = (starred = false) => ({ type: 'rally', mod: 0, starred });
 
 // Fill every faction's mandatory coverage, applying explicit overrides, with a
@@ -34,7 +36,11 @@ function stage({ plants = {}, strip = [], orders = {} }, seed = 5) {
     });
     const full = { ...explicit };
     for (const rid of orderableRegions(s, fid)) {
-      if (!full[rid]) full[rid] = pool.shift();
+      if (!full[rid]) {
+        // m3d8: rally never at sea (Rules p.13) — deal the first legal token.
+        const i = pool.findIndex(o => cpAllowedAt(rid) || o.type !== 'rally');
+        full[rid] = pool.splice(i === -1 ? 0 : i, 1)[0];
+      }
     }
     s = applyAction(s, { type: 'submitOrders', faction: fid, orders: full }).state;
   }
@@ -523,5 +529,22 @@ tests.push(
     ok(menu.length > 0, 'the menu survives: stand-down and smaller moves remain');
     ok(!menu.some(a => a.moves.some(mv => mv.to === 'L36' && (mv.units.cavalry || 0) === 3)),
       'no menu item offers the illegal full-stack assault');
+  }},
+);
+
+tests.push(
+  { name: 'raiding a rally order pillages one authority (Rules p.14; relocated m3d8 — rally left the seas, so the pillage happens ashore)', fn() {
+    // F6 raids from its home waters (S11) into F2's rally ashore at L14 —
+    // a sea raid reaching land is legal (Rules p.14 terrain gate).
+    const s = stage({
+      strip: ['L14'],
+      plants: { L14: [['F2', 'infantry']] },
+      orders: { F6: { S11: R(false) }, F2: { L14: CP(false) } },
+    });
+    const before = { raider: s.authority.F6, victim: s.authority.F2 };
+    const r = applyAction(s, { type: 'resolveRaid', faction: 'F6', region: 'S11', target: 'L14' }).state;
+    eq(r.authority.F6, before.raider + 1, 'raider pillages one authority');
+    eq(r.authority.F2, before.victim - 1, 'the rallying power loses it');
+    ok(!r.ordersByRegion['L14'], 'the rally is torn off the board');
   }},
 );

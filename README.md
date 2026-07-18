@@ -329,6 +329,55 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## M3.d.8 — WEIGHTS-v2 SHIPS · rally leaves the seas (build m3d8)
+
+**WEIGHTS-v2 is live.** Pooled verification: 141/720 held-out games =
+19.58% [16.85–22.64] vs the 16.67% null — the pre-registered bar (CI lower
+bound above null) CLEARED; guardrails green in both batches. Baked with
+full provenance (SPSA night1, runSeed 267783951, best iter 15);
+**WEIGHTS_V1 stays frozen forever** as the non-regression anchor, and
+`eval.mjs --incumbent v1` now targets that anchor explicitly, never the
+active default. (Bake + anchor plumbing + goldens landed at the tail of
+the prior session; this drop completes the milestone. Owner builds already
+stamped m3d7 carry v2 weights at rev 8 — superseded by this m3d8.)
+
+**[P1, RULES_REVISION → 9] Consolidate Power banned at sea (Rules p.13;
+owner screenshot — a bot rallied East Summer Sea).** Validator refuses it
+with the cite; the M3.a generator walks sea regions FIRST with non-rally
+tokens (mirroring the shortage math's greedy, so feasible counts are
+always reachable); `maxPlaceableOrders` grew a terrain-aware exact search
+(two-class transversal over star-cap x CP-terrain); the table-mode token
+picker disables rally on sea rows with a tooltip. Ports remain legal for
+CP [owner-audit: confirm p.13 port wording].
+
+**Canonical-type bug found while fixing it, and it's a big one:** the
+engine's rally token type is `'rally'` (themes merely DISPLAY "Consolidate
+Power"), but the M3.b heuristic scored `case 'consolidate'` — dead code
+since it shipped. **Bots have scored every rally placement at ZERO for the
+entire M3.b–d era**, including both tuning runs. Fixed; rally placement
+now actually scores. Implication: the v2 vector was tuned around a blind
+spot — a v3 run post-fix may find real gains cheaply.
+
+**Raid terrain audit (owner request):** already correct since M1 — land
+raids land only, sea raids anything adjacent, ports raid only their own
+sea (golden-locked). Port→land raiding is structurally unreachable (a
+port's sole land neighbor is its own land; raids target enemies only).
+
+**Test-suite doctrine sweep:** the old "sea accepts rally, nullity at
+resolution" golden retired; sea-rally halves of two rally goldens removed;
+the pillage golden relocated ashore (sea raid → land rally); every
+suite-local FILL dealer is now terrain-aware via one shared `dealOrder`.
+Suite: **240**. Fuzz post-change: zero rejections.
+
+**Corpus:** first F3 human victory verified (hash-exact, rev 8): won in 4
+rounds with the 4% faction — all 6 battles, 3 amphibious prongs
+(L19/L20/L21), 3 warships across 8 musters. Navy-then-invade, on record
+for the M3.e opening book. (Episode titles are free text; seatControllers
+are ground truth — this one was labeled F6, played F3.) NOTE: rev-8
+episodes may contain now-illegal sea rallies; replays remain valid under
+their recorded revision per the filtering doctrine — never re-validate old
+episodes against new rules.
+
 ## Post-run verdicts & queue (m3d6, doc-only)
 
 **Overnight results are in (owner's desktop, night1 + seatbias-600):**

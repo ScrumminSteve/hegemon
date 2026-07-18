@@ -5,6 +5,13 @@ import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
 import { combatStrengths } from '../src/engine/combat.js';
+import { cpAllowedAt } from '../src/engine/planning.js';
+
+const dealOrder = (pool, rid) => { // m3d8: rally never at sea (Rules p.13)
+  const i = pool.findIndex(o => cpAllowedAt(rid) || o.type !== 'rally');
+  return pool.splice(i === -1 ? 0 : i, 1)[0];
+};
+
 
 const M  = (mod = 0) => ({ type: 'march', mod, starred: mod === 1 });
 const D  = (mod = 1) => ({ type: 'defend', mod, starred: mod === 2 });
@@ -24,7 +31,7 @@ function runRound(s) {
   for (const fid of s.factions) {
     const pool = FILL.slice();
     const orders = {};
-    for (const rid of orderableRegions(s, fid)) orders[rid] = pool.shift();
+    for (const rid of orderableRegions(s, fid)) orders[rid] = dealOrder(pool, rid);
     s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
   }
   s = applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' }).state;
@@ -76,7 +83,7 @@ export const tests = [
       const explicit = fid === 'F3' ? { L19: M(0), L18: SU(1) } : {};
       const pool = FILL.filter(o => !(fid === 'F3' && ((o.type === 'march' && o.mod === 0) || (o.type === 'support' && o.mod === 1))));
       const orders = { ...explicit };
-      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = dealOrder(pool, rid);
       s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
@@ -117,7 +124,7 @@ export const tests = [
         && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
       if (fid === 'F4') pool = pool.filter((o, i, a) => !(o.type === 'defend' && a.findIndex(x => x.type === 'defend') === i)); // one D(1) spent explicitly
       const orders = { ...explicit };
-      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = dealOrder(pool, rid);
       s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
@@ -155,7 +162,7 @@ export const tests = [
       const pool = FILL.filter(o => !(fid === 'F3' && ((o.type === 'march' && o.mod === 0) || (o.type === 'support' && o.mod === 1)))
         && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
       const orders = { ...explicit };
-      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = dealOrder(pool, rid);
       s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
@@ -180,7 +187,7 @@ export const tests = [
       const pool = FILL.filter(o => !(fid === 'F3' && o.type === 'march' && o.mod === 0)
         && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
       const orders = { ...explicit };
-      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = dealOrder(pool, rid);
       s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
@@ -322,7 +329,7 @@ export const tests = [
       const pool = FILL.filter(o => !(fid === 'F6' && o.type === 'march' && o.mod === 0)
         && !(fid === 'F4' && o.type === 'march' && o.mod === -1));
       const orders = { ...explicit };
-      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, fid)) if (!orders[rid]) orders[rid] = dealOrder(pool, rid);
       s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });

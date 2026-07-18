@@ -58,29 +58,11 @@ export const tests = [
     ok(r.state.ordersByRegion['S10'] === undefined, 'raid removed');
   }},
 
-  { name: 'raiding a rally order pillages one authority (Rules p.14)', fn() {
-    const s = toAction({
-      F2: { L36: D(1), L16: SU(0), S10: R(), P04: D(1) },
-      F4: { L30: D(1), L33: SU(0), S08: SU(0), }, // F4 keeps defaults except:
-    });
-    // Give F4 a rally at L34? F4 has no unit at L34. Move the pillage test to sea:
-    // F4's S08 order becomes rally; F2 cannot reach S08 from S10 (not adjacent).
-    // Real adjacency: F6 raid at S11 vs F2 rally at S10 (S10–S11 seas adjacent).
-    const s2 = toAction({
-      F6: { L37: D(1), L08: SU(0), S11: R(), P03: SU(0) },
-      F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
-      F4: { L30: D(1), L33: SU(0), S08: R() }, // unresolved raid holds round 1 open
-    });
-    const r = applyAction(s2, { type: 'resolveRaid', faction: 'F6', region: 'S11', target: 'S10' });
-    eq(r.state.authority.F6, 6, 'raider gains 1:');
-    eq(r.state.authority.F2, 4, 'victim loses 1:');
-    void s;
-  }},
 
   { name: 'a land raid cannot reach a sea order (Rules p.14)', fn() {
     const s = toAction({
       F1: { L01: D(1), L04: R(), S02: SU(0) },
-      F6: { L37: D(1), L08: SU(0), S11: CP(), P03: SU(0) },
+      F6: { L37: D(1), L08: SU(0), S11: D(1), P03: SU(0) },
     });
     // F1's raid resolves first; L04 is coastal to S02/S03 but those hold F1's own order or none.
     throws(() => applyAction(s, { type: 'resolveRaid', faction: 'F1', region: 'L04', target: 'S11' }));
@@ -228,15 +210,13 @@ export const tests = [
       moves: [{ to: 'L07', units: { infantry: 1 } }] }), 'army of 4 under supply 1');
   }},
 
-  { name: 'rally collects 1 + coin icons on land; nothing at sea (Rules p.13, p.16)', fn() {
+  { name: 'rally collects 1 + coin icons on land (Rules p.16)', fn() {
     const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0), P04: D(1) },
       F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
     const r = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16' });
     eq(r.state.authority.F2, 7, 'Millford/Stoney Sept: 1 + 1 coin:');
-    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
-      F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
-    const r2 = applyAction(s2, { type: 'resolveRally', faction: 'F2', region: 'S10' });
-    eq(r2.state.authority.F2, 5, 'sea rally collects nothing:');
+    // (The sea half of this golden died with m3d8: rally can no longer be
+    // placed at sea at all — Rules p.13; see the CP TERRAIN goldens.)
   }},
 
   { name: 'the starred rally may muster in its own fortified area (Rules p.22)', fn() {
@@ -252,12 +232,13 @@ export const tests = [
   }},
 
   { name: 'unstarred rallies cannot muster; nor can a starred rally without a fort (Rules p.22)', fn() {
-    const s = toAction({ F2: { L36: D(1), L16: CP(), S10: CP(true), P04: D(1) },
+    let s = toAction({ F2: { L36: D(1), L16: CP(true), S10: SU(0), P04: D(1) },
       F4: { L30: D(1), L33: CP(), S08: SU(0) } });
-    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16', muster: true }),
+    throws(() => applyAction(structuredClone(s), { type: 'resolveRally', faction: 'F2', region: 'L16', muster: true }),
+      /fort/, 'starred rally on unfortified ground cannot muster');
+    s = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16' }).state; // take the authority instead
+    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F4', region: 'L33', muster: true }),
       'unstarred');
-    throws(() => applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'S10', muster: true }),
-      'no fort at sea');
   }},
 
   { name: 'orders cycle one-at-a-time in initiative order within each step (Rules p.14)', fn() {

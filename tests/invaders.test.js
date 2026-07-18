@@ -7,6 +7,13 @@ import { orderableRegions } from '../src/engine/planning.js';
 import { SETUP } from '../src/data/setup.js';
 import { LEADER_CARDS } from '../src/data/leaderCards.js';
 import { eq, ok, throws } from './assert.js';
+import { cpAllowedAt } from '../src/engine/planning.js';
+
+const dealOrder = (pool, rid) => { // m3d8: rally never at sea (Rules p.13)
+  const i = pool.findIndex(o => cpAllowedAt(rid) || o.type !== 'rally');
+  return pool.splice(i === -1 ? 0 : i, 1)[0];
+};
+
 
 const M  = (mod = 0) => ({ type: 'march', mod, starred: mod === 1 });
 const D  = (mod = 1) => ({ type: 'defend', mod, starred: mod === 2 });
@@ -30,7 +37,7 @@ function runRound(s) {
   for (const fid of s.factions) {
     const pool = FILL.slice();
     const orders = {};
-    for (const rid of orderableRegions(s, fid)) orders[rid] = pool.shift();
+    for (const rid of orderableRegions(s, fid)) orders[rid] = dealOrder(pool, rid);
     s = applyAction(s, { type: 'submitOrders', faction: fid, orders }).state;
   }
   s = applyAction(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' }).state;

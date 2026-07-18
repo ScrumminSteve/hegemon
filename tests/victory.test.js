@@ -83,6 +83,13 @@ function planAndMarch(s, fid, from, to) {
 }
 
 import { adjacency } from '../src/engine/state.js';
+import { cpAllowedAt } from '../src/engine/planning.js';
+
+const dealOrder = (pool, rid) => { // m3d8: rally never at sea (Rules p.13)
+  const i = pool.findIndex(o => cpAllowedAt(rid) || o.type !== 'rally');
+  return pool.splice(i === -1 ? 0 : i, 1)[0];
+};
+
 const ADJ = adjacency();
 
 export const tests = [
@@ -144,7 +151,7 @@ export const tests = [
     for (const f of s.factions) {
       const pool = FILL.slice();
       const orders = {};
-      for (const rid of orderableRegions(s, f)) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, f)) orders[rid] = dealOrder(pool, rid);
       s = act(s, { type: 'submitOrders', faction: f, orders });
     }
     const replayed = replayGame(s.config, s.actionLog);
@@ -159,7 +166,7 @@ export const tests = [
     for (const f of s.factions) {
       const pool = FILL.slice();
       const orders = {};
-      for (const rid of orderableRegions(s, f)) orders[rid] = pool.shift();
+      for (const rid of orderableRegions(s, f)) orders[rid] = dealOrder(pool, rid);
       s = act(s, { type: 'submitOrders', faction: f, orders });
     }
     s = act(s, { type: 'courierDecision', faction: 'F2', decision: 'pass' });
