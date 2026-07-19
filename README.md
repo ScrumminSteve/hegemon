@@ -329,6 +329,64 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## THE ANCHOR & THE CLOSE (m3d12, doc-only)
+
+**Pre-M3.e anchor set — seatbias N=6000, v2/rev-9 (seeds 500000+, ±1pp):**
+Stark 23.9 [22.9–25.0]↑ · Lannister 30.9 [29.8–32.1]↑ · Baratheon 2.5
+[2.1–2.9]↓ · Tyrell 18.7 [17.7–19.7]↑ (newly RESOLVED favored) · Martell
+17.3 [16.3–18.3] (the control, unflagged) · Greyjoy 6.7 [6.1–7.3]↓.
+All structural work measures against this table.
+
+**night3 closes the scalar chapter WITH AUTHORITY:** 300-game arms (±2pp
+noise), 50 iterations, y± history trendless around 17%; best (iter 35)
+verified 18.5% [15.96–21.34] on 800 held-out games — below the bar, third
+consecutive no-ship, this time with power. Doctrine final: NO further
+scalar tuning until M3.e changes the structure the weights act upon.
+Bonus finding: stock v2's edge over the v1 field is thinner under rev-9
+than its rev-8 verification — the rules moved under the weights.
+
+**Corpus: two more hash-verified human wins, both matching the banked
+baseline strategy document before it was a day old:** F4/Tyrell r6
+("conservative until pounce" — rally economy rounds 1–4, four late
+attacks, double-strike r6 = the granary game) and F5/Martell r5
+("conservative then lightning" — TWO battles all game, both human, rounds
+4–5 = second-everywhere-until-first). **Human record: 6–0 across five of
+six factions.** Outstanding: a Stark win completes the set; honest losses
+remain at zero and remain requested.
+
+**Execute next:** UI pass (4-item queue + Canaris leads) → M3.e (miner,
+per-faction opening books, guided menu construction, scorer fixes 3–6
+from the blunder bank, port-defend gate pending owner rulebook check) →
+re-run seatbias vs the anchor.
+
+## Owner bot-blunder bank (Jul 2026 — triage for next build session)
+
+Six observed "dumb moves," triaged. DO NOT ship scorer changes while a
+tuning run is in flight (night3 tunes against current scorer semantics).
+
+1. [RULES-GATE, owner-audit] **Defend at ports** — battles cannot occur in
+   ports, so port-defend is structurally dead; 2e port rules likely
+   restrict ports to March/Support/Raid/CP. If the owner's rulebook
+   confirms: CP-at-sea treatment (validator + generator + UI grey-out +
+   RULES_REVISION bump + goldens).
+2. [FIXED m3d8, rev 9] **Rally at sea** — regression if ever seen on ≥rev 9.
+3. [SCORER + M3.e BREADTH] **Pointless raids** (no adjacent enemies) —
+   scorer already zeros them, but duds survive inside best-of-8 sampled
+   order SETS. Real fix = guided menu construction; add explicit negative.
+4. [SCORER] **Sovereign tie-breaks** — ordering tie-break must put the
+   LEADING faction at the bottom explicitly (invader tie-break already
+   punishes the leader; the ordering scorer only favors the weakest up).
+5. [SCORER + THREAT MODEL] **Garrison-empty castles under threat** —
+   abandonment penalty exists but threat = adjacent-only; must include
+   TRANSPORTED reach (the owner's own amphibious wins are the exploit).
+   Feeds march scoring AND defend/garrison planning.
+6. [SCORER] **Rally★ off-fort** — legal but wastes the star allowance;
+   score starred rally at plain value minus star opportunity cost unless
+   fortified.
+
+Sequencing: scorer items (3–6) land at the top of the next build session,
+after night3 completes; item 1 pends the owner's rulebook check.
+
 ## M3.d.10 — parallel seatbias for order-of-magnitude scans (build m3d10)
 
 Owner request: 10x scans. seatbias gains --workers (same worker-pool
