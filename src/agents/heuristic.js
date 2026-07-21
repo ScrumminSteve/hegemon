@@ -237,6 +237,12 @@ const SCORERS = {
       const props = region(rid)?.kind === 'maritime' ? { muster: 0 } : regionProps(view, rid);
       switch (o.type) {
         case 'defend':
+          if (region(rid)?.kind === 'port') {
+            // Dumb-but-legal (owner ruling, Jul 2026): battles never occur in
+            // ports, so a port defend does nothing — waste it never.
+            s -= W.pDefend * 0.5;
+            break;
+          }
           s += W.pDefend * Math.min(pressure, mine + 2) * (here / W.wLand) * 0.3 + (o.mod || 0) * 0.3;
           break;
         case 'march': {
@@ -255,16 +261,29 @@ const SCORERS = {
           break;
         }
         case 'rally': // canonical type (the theme may DISPLAY it as Consolidate Power)
+          if (region(rid)?.kind === 'maritime') {
+            // Dumb-but-legal (owner ruling m3e1): sea rallies collect nothing.
+            // Legality moved out of the rules; avoidance lives HERE.
+            s -= W.pRally;
+            break;
+          }
           s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (pressure === 0 ? 1 : 0.4);
           break;
         case 'raid': {
           let targets = 0;
           for (const nbr of ADJ[rid] || []) if (enemyStrengthAt(view, nbr, q.faction) > 0) targets++;
-          s += W.pRaid * Math.min(targets, 2) * 0.6;
+          // Owner blunder bank #3: a raid with nobody to raid is a wasted token.
+          s += targets ? W.pRaid * Math.min(targets, 2) * 0.6 : -W.pRaid * 0.4;
           break;
         }
       }
-      if (o.starred) s += W.pStarBonus;
+      // Owner blunder bank #6: a starred rally off-fort burns the star
+      // allowance for nothing a plain rally wouldn't give.
+      if (o.starred) {
+        const fortHere = o.type === 'rally' && region(rid)?.kind !== 'maritime'
+          ? regionProps(view, rid).muster > 0 : true;
+        s += o.type === 'rally' && !fortHere ? -W.pStarBonus : W.pStarBonus;
+      }
     }
     return s;
   },
@@ -351,9 +370,16 @@ const SCORERS = {
   },
 
   bidTieBreak(view, q, a, W) {
-    const i = a.order.indexOf(q.faction);
-    if (i !== -1) return -i; // put myself as high as the tie allows
-    return -seatsControlled(view, a.order[0]); // else favor the weakest rival on top
+    // Owner blunder bank #4: the sovereign's tie-break is a political weapon —
+    // self as early as the tie allows, and the LEADING faction as late as
+    // possible (every early slot handed to a leader is scored as its seats).
+    let s = 0;
+    const n = a.order.length;
+    a.order.forEach((f, i) => {
+      if (f === q.faction) s += (n - i) * 3;
+      else s -= seatsControlled(view, f) * (n - i);
+    });
+    return s;
   },
 
   invaderBid(view, q, a, W) {

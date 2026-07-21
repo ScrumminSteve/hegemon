@@ -108,18 +108,12 @@ const GENERATORS = {
       const pool = shuffled(ORDER_TOKENS.filter(t => !isBanned(t)), r);
       const orders = {};
       let stars = 0, placed = 0;
-      // Sea regions first, and only non-CP tokens there (Rules p.13) — this
-      // walk mirrors the greedy inside maxPlaceableOrders, so whenever the
-      // required count is feasible, an attempt can always reach it. Within
-      // each group the walk is shuffled: when tokens run short, WHICH areas
-      // go without is the player's choice (Rules p.12) — sampling covers it.
-      const seaFirst = [...shuffled(eligible.filter(rid => !cpAllowedAt(rid)), r),
-                        ...shuffled(eligible.filter(rid => cpAllowedAt(rid)), r)];
-      for (const rid of seaFirst) {
+      // Shuffled region walk (m3e1: the sea-rally terrain filter reverted to
+      // scoring per owner ruling): when tokens run short, WHICH areas go
+      // without is the player's choice (Rules p.12) — sampling covers it.
+      for (const rid of shuffled(eligible, r)) {
         if (placed === required) break;
-        const cpOK = cpAllowedAt(rid);
-        const idx = pool.findIndex(t => (!t.starred || stars < allowance) &&
-                                        (cpOK || t.type !== 'rally'));
+        const idx = pool.findIndex(t => !t.starred || stars < allowance);
         if (idx === -1) continue; // this area goes without; later areas may still place
         const t = pool.splice(idx, 1)[0];
         if (t.starred) stars++;

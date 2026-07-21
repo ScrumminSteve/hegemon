@@ -250,62 +250,36 @@ tests.push(
   }},
 );
 
-// --- m3d8 (owner screenshot): Consolidate Power never at sea (Rules p.13) ---
+// --- m3e1 (owner ruling): sea rally is DUMB-BUT-LEGAL --------------------
+// The m3d8 hard ban trapped a human whose token pool was spent (staged sea
+// CP + commit rejection + nothing left to swap = undo or nothing). Doctrine
+// reverted: placement legal, resolution null, bot avoidance in SCORING.
 
 tests.push(
-  { name: 'CP TERRAIN: Consolidate Power at sea is refused, plain and starred; ports remain legal (Rules p.13; owner repro East Summer Sea)', fn() {
-    const g = createGame(6, { seed: 21 });
-    beginPlanning(g);
-    // F1 holds S02 at seed 21? Rig it directly: give F1 a ship at sea.
-    (g.unitsByRegion['S02'] = g.unitsByRegion['S02'] || []).push({ faction: 'F1', type: 'warship', routed: false });
-    const areas = orderableRegions(g, 'F1');
-    const others = areas.filter(r => r !== 'S02');
-    const mk = cpAt => {
-      const orders = { [cpAt]: CP(false) };
-      const toks = [M(0), M(0), M(-1), D(1), SU(0), SU(0), R(false), R(false), D(1)];
-      areas.filter(r => r !== cpAt).forEach((rid, i) => { orders[rid] = toks[i % toks.length]; });
-      return orders;
-    };
-    throws(() => applyAction(structuredClone(g), { type: 'submitOrders', faction: 'F1', orders: mk('S02') }),
-      /cannot be placed at sea/, 'plain CP at sea dies with the rule cite');
-    void others;
+  { name: 'SEA RALLY DOCTRINE: placement is accepted; nullity is resolution\'s concern (owner ruling m3e1, reverts m3d8)', fn() {
+    const g = freshPlanning();
+    const { state } = applyAction(g, { type: 'submitOrders', faction: 'F1',
+      orders: { L01: M(0), L04: D(1), S02: CP(false) } });
+    eq(state.ordersByRegion.S02.type, 'rally', 'the dumb order stands');
   }},
 
-  { name: 'CP TERRAIN: the menu never offers CP at sea, and the shortage math stays exact in a sea-heavy corner (Rules p.12–13)', fn() {
-    const g = createGame(6, { seed: 21 });
-    beginPlanning(g);
-    (g.unitsByRegion['S02'] = g.unitsByRegion['S02'] || []).push({ faction: 'F1', type: 'warship', routed: false });
-    const q = g.pendingQueries.find(x => x.type === 'submitOrders' && x.faction === 'F1');
-    const menu = legalActions(g, q);
-    ok(menu.length > 0, 'menu is never empty');
-    for (const a of menu) {
-      for (const [rid, o] of Object.entries(a.orders)) {
-        ok(!(o.type === 'consolidate' && !cpAllowedAt(rid)), `no CP at sea in any menu item (found at ${rid})`);
-      }
-    }
-    // Sea-heavy corner: a faction holding ONLY sea regions can never place CP —
-    // the shortage math must know it, and the menu must still exist. A decree
-    // squeezes the non-rally supply so the terrain constraint actually binds:
-    // ban march/defend/support, park F2 at the command bottom (no stars) —
-    // legal tokens are raid x2 (plain) + rally x2 which cannot sail.
+  { name: 'shortage math under decree, flat again (m3e1): an all-sea navy places exactly the supply-capped count, menu non-empty', fn() {
     const h = createGame(6, { seed: 22 });
     beginPlanning(h);
     h.roundFlags.bannedOrders = ['march', 'marchPlusOne', 'defend', 'support'];
-    h.tracks.command = h.tracks.command.filter(f => f !== 'F2').concat('F2');
-    for (const rid of orderableRegions(h, 'F2')) delete h.unitsByRegion[rid].splice(0, 99);
+    h.tracks.command = h.tracks.command.filter(f => f !== 'F2').concat('F2'); // no stars
     for (const rid of Object.keys(h.unitsByRegion)) {
       h.unitsByRegion[rid] = (h.unitsByRegion[rid] || []).filter(u => u.faction !== 'F2');
     }
     for (const sea of ['S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08', 'S09']) {
       (h.unitsByRegion[sea] = h.unitsByRegion[sea] || []).push({ faction: 'F2', type: 'warship', routed: false });
     }
-    const eligible = orderableRegions(h, 'F2');
-    eq(eligible.length, 9, 'nine sea areas held');
+    eq(orderableRegions(h, 'F2').length, 9, 'nine sea areas held');
     const cap = maxPlaceableOrders(h, 'F2');
-    eq(cap, 2, 'raid x2 is all that sails: the cap is exactly 2, not 9');
+    eq(cap, 4, 'raid x2 + rally x2 sail (stars capped at 0): exactly 4');
     const q2 = h.pendingQueries.find(x => x.type === 'submitOrders' && x.faction === 'F2');
     const menu2 = legalActions(h, q2);
-    ok(menu2.length > 0, 'the all-sea navy still gets a non-empty menu');
-    for (const a of menu2) eq(Object.keys(a.orders).length, cap, 'every item places exactly the terrain-aware maximum');
+    ok(menu2.length > 0, 'the navy still gets a menu');
+    for (const a of menu2) eq(Object.keys(a.orders).length, cap, 'every item places exactly the cap');
   }},
 );

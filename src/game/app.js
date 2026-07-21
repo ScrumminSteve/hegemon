@@ -19,7 +19,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3d12';
+export const BUILD_ID = 'm3e3';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -1069,12 +1069,10 @@ function planningForm(q) {
   html += `</div>`;
   if (ui.awaitTokenFor) {
     const banned = shown().roundFlags.bannedOrders || [];
-    const seaRow = !cpAllowedAt(ui.awaitTokenFor);
     html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div><div class="token-grid">` + remaining.map((t, i) => {
       const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
-      const cpSea = seaRow && t.type === 'consolidate'; // Rules p.13 (m3d8)
-      return `<button class="token" data-tok="${i}" ${ban || cpSea || (t.starred && stars >= limit) ? 'disabled' : ''}
-        ${ban ? `title="forbidden this round (event card)"` : cpSea ? `title="Consolidate Power cannot be placed at sea (Rules p.13)"` : ''}>
+      return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
+        ${ban ? `title="forbidden this round (event card)"` : ''}>
         ${esc(tokenLabel(t))}${ban ? ' ⃠' : ''}</button>`;
     }).join('') + `</div>`;
     if (banned.length) html += `<div class="hint">Event decree: ${banned.map(esc).join(', ')} orders are forbidden this round.</div>`;

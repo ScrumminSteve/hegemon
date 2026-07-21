@@ -1,0 +1,10 @@
+6000 symmetric games, 2748.7s (null: 16.7% each)
+
+F1: 1435/6000 wins (23.9% [22.9–25.0]) · mean rank 2.99  ↑ FAVORED
+F2: 1855/6000 wins (30.9% [29.8–32.1]) · mean rank 2.85  ↑ FAVORED
+F3: 149/6000 wins (2.5% [2.1–2.9]) · mean rank 4.92  ↓ DISFAVORED
+F4: 1123/6000 wins (18.7% [17.7–19.7]) · mean rank 2.83  ↑ FAVORED
+F5: 1037/6000 wins (17.3% [16.3–18.3]) · mean rank 2.85
+F6: 401/6000 wins (6.7% [6.1–7.3]) · mean rank 4.56  ↓ DISFAVORED
+
+A faction flagged only when its 95% CI clears 1/6 entirely.

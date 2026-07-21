@@ -149,7 +149,7 @@ export function stateHash(state) {
 //    battles, march-in respects the 3-ship cap, and Bordeaux (L35) borders
 //    The Mediterranean (S07). Episodes < 4 were played on a board where
 //    none of those moves existed.
-export const RULES_REVISION = 9; // 9: Consolidate Power banned at sea (Rules p.13). 8: combat marches supply-checked at declaration, full-survival basis (Rules p.8, FAQ). 7: replacePortShips supply check (Rules p.8). 6: support terrain gate (Rules p.18) — land cannot back sea battles, ports cannot back land. 5: Rules p.12 Not-Enough-Order-Tokens
+export const RULES_REVISION = 10; // 10: sea rally PLACEABLE again (owner ruling: dumb-but-legal, null at resolution; bot avoidance is scoring) — reverts 9. 9: CP banned at sea. 8: combat marches supply-checked at declaration, full-survival basis (Rules p.8, FAQ). 7: replacePortShips supply check (Rules p.8). 6: support terrain gate (Rules p.18) — land cannot back sea battles, ports cannot back land. 5: Rules p.12 Not-Enough-Order-Tokens
 
 export function episodeRecord(state, meta = {}) {
   return {

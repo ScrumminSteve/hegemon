@@ -329,6 +329,99 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## PROCESS DOCTRINE (owner-instituted, Jul 2026): phase kickoffs & reviews
+
+Every phase opens with a KICKOFF — objectives, acceptance criteria split
+into SHIP GATES (must pass to merge) and MEASUREMENT GOALS (honest
+outcomes either way), and PLANNED OWNER ACTIVITIES with effort and
+sequence. Every phase closes with a REVIEW grading each criterion before
+the next kickoff. The owner tracks, coordinates, and completes the
+activity list; Claude surfaces each item when it becomes actionable.
+
+## M3.e KICKOFF — "the bots learn from the teacher"
+
+**Objectives:** (1) per-faction opening books mined from winning play;
+(2) guided top-K planning menus replace the ≤8-random sampler; (3)
+transported-reach threat model (blunder #5); (4) 7-item UI queue closed.
+
+**Ship gates:** G1 new bots beat m3e1 bots head-to-head (1v5 paired eval,
+verification CI-lo > 16.7%); G2 suite green + new goldens + zero-rejection
+fuzz + revision hygiene; G3 all 7 UI items verified BY THE OWNER ON DEVICE.
+**Measurement goals:** M1 seatbias N=6000 vs the anchor — island lift
+F3/F6 ≥ +1.5pp with CI separation (miss = finding, not failure; next
+lever = per-faction deltas); M2 bot openings match book priors at a
+stated rate.
+
+**Owner activities (~4–6h across the phase):**
+1. [DONE] Rulebook: port defends legal, no effect → scoring fix, m3e3.
+2. [PER UI DROP, 20m] Walk the 7-point on-device checklist → G3.
+3. [WHEN REACHED, 2×10m] Decisions: book strength (hard prior vs decaying
+   bias); book scope (per faction vs per archetype).
+4. [ONGOING] 3+ new wins with varied openings.
+5. [ONGOING] ≥2 HONEST LOSSES — the corpus has never seen a strong player
+   lose; the books inherit that blindness until it does.
+6. [ONGOING] Export discipline: distinct titles (ground truth wins anyway).
+7. [~30m compute] Head-to-head eval run → G1.
+8. [~50m compute] Post-change seatbias N=6000 → M1.
+9. [PHASE CLOSE, 30m] Joint review: grade gates/measurements, one
+   vibe-check game vs new bots, first grading of the STRATEGY BASELINE,
+   next kickoff.
+
+## M3.e OPENS — the dumb-but-legal revert & scorer pre-work (build m3e1)
+
+**[RULES_REVISION → 10, owner ruling] Sea rally is PLACEABLE again** —
+reverts the m3d8 hard ban. Postmortem of the trap that forced the ruling:
+the m3d8 UI grey-out checked `t.type === 'consolidate'` (the dead string,
+missed by the same sweep that fixed it everywhere else because the line
+was written minutes before the sweep), so the human could STAGE a sea CP;
+the validator (correct string) rejected at commit; with the token pool
+spent there was no path but undo. Two bugs conspiring. Doctrine now:
+**placement legal, resolution null, avoidance in scoring** — the validator
+never traps a human over a merely-wasteful choice. Shortage math and the
+menu generator revert to the flat forms; goldens rewritten (placement
+accepted, sea rally collects nothing, decree+shortage still exact).
+
+**Blunder-bank scorer fixes landed (items 3, 4, 6 + the revert's bot
+side), each with a behavioral golden:** sea rallies penalized (never win
+the argmax vs a support); pointless raids (no adjacent enemies) score
+negative; **sovereign tie-breaks are political** — self as early as the
+tie allows, seat leader eats the back of the line; starred rally off-fort
+loses to the plain rally (stars are for musters — and the golden itself
+caught a rig error: L04 is fortified, muster 1). Item 5 (transported-reach
+threat model) is M3.e-proper work. Suite: **244**. Fuzz: zero rejections.
+
+**Corpus: THE SET IS COMPLETE — 7–0 across all six factions.** F1/Stark
+r4 (hash-verified, rev 9): two battles, both human — the patience line as
+predicted. The episode also carries the FIRST undo telemetry: 8 undos
+rewinding through five bot submissions to escape the sea-CP trap —
+mixed-mode undo-through-bots working and recording as designed.
+
+**UI queue grows to 7:** [P2] token UNASSIGN affordance — tapping an
+assigned territory row must offer clearing its token back to the pool;
+the trap dissolves under the revert, but pool-exhausted re-planning
+without undo remains bad UX.
+
+## STRATEGY BASELINE (pre-learning snapshot, Jul 2026 — grade at M-end)
+Evidence: 6,000-game anchor, 7 human wins, 3 tuning runs. One line each:
+- **Stark (23.9%↑):** patience funded by geography — walk the empty north,
+  fix supply 1 before fighting, arrive late/large/fed. HUMAN-PROVEN r4.
+- **Lannister (30.9%↑):** tempo on two boards — deny Greyjoy S10/S11
+  first, press L14/L34, coin→bids, 7 seats by r5. HUMAN-PROVEN r5.
+- **Baratheon (2.5%↓):** the fleet is the kingdom — CP★ citadel muster,
+  LOCK S04 (touches 4 shores), multi-prong landings with sea support as
+  artillery. HUMAN-PROVEN twice (r4 aggressive, r6 economy).
+- **Tyrell (18.7%↑):** the granary game — harvest, prowess bids, stay off
+  threat lists, dismantle the weakened neighbor r4+. HUMAN-PROVEN r6.
+- **Martell (17.3%, control):** second everywhere until first — corner
+  fortress, CP economy, initiative-track politics, late S05/S06 sweep.
+  HUMAN-PROVEN r5 (two battles all game).
+- **Greyjoy (6.7%↓):** the reaver rush — S11 (5 shores) simultaneous
+  landings r2–3 before garrisons exist; must end before attrition.
+  HUMAN-PROVEN r3.
+Prediction on record: post-learning revisions will concentrate where
+cross-turn coordination matters (Baratheon sea-lock, Greyjoy sync,
+Martell politics) and least where geography thinks for you.
+
 ## THE ANCHOR & THE CLOSE (m3d12, doc-only)
 
 **Pre-M3.e anchor set — seatbias N=6000, v2/rev-9 (seeds 500000+, ±1pp):**
@@ -364,11 +457,12 @@ re-run seatbias vs the anchor.
 Six observed "dumb moves," triaged. DO NOT ship scorer changes while a
 tuning run is in flight (night3 tunes against current scorer semantics).
 
-1. [RULES-GATE, owner-audit] **Defend at ports** — battles cannot occur in
-   ports, so port-defend is structurally dead; 2e port rules likely
-   restrict ports to March/Support/Raid/CP. If the owner's rulebook
-   confirms: CP-at-sea treatment (validator + generator + UI grey-out +
-   RULES_REVISION bump + goldens).
+1. [CLOSED m3e3 — owner rulebook ruling] **Defend at ports**: "Defense
+   orders can be placed in ports but they have no effect" — dumb-but-legal,
+   same doctrine as sea rally. No rules gate (the engine already nulls it:
+   battles never occur in ports); fixed in SCORING with a behavioral golden
+   (the dock supports its sea instead of defending nothing). Kickoff
+   activity 1 complete.
 2. [FIXED m3d8, rev 9] **Rally at sea** — regression if ever seen on ≥rev 9.
 3. [SCORER + M3.e BREADTH] **Pointless raids** (no adjacent enemies) —
    scorer already zeros them, but duds survive inside best-of-8 sampled
@@ -522,6 +616,17 @@ the heuristic scores positions but never presses initiative. M3.e/f target.
    claimed outlines) — needs stronger differentiation.
 4. [P2] Order-badge collision near ports (Oslo/S11 repro) — extend the
    M2.d portAnchor spacing to order badges.
+5. [P2, owner request Jul 2026] Supply army distribution shown somewhere
+   easy to reference — the limits ladder (e.g. supply 2 → armies [3,2,2])
+   for each seat, visible at a glance. Natural homes: the seat inspector
+   row (current level + ladder), and inline in the march/muster panels
+   where the constraint actually bites (supply-at-declaration means
+   players now hit it at march time). Show current armies vs limits, not
+   just the level number.
+6. [P2, owner request Jul 2026] Chronicle consumes too much real estate on
+   mobile — needs a compact/collapsed default on small screens (e.g. last
+   2–3 entries with a tap-to-expand drawer), keeping the turn panel and
+   map dominant.
 
 ## M3.d.5 — crash diagnosability (build m3d5)
 

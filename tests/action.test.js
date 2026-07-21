@@ -210,13 +210,16 @@ export const tests = [
       moves: [{ to: 'L07', units: { infantry: 1 } }] }), 'army of 4 under supply 1');
   }},
 
-  { name: 'rally collects 1 + coin icons on land (Rules p.16)', fn() {
+  { name: 'rally collects 1 + coin icons on land; nothing at sea (Rules p.16; m3e1 doctrine)', fn() {
     const s = toAction({ F2: { L36: D(1), L16: CP(), S10: SU(0), P04: D(1) },
       F4: { L30: D(1), L33: CP(), S08: SU(0) } }); // later-initiative rally holds round 1 open
     const r = applyAction(s, { type: 'resolveRally', faction: 'F2', region: 'L16' });
     eq(r.state.authority.F2, 7, 'Millford/Stoney Sept: 1 + 1 coin:');
-    // (The sea half of this golden died with m3d8: rally can no longer be
-    // placed at sea at all — Rules p.13; see the CP TERRAIN goldens.)
+    // m3e1: sea rally is legal again (owner ruling) — and collects NOTHING.
+    const s2 = toAction({ F2: { L36: D(1), L16: SU(0), S10: CP(), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } });
+    const r2 = applyAction(s2, { type: 'resolveRally', faction: 'F2', region: 'S10' });
+    eq(r2.state.authority.F2, 5, 'sea rally collects nothing');
   }},
 
   { name: 'the starred rally may muster in its own fortified area (Rules p.22)', fn() {

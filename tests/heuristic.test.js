@@ -97,3 +97,85 @@ export const tests = [
     eq(pick.builds.length, 1, 'the spending build wins');
   }},
 ];
+
+// --- m3e1: blunder-bank behavioral goldens ----------------------------------
+const bp2 = beginPlanning, vf2 = viewFor; // already imported at top
+
+tests.push(
+  { name: 'behavior: sea rallies are shunned — the same set with support at sea outranks it (owner ruling m3e1)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    const agent = createHeuristicAgent();
+    const base = { L01: { type: 'march', mod: 0, starred: false }, L04: { type: 'defend', mod: 1, starred: false } };
+    const menu = [
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, S02: { type: 'rally', mod: 0, starred: false } } },
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, S02: { type: 'support', mod: 0, starred: false } } },
+    ];
+    const pick = agent.decide(vf2(g, 'F1'), { type: 'submitOrders', faction: 'F1' }, menu, botRng(3));
+    eq(pick.orders.S02.type, 'support', 'the wasted rally never wins the argmax');
+  }},
+
+  { name: 'behavior: pointless raids are penalized — raiding empty borders loses to rallying the citadel (blunder #3)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    const agent = createHeuristicAgent();
+    const base = { L04: { type: 'defend', mod: 1, starred: false }, S02: { type: 'support', mod: 0, starred: false } };
+    const menu = [
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, L01: { type: 'raid', mod: 0, starred: false } } },
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, L01: { type: 'rally', mod: 0, starred: false } } },
+    ];
+    const pick = agent.decide(vf2(g, 'F1'), { type: 'submitOrders', faction: 'F1' }, menu, botRng(3));
+    eq(pick.orders.L01.type, 'rally', 'no enemies adjacent = the raid token is dead weight');
+  }},
+
+  { name: 'behavior: a starred rally off-fort loses to the plain rally (blunder #6 — stars are for musters)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    const agent = createHeuristicAgent();
+    // L04 is fortified at this seed — plant an outpost on plain ground instead.
+    g.unitsByRegion['L03'] = [{ faction: 'F1', type: 'infantry', routed: false }];
+    const base = { L01: { type: 'march', mod: 0, starred: false }, L04: { type: 'defend', mod: 1, starred: false }, S02: { type: 'support', mod: 0, starred: false } };
+    const menu = [
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, L03: { type: 'rally', mod: 0, starred: true } } },
+      { type: 'submitOrders', faction: 'F1', orders: { ...base, L03: { type: 'rally', mod: 0, starred: false } } },
+    ];
+    const pick = agent.decide(vf2(g, 'F1'), { type: 'submitOrders', faction: 'F1' }, menu, botRng(3));
+    ok(!pick.orders.L03.starred, 'the star waits for fortified ground');
+  }},
+
+  { name: 'behavior: sovereign tie-breaks put self first and the seat leader last (blunder #4)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    // F4 gets two extra fortified holdings so it clearly leads on seats.
+    for (const rid of ['L31', 'L34']) {
+      g.unitsByRegion[rid] = [{ faction: 'F4', type: 'infantry', routed: false }];
+    }
+    const agent = createHeuristicAgent();
+    const v = vf2(g, 'F1');
+    const selfIn = agent.decide(v, { type: 'bidTieBreak', faction: 'F1', track: 'initiative' }, [
+      { type: 'bidTieBreak', faction: 'F1', order: ['F1', 'F4'] },
+      { type: 'bidTieBreak', faction: 'F1', order: ['F4', 'F1'] },
+    ], botRng(3));
+    eq(selfIn.order[0], 'F1', 'self as early as the tie allows');
+    const noSelf = agent.decide(v, { type: 'bidTieBreak', faction: 'F1', track: 'initiative' }, [
+      { type: 'bidTieBreak', faction: 'F1', order: ['F4', 'F5'] },
+      { type: 'bidTieBreak', faction: 'F1', order: ['F5', 'F4'] },
+    ], botRng(3));
+    eq(noSelf.order[0], 'F5', 'the leader eats the back of the line');
+  }},
+);
+
+tests.push(
+  { name: 'behavior: port defends are shunned — battles cannot reach a dock, so the token goes where it works (owner ruling; blunder #1 closed)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    const agent = createHeuristicAgent();
+    const base = { L36: { type: 'defend', mod: 1, starred: false }, L16: { type: 'rally', mod: 0, starred: false }, S10: { type: 'march', mod: 0, starred: false } };
+    const menu = [
+      { type: 'submitOrders', faction: 'F2', orders: { ...base, P04: { type: 'defend', mod: 1, starred: false } } },
+      { type: 'submitOrders', faction: 'F2', orders: { ...base, P04: { type: 'support', mod: 0, starred: false } } },
+    ];
+    const pick = agent.decide(vf2(g, 'F2'), { type: 'submitOrders', faction: 'F2' }, menu, botRng(3));
+    eq(pick.orders.P04.type, 'support', 'the dock supports its sea instead of defending nothing');
+  }},
+);
