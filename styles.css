@@ -350,7 +350,13 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 /* Over art, region shapes become tap halos: invisible until wanted, always
    tappable. The vector chart look remains intact for the core theme. */
 .has-canvas .graticule { display: none; }
-.has-canvas .edges line { stroke-opacity: 0.14; }
+/* B5 (owner, Three Towers–Oldtown): straight-line edges faded to .14 while
+   curved paths kept .28 — connectors vanished by geometry lottery. Unified. */
+.has-canvas .edges line, .has-canvas .edges path { stroke-opacity: 0.26; }
+/* Sprint-1.1: focused SEA connectors glow blue; land stays brass. */
+.edge-sea.edge-hl { stroke: #6fb9ea; }
+/* G3-8: vacant seats must read on the dark art. */
+.ic-fort.fort-vacant { opacity: .9; color: #cfc8b4 !important; stroke-dasharray: 4 3; }
 .has-canvas .land-hex {
   fill: transparent; stroke: rgba(255, 255, 255, 0.10);
   transition: stroke 120ms ease, fill 120ms ease;

@@ -8,6 +8,7 @@ import { INVADER_CARDS } from '../data/invaderCards.js';
 import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_CORE } from '../themes/core.js';
 import { THEME_ASOIAF } from '../themes/asoiaf.js';
+import { THEME_WARROSES } from '../themes/warroses.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
 import { ICON_SETS } from '../icons.js';
@@ -19,7 +20,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e6';
+export const BUILD_ID = 'm3e11';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -142,7 +143,7 @@ import { transportReachable, landAreasControlled } from '../engine/actionPhase.j
 import { SETUP } from '../data/setup.js';
 const SETUP_VICTORY_TARGET = SETUP.victoryTarget;
 
-const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
+const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, warroses: THEME_WARROSES, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
 const byId = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r]));
 const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
@@ -168,7 +169,7 @@ function applyThemeVisuals() {
 // event-phase reveal; minimized: decision demoted to the side panel; quiet:
 // passive reveals go to the Chronicle only.
 const stageState = { seen: 0, batch: null, minimized: false, quiet: false };
-let inspectorFid = 'F1';
+let inspectorFid = 'F1'; // m3e11: newGame/restore point this at the human's house
 
 // Dramatic decisions pop out on stage; table work (planning, order
 // resolution, mustering) stays beside the map where the geography is.
@@ -200,11 +201,17 @@ function newGame(seed) {
   resetTelemetry();
   // Seat assignment takes effect on New game (M3.c): 'table' = classic
   // all-seats operator mode; a faction id = you vs five bots.
-  const seatSel = $('#seat-select')?.value || 'table';
+  // m3e11 F1: 'random' hands the player a surprise house.
+  let seatSel = $('#seat-select')?.value || 'table';
+  if (seatSel === 'random') {
+    seatSel = FACTIONS[Math.floor(Math.random() * FACTIONS.length)].id;
+    flash(`The lots are drawn: you play ${fName(seatSel)}.`);
+  }
   mixed.human = seatSel === 'table' ? null : seatSel;
   mixed.policy = $('#spectate-policy')?.value || 'heuristic';
   mixed.agents = null; mixed.key = null; mixed.rng = null;
   clearTimeout(mixed.timer); mixed.timer = null;
+  inspectorFid = mixed.human || 'F1'; // G3-3: your hand first
   if (Number.isFinite(seed)) {
     game = createGame(6, { seed: Math.floor(seed) });
     beginPlanning(game);
@@ -598,8 +605,12 @@ function renderTurnPanel() {
 
   const qsAll = shown().pendingQueries;
   const qs = visibleQueries();
-  if (!qsAll.length) { panel.innerHTML = '<p class="hint">No pending decisions.</p>'; return; }
+  const bans = shown().roundFlags?.bannedOrders || [];
+  const decreeChip = bans.length
+    ? `<div class="decree-chip" title="event decree — active all round">⛔ decree: ${bans.map(esc).join(', ')} orders forbidden this round</div>` : '';
+  if (!qsAll.length) { panel.innerHTML = decreeChip + '<p class="hint">No pending decisions.</p>'; return; }
   if (mixed.human && !qs.length) {
+    // (decree chip rides the waiting card too)
     // Bots hold the table (M3.c). Their queries NEVER render as forms — the
     // sealed-bid slip, the card pick, the peek all stay off this screen.
     const thinking = [...new Set(qsAll.map(q => q.faction))];
@@ -659,7 +670,7 @@ function renderTurnPanel() {
 // one 3-card stage batch (the physical table's "flip all three" moment).
 // Engine state has ALREADY advanced — this is presentation only, invisible to
 // replay and to headless agents.
-const BATCH_SKIP = new Set(['eventCardRevealed', 'eventPhaseBegan', 'planningBegan']);
+const BATCH_SKIP = new Set(['eventPhaseBegan', 'planningBegan']); // m3e11: reveals STAY — they head each card's effect lines
 function scanForStage() {
   if (!shown()) return;
   const fresh = shown().log.slice(stageState.seen);
@@ -677,14 +688,25 @@ function scanForStage() {
     };
   }
   const beganAt = fresh.findIndex(e => e.event === 'eventPhaseBegan');
-  if (beganAt === -1) return;
+  if (beganAt === -1) {
+    // m3e11 (owner r3 repro): card queries interrupt the event phase, and
+    // effect lines resolving AFTER the interrupt used to vanish from the
+    // stage. An OPEN batch keeps collecting until planning begins.
+    if (stageState.batch?.open) {
+      const more = fresh.filter(e => !BATCH_SKIP.has(e.event)).map(logLine).filter(Boolean);
+      stageState.batch.lines = stageState.batch.lines.concat(more).slice(0, 16);
+      if (fresh.some(e => e.event === 'planningBegan')) stageState.batch.open = false;
+    }
+    return;
+  }
   const slice = fresh.slice(beganAt);
   const reveals = slice.filter(e => e.event === 'eventCardRevealed')
     .map(e => ({ deck: e.deck, card: e.card }));
   if (!reveals.length) return;
   const icons = new Set(slice.filter(e => e.event === 'threatAdvanced').map(e => e.card));
-  const lines = slice.filter(e => !BATCH_SKIP.has(e.event)).map(logLine).filter(Boolean).slice(0, 12);
-  stageState.batch = { round: slice[0].round, reveals, icons: [...icons], lines };
+  const lines = slice.filter(e => !BATCH_SKIP.has(e.event)).map(logLine).filter(Boolean).slice(0, 16);
+  stageState.batch = { round: slice[0].round, reveals, icons: [...icons], lines,
+    open: !slice.some(e => e.event === 'planningBegan') };
 }
 
 function renderBatchCard(stageEl) {
@@ -726,6 +748,10 @@ function renderBatchCard(stageEl) {
 function supplyLadder(f) {
   const lvl = shown().supply[f] ?? 0;
   const limits = SETUP.supplyLimits[lvl] || [];
+  // m3e11 (owner G3-3): actuals are for YOUR hand (and march/muster focus);
+  // rivals show the bare limits ladder — you know their law, not their books.
+  const own = !mixed.human || f === mixed.human;
+  if (!own) return `<span class="ladder" title="army size limits">${limits.map(c => `<span class="ladder-cell">${c}</span>`).join(' ')}</span>`;
   const armies = armiesOf(shown(), f).sort((a, b) => b - a);
   const cells = limits.map((cap, i) => {
     const have = armies[i];
@@ -747,8 +773,7 @@ function renderInspector() {
       `<button class="insp-chip ${x === f ? 'on' : ''}" data-insp="${x}" style="border-left:3px solid ${fColor(x)}">${fGlyph(x)}</button>`).join('')}</div>
     <div class="insp-stats">${fGlyph(f)} <b>${esc(fName(f))}</b> ·
       ${pic('i-fort-castle')}${seatsControlled(shown(), f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]} supply ${supplyLadder(f)} ·
-      ${pic('i-coin')}${shown().authority[f]} ${esc(theme.terms.authority)} ·
-      ${esc(theme.terms.threat || 'threat')} ${shown().threat}/12</div>
+      ${pic('i-coin')}${shown().authority[f]} ${esc(theme.terms.authority)}</div>
     <div class="insp-cards">${hand.map(id => cardChip(id, { withText: false })).join('') || '<span class="dim">no cards in hand</span>'}</div>
     ${discard.length ? `<div class="insp-stats" style="margin-top:6px">spent: ${discard.map(id => esc(theme.cards?.[id] ?? id)).join(', ')}</div>` : ''}`;
   el.querySelectorAll('[data-insp]').forEach(b => b.addEventListener('click', () => {
@@ -845,7 +870,7 @@ function trackName(t) {
 }
 function bidForm(q) {
   const amt = Math.min(ui.bidAmount ?? 0, q.max);
-  return header(q, `seal your bid — ${esc(trackName(q.track))}`) +
+  return header(q, `seal your bid — ${trackName(q.track)}`) +
     `<div class="stepper-row big-stepper">
       <button class="opt" data-bid-step="-1" ${amt <= 0 ? 'disabled' : ''}>−</button>
       <b class="bid-amt">${amt}</b>
@@ -858,7 +883,7 @@ function bidForm(q) {
 function bidTieBreakForm(q) {
   const placed = ui.tieOrder || [];
   const remaining = q.tied.filter(f => !placed.includes(f));
-  return header(q, `order the tie at ${q.amount} — ${esc(trackName(q.track))}`) +
+  return header(q, `order the tie at ${q.amount} — ${trackName(q.track)}`) +
     (placed.length ? `<div class="hint">Placed so far: ${placed.map(f => fGlyph(f)).join(' → ')}</div>` : '') +
     `<div class="btn-col">` +
     remaining.map(f => `<button data-tie-pick="${f}">${fGlyph(f)} ${esc(fName(f))} ${placed.length === 0 ? '(highest)' : ''}</button>`).join('') +
@@ -886,7 +911,7 @@ function musterForm(q) {
     `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
   const stagedRows = staged.map((b, i) =>
     `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
-  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${esc(rName(q.region))} — ${left}/${q.points} points`) +
+  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) +
     battleless() +
     btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
     btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
@@ -1130,11 +1155,13 @@ function planningForm(q) {
   if (ui.awaitTokenFor) {
     const banned = shown().roundFlags.bannedOrders || [];
     html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div>`;
-    // UI item 5 (owner trap, Jul 2026): a spent pool must never lock a plan.
-    if (ui.assignments[ui.awaitTokenFor]) {
-      html += `<button class="ghost" id="tok-clear">✕ Clear this order (return the token)</button>`;
-    }
-    html += `<div class="token-grid">` + remaining.map((t, i) => {
+    // G3-5 (owner): the assigned token sits IN the grid, greyed; clicking it
+    // clears the row. No separate button.
+    const curTok = ui.assignments[ui.awaitTokenFor];
+    if (curTok) {
+      html += `<div class="token-grid"><button class="token assigned" id="tok-clear" title="click to clear">
+        ${esc(tokenLabel(curTok))} ✓</button>`;
+    } else html += `<div class="token-grid">` + remaining.map((t, i) => {
       const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
       return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
         ${ban ? `title="forbidden this round (event card)"` : ''}>
@@ -1207,9 +1234,17 @@ function raidForm(q) {
     return html;
   }
   html += `<button data-repick>↩ choose a different raid</button>`;
+  // B2 (owner repro, Searoad→Sunset Sea): the menu must never list what the
+  // validator refuses — land raids reach land only; ports reach their sea.
+  const srcKind = region(ui.region)?.kind;
+  const canReach = rid => {
+    if (srcKind === 'maritime') return true;
+    if (srcKind === 'port') return region(rid)?.kind === 'maritime';
+    return region(rid)?.kind === 'land';
+  };
   const targets = [...ADJ[ui.region]].filter(rid => {
     const o = shown().ordersByRegion[rid];
-    return o && o.faction !== q.faction;
+    return o && o.faction !== q.faction && canReach(rid);
   }).sort();
   html += `<p class="hint">Raiding from <b>${esc(rName(ui.region))}</b></p><div class="btn-col">` +
     targets.map(rid => `<button data-target="${rid}">${esc(rName(rid))} · ${esc(tokenLabel(shown().ordersByRegion[rid]))}
@@ -1251,10 +1286,11 @@ function marchForm(q) {
     // VACATES ground you control — every unit leaving, your flag at stake.
     const _mineHere = (shown().unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction && !u.routed).length;
     const _leaving = ui.moves.reduce((a, mv) => a + Object.values(mv.units).reduce((x, y) => x + y, 0), 0);
-    const _showLC = _leaving >= _mineHere && controllerOf(shown(), ui.region) === q.faction;
+    const _showLC = _leaving >= _mineHere && controllerOf(shown(), ui.region) === q.faction &&
+      shown().controlMarkers?.[ui.region] !== q.faction && region(ui.region)?.home !== q.faction; // B1: never offer what's already yours (or free)
     html += `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[q.faction]} · ${supplyLadder(q.faction)}</div>`;
     if (_showLC) html += `<label class="toggle-label"><input type="checkbox" id="leave-control" ${ui.leaveControl ? 'checked' : ''}>
-      Leave a control marker (1 ${esc(theme.terms.authority)})</label>`;
+      Leave a control marker to KEEP OWNERSHIP of ${esc(rName(ui.region))} (costs 1 ${esc(theme.terms.authority)} — Rules p.24)</label>`;
   }
   html += `<button class="primary" id="do-march">Resolve march</button>`;
   return html;
@@ -1549,7 +1585,9 @@ function logLine(e) {
     case 'planningBegan': return `— Round ${e.round}: ${esc(theme.terms.factions)} plan in secret —`;
     case 'eventPhaseBegan': return `— Round ${e.round}: the ${esc(theme.terms.eventPhase || 'Event Phase')} —`;
     case 'eventCardRevealed': return `Deck ${e.deck}: <b>${esc(eventCardName(e.card))}</b>.`;
-    case 'eventDeckReshuffled': return `Deck ${e.deck} was shuffled anew, discards and all.`;
+    case 'eventDeckReshuffled': return e.cause
+      ? `Deck ${e.deck}: <b>${esc(eventCardName(e.cause))}</b> — the deck is shuffled anew, discards and all.`
+      : `Deck ${e.deck} was shuffled anew, discards and all.`;
     case 'threatAdvanced': return `The ${esc(theme.terms.threat || 'threat')} grows: ${e.threat} of 12.`;
     case 'eventNothing': return `${esc(eventCardName(e.card))}: nothing happens.`;
     case 'ordersBanned': return `${esc(eventCardName(e.card))}: ${e.order === 'marchPlusOne' ? '+1 march' : esc(e.order)} orders are forbidden this round.`;
@@ -1744,6 +1782,7 @@ function fillSeatSelect() {
   if (!sel) return;
   const cur = sel.value || 'table';
   sel.innerHTML = `<option value="table">table mode (all seats)</option>` +
+    `<option value="random">🎲 random house</option>` +
     FACTIONS.map(f => `<option value="${f.id}">play ${esc(fName(f.id))}</option>`).join('');
   sel.value = [...sel.options].some(o => o.value === cur) ? cur : 'table';
 }

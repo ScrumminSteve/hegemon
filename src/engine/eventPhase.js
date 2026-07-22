@@ -78,7 +78,7 @@ function reshuffleDeck(state, deckId, includeCardId) {
   state.seed = r.seed;
   deck.draw = r.value;
   deck.discard = [];
-  state.log.push({ round: state.round, event: 'eventDeckReshuffled', deck: deckId });
+  state.log.push({ round: state.round, event: 'eventDeckReshuffled', deck: deckId, cause: includeCardId || null });
 }
 
 export function advanceThreat(state, by) {

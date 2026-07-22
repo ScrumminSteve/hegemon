@@ -81,10 +81,10 @@ export const tests = skipped ? [
 // renders as face-down backs — the viewFor routing proven in the DOM.
 
 if (!skipped) tests.push(
-  { name: 'mixed-seat controls exist: seat select is populated with all six factions plus table mode (M3.c)', fn() {
+  { name: 'mixed-seat controls exist: seat select is populated with all six factions plus table mode and random (M3.c; F1 m3e11)', fn() {
     const sel = dom.window.document.querySelector('#seat-select');
     ok(sel, 'seat select present');
-    ok(sel.options.length === 7, `7 options (got ${sel.options.length})`);
+    ok(sel.options.length === 8, `8 options — table + random + six houses (got ${sel.options.length})`);
     ok(sel.options[0].value === 'table', 'table mode is the default');
   }},
 
@@ -125,5 +125,22 @@ if (!skipped) tests.push(
       'every pentagon declares owned or vacant');
     const u = doc.querySelector('#map .unit-ic');
     ok(u && u.getAttribute('width') === '30', 'unit silhouettes at 30px');
+  }},
+);
+
+if (!skipped) tests.push(
+  { name: 'm3e11: the Wars of the Roses pack loads — selector option present, theme switch renders York at York (owner flagship candidate)', async fn() {
+    const doc = dom.window.document;
+    const sel = doc.querySelector('#theme-select');
+    ok([...sel.options].some(o => o.value === 'warroses'), 'warroses selectable');
+    sel.value = 'warroses';
+    sel.dispatchEvent(new dom.window.Event('change'));
+    await new Promise(r => setTimeout(r, 30));
+    const html = doc.body.innerHTML;
+    ok(html.includes('House of York') || html.includes('York'), 'York on the board');
+    ok(!/undefined/.test(doc.querySelector('#turn-panel')?.textContent || ''), 'no undefined leaks in the panel');
+    sel.value = 'core';
+    sel.dispatchEvent(new dom.window.Event('change'));
+    await new Promise(r => setTimeout(r, 20));
   }},
 );

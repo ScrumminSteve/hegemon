@@ -329,6 +329,191 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## PACKAGE A SHIPS — fixes, discipline, and a new realm (build m3e11)
+
+**Engine [RULES_REVISION → 11]:** B1 double-claim fixed — a standing
+marker costs NOTHING to keep (`controlAlreadyHeld` chronicled; owner's
+L31/L07 transcript was the proof); UI never offers the checkbox on ground
+already marked or home. Golden locks both charge-once and the free pass.
+
+**Scorer (blunder bank complete through #8, goldens on each):**
+- #7 BLADE DISCIPLINE — post-reveal the strengths are computable; the
+  blade is drawn ONLY when +1 turns a loss into tie-or-win or a tie into a
+  win, held otherwise (and held when strengths are unknowable). End-to-end
+  golden drives a real combat to the blade window twice, straddling the
+  calculus. (Found my own bug en route: the import never landed and a
+  draw-leaning fallback masked it — fallback now holds.)
+- #8 DECREES WITH INTENT — bans always outrank "nothing"; tempo classes
+  (march+1, march) are priority denials; leaning harder when a rival leads.
+
+**UI (Sprint 1.1 remainder + adds):** raid menus filtered by the terrain
+gate (B2); deck logs overhauled (B3: reshuffles NAME their causing card —
+the round-2 "shuffled anew" mystery was a Wheel-of-Fortune-class card
+resolving on draw; reveals head each card's effect lines; the stage batch
+stays OPEN across query interrupts so round-3-style effects never vanish);
+&#39; double-escape killed (B4, three header sites); B5 connector
+visibility unified (straight-line edges faded to .14 while curves kept .28
+— geometry lottery, fixed at .26 for both); sea connectors glow BLUE on
+focus; vacant pentagons brightened; 2026 infantry is a HUMAN SOLDIER;
+random-house option (F1); decree chip; click-the-greyed-token unassign;
+inspector defaults to your house with rival ladders limits-only.
+
+**NEW THEME PACK: "Historical — The Wars of the Roses" (owner flagship
+candidate).** Fully historical nomenclature — zero licensed material:
+York ☀ (Sun in Splendour), Lancaster 🌹, Tudor 🐉 (comes by sea from
+Carisbrooke — the amphibious island seat suits the dynasty that landed at
+Milford Haven), Stafford 🦢, Percy 🦁, Neville 🐻 (the Kingmaker raids
+from the Isle of Man). Henry VI is the 0-strength card, as history
+demands; St Albans sits where Stoney Sept stood; Berwick watches the
+Border Threat (Scots Reivers). Terms of art throughout: Livery,
+Commissions of Array, Bill of Attainder, A Parliament of Devils, The
+Loveday. Key-parity audited against the template — no missing ids. Map
+art is the owner's own and carries both packs.
+
+Suite: **251**. Fuzz: zero rejections. AWAITING: owner walk of the
+Sprint-1.1 fixes + first Roses game.
+
+## G3 VERDICTS & THE OWNER'S DESIGN BATCH (m3e9, doc-only)
+
+**Sprint-1 G3 walk:** 1 PASS · 2 deferred (needs a live cancel) · 3
+NEEDS WORK (spec below) · 4 → Sprint 2 · 5 REVISE (interaction change) ·
+6 label unclear (explained; rename banked) · 7 PASS (+Sprint-2 shore
+work) · 8 partial (vacant visibility up; legend ties in) · 9 FAIL
+(rifle → human soldier) · 10 = theme roadmap (below).
+
+**Sprint 1.1 corrections (fast, next build):**
+- (3) Supply ladder placement: seat inspector AND march-destination +
+  muster focus contexts; inspector DEFAULTS to the player's own house;
+  other houses show limits only ("3-2-2"), actuals reserved for self and
+  march/muster contexts. Remove the wildling/invader chip from the seat
+  inspector.
+- (5) Unassign interaction: kill the ✕ button; clicking the greyed
+  (already-assigned) token clears it.
+- (6) Leave-control label: "Leave a control marker to keep ownership
+  (1 <authority>)" + rules tooltip.
+- (8) Vacant pentagons: stronger visibility on the dark map.
+- (9) 2026 infantry: human soldier silhouette, not a rifle.
+
+**NEW FEATURES (owner design, banked for scheduling):**
+- F1: "Random house" option in the seat select.
+- F2: **House takeover** — while spectating OR mid-game, switch which
+  house the human controls (take over a dying bot house to try to save
+  it; hand your own to a bot). Controller reassignment at runtime —
+  touches mixed-mode machinery + episode seatControllers (record the
+  handoff timeline, not a single label).
+- F3: **SCOREBOARD REVISION** (full spec): seat inspector opens from
+  scoreboard house rows (selector merges in); during the action phase the
+  scoreboard highlights the acting house in sync with the chronicle line,
+  and MARCH actions auto-focus the map on the area/battle (pairs with UI
+  item 11's battle spotlight); rows ordered by the initiative track;
+  special items (e.g. the Valyrian sword) shown by the holder's name,
+  greyed once used; influence tracks collapse below the scoreboard; the
+  current leader renders at 2x; the theme selector moves to the system
+  area.
+- F4: **Supply-as-icons for the self view**: your armies render as unit
+  icons filling their slots — 2/2 as two ships, 3/4 as infantry+knight+
+  siege+one blank slot.
+- F5: The system button row (save/new/spectate/…) collapses like the
+  chronicle.
+
+- (6-clarified, m3e10) Item 6 was DISPLAY-ONLY: the leave-control mechanic
+  is unchanged since M1 (march everyone out of controlled ground → pay 1
+  authority for a marker or the territory goes neutral; any unit staying =
+  control persists free). Sprint 1 merely hid the checkbox when it was
+  meaningless. G3 check: empties-controlled-ground march shows it; partial
+  march doesn't.
+- **UI item 26 (owner, m3e10): control markers wear the house SIGIL** —
+  power-controlled territories show the controlling house's sigil glyph in
+  a circle SMALLER than the capital seal (sigil icon itself same size);
+  capitals keep their grand seal. A planted marker should read as "theirs"
+  from across the room.
+
+**THEME ROADMAP (owner, strategic):** a War of the Roses theme is under
+review in a separate thread — likely to become the second flagship
+alongside 2026. The ASOIAF/"five kings" theme will eventually be
+HIDDEN/REMOVED for copyright reasons (note: assets/map-asoiaf.webp
+inherits the same concern — the WotR map art should be original).
+Sundered Kingdoms likely abandoned → deprioritize Sprint-2 item 10 and
+any Sundered-specific work.
+
+## UI SPRINT 2 SPEC — map readability (owner feedback batch, PC, m3e8)
+
+G3 STATUS: owner's walk reply truncated at item 1 — verdicts pending
+resend. This batch implies a PARTIAL FAIL on sprint-1 item 4 (castles
+didn't visibly grow; citadels did) — investigate whether the asoiaf
+castle symbol under-fills its viewBox vs the citadel.
+
+**The centerpiece (12): A HEX LAYOUT SYSTEM, not more point fixes.**
+Assign every entity class a home zone on the hex and enforce it:
+e.g. garrisons pinned to a true N/S/E/W edge (whichever dodges local
+clutter), units the opposite side, orders their own lane, supply/coin
+icons theirs. Goals: zero cross-class bunching/overlap, instant
+legibility, mobile-first. Design the zone map once; every renderer
+follows it.
+
+13. Fort marks take TWO more steps: ~4x original (≈60px — 2x the new
+    units); UNCLAIMED = grey; CLAIMED = faction shade/pattern deliberately
+    distinct from unit tint so a castle never reads as a unit.
+14. Harbors sit at the closest shore point to the territory edge, with a
+    visible connection line home-territory → dock.
+15. Land connection lines styled as ROADS — more visible, same focus
+    highlighting.
+16. Sea connection lines re-routed as true SHIPPING LANES: prefer open
+    water, stop hugging coasts, avoid criss-crossing.
+17. Power/authority icon redesign — current shape+color confusing;
+    PRESENT OPTIONS to the owner at build time.
+18. Faction hues: Greyjoy → purpler, Stark → whiter (current pair too
+    similar).
+19. LEGEND with click-to-highlight: clicking an icon class (supply,
+    garrisons, …) highlights all instances; clicking a house highlights
+    its territories; highlights are MUTUALLY EXCLUSIVE, never stacking.
+20. Map art repaint list (owner-called regions, asoiaf art): the
+    Flint's/Stony river system; White Harbor placement + the odd wide
+    canal; Prince's Pass area; south of the Twins; between the Marches;
+    Dragonstone/Shipbreaker.
+21. Territory name labels tinted to controlling house (legibility-adjusted
+    per background); unclaimed stay current white.
+22. Big single tree icons → several small trees covering the same
+    footprint.
+23. Infantry symbol → CROSSED SHIELDS (never confusable with the defend
+    order block or natural-defense icons).
+24. Natural-defense icon → a shield SHAPE with the number inside it.
+25. Order icons 2x, with the modifier (−1/+1/+2) rendered INSIDE the icon.
+
+Sequencing: items 13/23/24/25 (icon-level) can ship fast; 12 (the zone
+system) should land before or with them so placements are final once;
+14–16/20/22 are map-art/geometry work (build-map.py + repaint);
+17/18/19/21 are palette/interaction. Battle spotlight (item 11) rides
+whichever drop touches the stage.
+
+## SCORER-FIX RESULTS — the blunder bank pays out (m3e7, doc-only)
+
+**Head-to-head (720 games, seeds 4000000+): current bots (v2 + five
+scorer fixes) vs the frozen v1 anchor = 24.2% [21.2–27.4]** — the CI
+FLOOR clears the 16.7% null by 4.5pp; three SPSA campaigns never produced
+a floor above it. Worst-seat mean rank 3.78 (from ~4.5–5.2); challenger
+wins 17.5% as Baratheon, 20% as Greyjoy.
+
+**Seatbias N=6000 (seeds 600000+) vs the anchor:** Stark 23.9→21.0 ·
+Lannister 30.9→26.7 · **Baratheon 2.5→6.4** · Tyrell 18.7→17.6 · Martell
+17.3→16.3 · **Greyjoy 6.7→12.0**. Kickoff measurement M1 (island lift
+≥+1.5pp) EXCEEDED SEVERAL-FOLD before any opening book exists. The
+six-castle Baratheon bot was the leading edge, not a fluke.
+
+**DOCTRINE, in bold for the M-end retrospective: five behavioral fixes
+sourced from a strong human saying "that's dumb" outperformed ~100k games
+of gradient self-play.** Human diagnosis > blind search at this scale of
+model. The M3.e books are the systematic version of the same bet.
+
+**Consequence:** ship gate G1's incumbent is now the m3e6 bot. The books
+must beat the best, not the past.
+
+**UI item 11 [P2, banked]:** BATTLE SPOTLIGHT — on combatBegan the camera
+flies to the battlefield (cameraCenterOn exists); a staged scene renders
+the fight: supporting territories highlighted, opposing stacks, leader
+cards as revealed. Pairs with item 2's cancel drama. Choreography, not
+infrastructure.
+
 ## M3.e UI SPRINT — the facelift (build m3e6)
 
 All ten queue items shipped in one pass:

@@ -568,3 +568,61 @@ tests.push(
     eq(str.defender ?? str.def ?? 0, 0, 'routed defenders contribute nothing');
   }},
 );
+
+import { createHeuristicAgent } from '../src/agents/heuristic.js';
+import { combatStrengths as _cs } from '../src/engine/combat.js';
+import { botRng } from '../src/agents/random.js';
+import { viewFor } from '../src/engine/views.js';
+
+tests.push(
+  { name: 'BLADE DISCIPLINE: held on a hopeless battle, drawn on a flippable one (blunder #7 — owner Greyjoy 6+1 vs 8 repro)', fn() {
+    const rig = (defenders, cardPick) => {
+      const s = stage({
+        strip: ['L04', 'L05'],
+        plants: {
+          L05: [['F2', 'cavalry'], ['F2', 'cavalry'], ['F2', 'cavalry']],
+          L04: defenders,
+        },
+        orders: { F2: { L05: M(0) } },
+      });
+      s.tracks.prowess = ['F1', ...s.tracks.prowess.filter(f => f !== 'F1')];
+      s.tokens.blade = 'F1'; // the blade follows prowess seat 1 (Rules p.11)
+      let r = applyAction(driveToMarch(s, 'F2', 'L05'),
+        { type: 'resolveMarch', faction: 'F2', region: 'L05', moves: [{ to: 'L04', units: { cavalry: 3 } }] }).state;
+      // march past support declarations and card slides to the blade window
+      let guard = 0;
+      while (!r.pendingQueries.some(x => x.type === 'useBlade' && x.faction === 'F1')) {
+        const q = r.pendingQueries[0];
+        if (!q || ++guard > 30) throw new Error('never reached a blade window: ' + JSON.stringify(r.pendingQueries[0] || null));
+        if (q.type === 'declareSupport') r = applyAction(r, { type: 'declareSupport', faction: q.faction, side: null }).state;
+        else if (q.type === 'chooseLeaderCard') {
+          const hand = r.leaderHands[q.faction] || [];
+          const want = q.faction === 'F2' ? cardPick.atk : cardPick.def;
+          const card = hand.find(id => id.endsWith(want)) || hand[0];
+          r = applyAction(r, { type: 'chooseLeaderCard', faction: q.faction, card }).state;
+        }
+        else if (q.type === 'useCardAbility') r = applyAction(r, { type: 'useCardAbility', faction: q.faction, use: false }).state;
+        else throw new Error('unexpected query on the road to the blade: ' + q.type);
+      }
+      return r;
+    };
+    const agent = createHeuristicAgent();
+    const menu = f => [{ type: 'useBlade', faction: f, use: true }, { type: 'useBlade', faction: f, use: false }];
+    // The golden is SELF-CONSISTENT: it computes the true strengths at the
+    // window and demands the agent's choice match the flip calculus — while
+    // the card picks force the two rigs onto opposite sides of it.
+    const verdict = st => {
+      const mine = st.defender, theirs = st.attacker;
+      return (mine < theirs && mine + 1 >= theirs) || mine === theirs;
+    };
+    const a = rig([['F1', 'infantry']], { atk: '-4', def: '-0' }); // stretch the gap
+    const stA = _cs(a);
+    const pickA = agent.decide(viewFor(a, 'F1'), a.pendingQueries.find(x => x.type === 'useBlade'), menu('F1'), botRng(3));
+    const b = rig([['F1', 'cavalry'], ['F1', 'cavalry'], ['F1', 'infantry']], { atk: '-1', def: '-1' });
+    const stB = _cs(b);
+    const pickB = agent.decide(viewFor(b, 'F1'), b.pendingQueries.find(x => x.type === 'useBlade'), menu('F1'), botRng(3));
+    ok(verdict(stA) !== verdict(stB), `rigs must straddle the calculus (A ${stA.defender}v${stA.attacker}, B ${stB.defender}v${stB.attacker})`);
+    eq(pickA.use, verdict(stA), 'hopeless side: choice matches the calculus');
+    eq(pickB.use, verdict(stB), 'flippable side: choice matches the calculus');
+  }},
+);

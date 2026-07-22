@@ -20,6 +20,7 @@ import { regionProps, region, controllerOf, seatsControlled, adjacency } from '.
 import { unitStrength } from '../engine/actionPhase.js';
 import { card } from '../engine/cards.js';
 import { botRng } from './random.js';
+import { combatStrengths } from '../engine/combat.js';
 
 const ADJ = adjacency();
 
@@ -407,8 +408,40 @@ const SCORERS = {
     return backed ? 1 - seatsControlled(view, backed) * 0.1 : 0;
   },
 
-  useBlade(view, q, a, W) { return a.use ? W.cBlade : 0; },
+  useBlade(view, q, a, W) {
+    if (!a.use) return 0.01; // holding the blade is the quiet default
+    // Blunder #7 (owner, Greyjoy 6+1 vs 8): NEVER burn the blade on a battle
+    // it cannot flip. Post-reveal the strengths are computable — the +1 is
+    // worth using only when it turns a loss into a tie-or-win, or a tie into
+    // a win. Anything else wastes a once-per-age treasure.
+    try {
+      const st = combatStrengths(view);
+      const me = q.faction === view.combat.attacker ? 'attacker' : 'defender';
+      const mine = st[me], theirs = st[me === 'attacker' ? 'defender' : 'attacker'];
+      const flips = (mine < theirs && mine + 1 >= theirs) || (mine === theirs);
+      return flips ? W.cBlade * 2 : -W.cBlade;
+    } catch { return a.use ? 0.005 : 0.01; } // strengths unknowable: HOLD the treasure
+  },
   useCardAbility(view, q, a, W) { return a.use ? W.cAbility : 0; },
+
+  eventChoice(view, q, a, W) {
+    // Blunder #8 (owner): "House X decreed: nothing" by coin flip. Decrees
+    // are weapons — deny the class the board's leader exploits, prefer any
+    // ban over passivity, and lean harder when someone ELSE is leading.
+    const opt = String(a.option ?? '');
+    if (opt === 'nothing') return 0.1;
+    if (opt.startsWith('banOrder:')) {
+      const cls = opt.slice(9);
+      const base = { marchPlusOne: 1.0, march: 0.9, starred: 0.8, defend: 0.65, support: 0.55, raid: 0.3 }[cls] ?? 0.5;
+      let lead = null, best = -1;
+      for (const f of view.factions) {
+        const n = seatsControlled(view, f);
+        if (n > best) { best = n; lead = f; }
+      }
+      return W.cAbility * base + (lead && lead !== q.faction ? 0.4 : 0);
+    }
+    return 0.3;
+  },
 
   chooseLeaderCard(view, q, a, W) {
     const c = card(a.card);

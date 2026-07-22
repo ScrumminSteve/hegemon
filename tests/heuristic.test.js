@@ -179,3 +179,20 @@ tests.push(
     eq(pick.orders.P04.type, 'support', 'the dock supports its sea instead of defending nothing');
   }},
 );
+
+
+tests.push(
+  { name: 'behavior: decrees are weapons — a ban always outranks "nothing" (blunder #8)', fn() {
+    const g = createGame(6, { seed: 21 });
+    bp2(g);
+    const agent = createHeuristicAgent();
+    const menu = [
+      { type: 'eventChoice', faction: 'F1', option: 'nothing' },
+      { type: 'eventChoice', faction: 'F1', option: 'banOrder:marchPlusOne' },
+      { type: 'eventChoice', faction: 'F1', option: 'banOrder:raid' },
+    ];
+    const pick = agent.decide(vf2(g, 'F1'), { type: 'eventChoice', faction: 'F1' }, menu, botRng(3));
+    ok(pick.option !== 'nothing', 'passivity never wins the argmax');
+    eq(pick.option, 'banOrder:marchPlusOne', 'the tempo class is the priority denial');
+  }},
+);

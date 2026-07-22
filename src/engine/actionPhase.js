@@ -308,10 +308,16 @@ export function resolveMarch(state, fid, rid, moves = [], leaveControl = false) 
     const r = region(rid);
     if (r.kind !== 'land') throw new Error('Control markers go on land areas only (Rules p.24)');
     if (r.home === fid) throw new Error('Home areas keep control without a token (Rules p.24)');
-    if (state.authority[fid] < 1) throw new Error('No authority available to establish control (Rules p.24)');
-    state.authority[fid] -= 1;
-    state.controlMarkers[rid] = fid;
-    state.log.push({ round: state.round, event: 'controlEstablished', faction: fid, region: rid });
+    // B1 (owner transcript, m3e11 — L31 and L07 double-claimed and
+    // double-charged): a marker already standing costs nothing to keep.
+    if (state.controlMarkers[rid] === fid) {
+      state.log.push({ round: state.round, event: 'controlAlreadyHeld', faction: fid, region: rid });
+    } else {
+      if (state.authority[fid] < 1) throw new Error('No authority available to establish control (Rules p.24)');
+      state.authority[fid] -= 1;
+      state.controlMarkers[rid] = fid;
+      state.log.push({ round: state.round, event: 'controlEstablished', faction: fid, region: rid });
+    }
   }
 
   if (vacated) {

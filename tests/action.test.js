@@ -275,3 +275,25 @@ export const tests = [
   }},
 
 ];
+
+tests.push(
+  { name: 'B1: a second leave-control on ground already marked is FREE — no double charge (owner transcript: L31, L07 twice)', fn() {
+    // March out leaving a marker; return; march out again "leaving" it again.
+    let s = toAction({ F2: { L36: D(1), L16: M(0), S10: SU(0), P04: D(1) },
+      F4: { L30: D(1), L33: CP(), S08: SU(0) } });
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F2', region: 'L16',
+      moves: [{ to: 'L15', units: { infantry: 1 } }], leaveControl: true }).state;
+    const afterFirst = s.authority.F2;
+    eq(s.controlMarkers['L16'], 'F2', 'marker planted');
+    // hand-carry the unit back and march out again with leaveControl
+    s.unitsByRegion['L16'] = [{ faction: 'F2', type: 'infantry', routed: false }];
+    s.unitsByRegion['L15'] = [];
+    s.pendingQueries.push({ type: 'resolveOrder', step: 'march', faction: 'F2', regions: ['L16'] });
+    s.ordersByRegion['L16'] = { type: 'march', mod: 0, starred: false, faction: 'F2' };
+    s = applyAction(s, { type: 'resolveMarch', faction: 'F2', region: 'L16',
+      moves: [{ to: 'L15', units: { infantry: 1 } }], leaveControl: true }).state;
+    eq(s.authority.F2, afterFirst, 'the standing marker costs NOTHING to keep');
+    eq(s.controlMarkers['L16'], 'F2', 'and it still stands');
+    ok(s.log.some(e => e.event === 'controlAlreadyHeld'), 'the free pass is chronicled');
+  }},
+);
