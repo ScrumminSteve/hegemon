@@ -396,3 +396,15 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 /* ---------- M3.a — spectate ---------- */
 #spectate-speed { width: 90px; vertical-align: middle; accent-color: var(--brass); }
 #btn-spectate { min-width: 92px; }
+
+/* m3e6 UI sprint */
+#log.collapsed { max-height: 58px; }
+#log-toggle.mini, button.mini { font-size: 11px; padding: 1px 7px; margin-left: 6px; }
+.ladder { font-family: var(--mono, monospace); font-size: 11.5px; letter-spacing: .04em; }
+.ladder-cell { padding: 0 3px; border: 1px solid var(--hair); border-radius: 3px; margin-right: 2px; }
+.ladder-cell.over { border-color: #c0392b; color: #e07060; font-weight: 700; }
+.opp-card { margin: 6px 0 2px; padding: 6px 8px; border-left: 3px solid var(--hair); background: rgba(255,255,255,.03); }
+.stage-alert .stage-title { color: #f0c060; }
+.stage-alert { border: 1px solid #f0c060; }
+.ic-fort.fort-owned { stroke-width: 2.8; filter: drop-shadow(0 0 3px currentColor); }
+.ic-fort.fort-vacant { opacity: .55; stroke-dasharray: 3 3; }

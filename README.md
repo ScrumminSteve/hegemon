@@ -329,6 +329,38 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## M3.e UI SPRINT — the facelift (build m3e6)
+
+All ten queue items shipped in one pass:
+1. **Chronicle compact** — collapsed to the last 3 lines by default on
+   narrow screens, ▸-count toggle to expand; desktop unchanged.
+2. **Cancel visibility, both directions** — the ability decision panel now
+   shows the opponent's revealed card; a canceled card triggers a golden
+   ⚡ stage alert naming the consequence ("returns to hand — fights
+   cardless"), always in table mode, human-relevant in mixed. Never again
+   shall a Tyrion pass unnoticed.
+3. **Supply ladder** — armies-vs-limits cells ("3/3 2/2 —/2", over-cap in
+   red) in the seat inspector and inline in the march AND muster panels,
+   exactly where supply-at-declaration bites.
+4. **~2x icons with separation** — unit silhouettes 18→30px, cluster
+   spacing widened, the row riding higher; fort marks 21→34px at the hex
+   crown; lanes re-threaded so nothing collides.
+5. **Token unassign** — "✕ Clear this order" atop the picker whenever the
+   row holds a token; a spent pool can never lock a plan again.
+6. **Leave-control checkbox** appears only when the march vacates ground
+   you control — every unit leaving, your flag at stake.
+7. **Port badge offsets** — port order badges step out from the diamond
+   (Oslo/S11 overlap class resolved).
+8. **Pentagon contrast** — vacant seats: dim gray, dashed; claimed:
+   faction-colored, bold, glowing. Readable at arm's length.
+9. **The modern arsenal (2026 theme)** — pictorial rifle (infantry), tank
+   (armor), missile (siege artillery); the destroyer stays.
+10. **Sundered rides the ASOIAF map** — same art and anchors, its own
+    names and icon language.
+
+Suite: **247** (sprint smoke added). AWAITING: the owner's 10-point
+on-device checklist walk = ship gate G3.
+
 ## PROCESS DOCTRINE (owner-instituted, Jul 2026): phase kickoffs & reviews
 
 Every phase opens with a KICKOFF — objectives, acceptance criteria split
@@ -609,9 +641,15 @@ the heuristic scores positions but never presses initiative. M3.e/f target.
 **UI feedback queue (owner screenshots, mobile, next build session):**
 1. [P2] Leave-control checkbox offered on marches that don't vacate
    controlled ground (Prague repro) — show only when control would lapse.
-2. [P2] Cancel-ability decision (Canaris/Tyrion-class) renders WITHOUT the
-   opponent's revealed card — decision-critical info; render the revealed
-   card in the ability panel.
+2. [P1 — HEADLINER, expanded m3e5] Cancel-ability visibility, BOTH
+   directions: (a) deciding YOUR cancel must show the opponent's revealed
+   card; (b) when a bot cancels YOURS, an unmissable stage beat ("X cancels
+   your card — it returns to your hand; you fight cardless"). Postmortem:
+   the stony-sept "no battle" report was a fully-correct engine sequence
+   (owner's last card played → bot Tyrion-class CANCEL → card back to hand,
+   fought cardless, won vs routed) rendered so quietly the owner believed
+   no battle occurred. The engine's hand/deck state was right; the drama
+   was silent. A cancel is a headline beat, not a rounding error.
 3. [P3] Seat pentagon colors too similar at phone size (unclaimed blue vs
    claimed outlines) — needs stronger differentiation.
 4. [P2] Order-badge collision near ports (Oslo/S11 repro) — extend the
@@ -623,10 +661,29 @@ the heuristic scores positions but never presses initiative. M3.e/f target.
    where the constraint actually bites (supply-at-declaration means
    players now hit it at march time). Show current armies vs limits, not
    just the level number.
-6. [P2, owner request Jul 2026] Chronicle consumes too much real estate on
-   mobile — needs a compact/collapsed default on small screens (e.g. last
-   2–3 entries with a tap-to-expand drawer), keeping the turn panel and
-   map dominant.
+6. [P1 — RAISED, owner repeated twice] Chronicle consumes too much real
+   estate on mobile — compact/collapsed default on small screens (last 2–3
+   entries, tap-to-expand drawer), turn panel and map dominant.
+   (Item 5, supply ladder, also repeated — treat both as the UI pass's
+   headliners alongside Canaris.)
+7. [P2] Token UNASSIGN affordance (see m3e1 note above).
+8. [P2, owner Jul 2026] Unit icons 2x BIGGER, and visually separated from
+   the castle/stronghold marks (which also grow ~2x) — current density
+   reads as one blob at phone zoom.
+9. [P3, theme content] 2026/Concert icon set goes modern: infantry →
+   rifle/handgun, cavalry → tank/truck, siege → missile/cannon.
+10. [P3, theme/map pairing] The Sundered theme should run on the ASOIAF
+    map (currently paired with the default map).
+
+**Bot-play milestone (Greyjoy episode, rev 10):** the Baratheon BOT — the
+2.5% faction — reached SIX castles by end of r5, one seat from instant
+victory, before the human dismantled it. First post-scorer-fix evidence
+the islands may already be moving; the kickoff's M1 seatbias will say.
+**Stony-sept RESOLVED (m3e5):** see UI item 2's postmortem — battle
+happened, owner's card was played then CANCELED by a bot Tyrion-class
+ability (correct hand/deck consequences), presented near-invisibly.
+Engine exonerated; UX convicted; invariant golden stays. Corpus now 10 human wins + 1 spectate (mixed
+provenance); losses still zero.
 
 ## M3.d.5 — crash diagnosability (build m3d5)
 

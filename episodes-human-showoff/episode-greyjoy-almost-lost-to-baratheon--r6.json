@@ -1,0 +1,5520 @@
+{
+ "schema": "hegemon-episode/1",
+ "engine": 1,
+ "rulesRevision": 10,
+ "meta": {
+  "title": "Greyjoy - almost lost to Baratheon ",
+  "notes": "M3e",
+  "recordedAt": "2026-07-22T00:40:00.805Z",
+  "seatControllers": {
+   "F1": "heuristic-v1+j-133196304",
+   "F2": "heuristic-v1+j-133196303",
+   "F3": "heuristic-v1+j-133196302",
+   "F4": "heuristic-v1+j-133196301",
+   "F5": "heuristic-v1+j-133196300",
+   "F6": "human"
+  }
+ },
+ "hash": "f9a930cc",
+ "config": {
+  "seatCount": 6,
+  "seed": 97341264,
+  "ruleset": {
+   "id": "strict",
+   "leaderCards": true
+  },
+  "scenario": "base"
+ },
+ "actions": [
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "L04": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S02": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L01": {
+     "type": "rally",
+     "mod": 0,
+     "starred": true
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {
+    "L36": {
+     "type": "rally",
+     "mod": 0,
+     "starred": true
+    },
+    "S10": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "P04": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L16": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "L22": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L20": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "S04": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "S08": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L30": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L33": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "L28": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S05": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "L27": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L08": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L37": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P03": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S11": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "courierDecision",
+   "decision": "peekThreatDeck",
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "threatPeekPlacement",
+   "placement": "bottom",
+   "_round": 1,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L20",
+   "moves": [
+    {
+     "to": "L29",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F2",
+   "region": "S10",
+   "moves": [
+    {
+     "to": "S09",
+     "units": {
+      "warship": 1
+     }
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "L27",
+   "moves": [
+    {
+     "to": "L25",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L37",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "cavalry": 1,
+      "infantry": 0
+     }
+    },
+    {
+     "to": "L10",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F4",
+   "region": "L30",
+   "moves": [
+    {
+     "to": "L31",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "S04",
+   "moves": [
+    {
+     "to": "P08",
+     "units": {
+      "warship": 1
+     }
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L08",
+   "moves": [
+    {
+     "to": "L06",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F4",
+   "region": "S08",
+   "moves": [
+    {
+     "to": "P05",
+     "units": {
+      "warship": 1
+     }
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F3",
+   "region": "L22",
+   "muster": false,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F2",
+   "region": "L36",
+   "muster": true,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "muster",
+   "region": "L36",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S10"
+    },
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F1",
+   "region": "L01",
+   "muster": true,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L01",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    },
+    {
+     "type": "warship",
+     "to": "S02"
+    }
+   ],
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F6",
+   "region": "P03",
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F4",
+   "region": "L33",
+   "muster": false,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F2",
+   "region": "P04",
+   "muster": false,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F1",
+   "region": "L04",
+   "muster": false,
+   "_round": 1,
+   "_phase": "action"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L22",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L22"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L29",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "muster",
+   "region": "L36",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L36"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L01",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L01"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L04",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "muster",
+   "region": "L25",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S07"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "muster",
+   "region": "L28",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S05"
+    },
+    {
+     "type": "upgrade",
+     "to": "siege_engine"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L06",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S01"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L10",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S11"
+    },
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L14",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S11"
+    },
+    {
+     "type": "infantry",
+     "to": "L14"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L37",
+   "builds": [
+    {
+     "type": "infantry",
+     "to": "L37"
+    },
+    {
+     "type": "warship",
+     "to": "P03"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "muster",
+   "region": "L30",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S08"
+    },
+    {
+     "type": "upgrade",
+     "to": "siege_engine"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "muster",
+   "region": "L31",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S08"
+    },
+    {
+     "type": "warship",
+     "to": "P05"
+    }
+   ],
+   "_round": 2,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "S02": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L04": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L01": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {
+    "L36": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "L16": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S09": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S10": {
+     "type": "raid",
+     "mod": 0,
+     "starred": true
+    },
+    "P04": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "S04": {
+     "type": "raid",
+     "mod": 0,
+     "starred": true
+    },
+    "L29": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L22": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P08": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "L31": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L30": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S08": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L33": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P05": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "L25": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S05": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "S07": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L28": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L06": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L10": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L14": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L37": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "P03": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "S01": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S11": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "courierDecision",
+   "decision": "peekThreatDeck",
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "threatPeekPlacement",
+   "placement": "bottom",
+   "_round": 2,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F3",
+   "region": "S04",
+   "target": null,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F2",
+   "region": "S10",
+   "target": "L14",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "S07",
+   "target": null,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F6",
+   "region": "S01",
+   "target": null,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F4",
+   "region": "L31",
+   "target": null,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F2",
+   "region": "L16",
+   "target": null,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L22",
+   "moves": [
+    {
+     "to": "L18",
+     "units": {
+      "cavalry": 1
+     }
+    },
+    {
+     "to": "L21",
+     "units": {
+      "cavalry": 1,
+      "infantry": 1
+     }
+    }
+   ],
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "L01",
+   "moves": [
+    {
+     "to": "L07",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "S05",
+   "moves": [
+    {
+     "to": "S06",
+     "units": {
+      "warship": 1
+     }
+    }
+   ],
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "S11",
+   "moves": [
+    {
+     "to": "S09",
+     "units": {
+      "warship": 3
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-3",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-2b",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "useBlade",
+   "faction": "F6",
+   "use": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "retreat",
+   "to": "S10",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F4",
+   "region": "L33",
+   "moves": [
+    {
+     "to": "L24",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "P08",
+   "moves": [],
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "P03",
+   "moves": [
+    {
+     "to": "S11",
+     "units": {
+      "warship": 2
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F2",
+   "region": "P04",
+   "muster": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F5",
+   "region": "L28",
+   "muster": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F6",
+   "region": "L06",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F4",
+   "region": "P05",
+   "muster": false,
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F6",
+   "region": "L37",
+   "_round": 2,
+   "_phase": "action"
+  },
+  {
+   "faction": "F3",
+   "type": "eventChoice",
+   "option": "muster",
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L18",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S12"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L21",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L22",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L22"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "muster",
+   "region": "L29",
+   "builds": [
+    {
+     "type": "infantry",
+     "to": "L29"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "muster",
+   "region": "L36",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "P04"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L01",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L01"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L04",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "P02"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L07",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S03"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "muster",
+   "region": "L25",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S06"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "muster",
+   "region": "L28",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "P06"
+    },
+    {
+     "type": "infantry",
+     "to": "L28"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L06",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "siege_engine"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L10",
+   "builds": [],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L14",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "siege_engine"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L37",
+   "builds": [
+    {
+     "type": "upgrade",
+     "to": "cavalry"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "muster",
+   "region": "L30",
+   "builds": [
+    {
+     "type": "warship",
+     "to": "S08"
+    },
+    {
+     "type": "infantry",
+     "to": "L30"
+    }
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "muster",
+   "region": "L31",
+   "builds": [],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 2,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 2,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 2,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 3,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 3,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "initiative",
+   "amount": 3,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bidTieBreak",
+   "track": "initiative",
+   "order": [
+    "F4",
+    "F5",
+    "F6"
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bidTieBreak",
+   "track": "initiative",
+   "order": [
+    "F3",
+    "F2",
+    "F1"
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 2,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 2,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "prowess",
+   "amount": 5,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bidTieBreak",
+   "track": "prowess",
+   "order": [
+    "F2",
+    "F3"
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bidTieBreak",
+   "track": "prowess",
+   "order": [
+    "F4",
+    "F5",
+    "F1"
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "command",
+   "amount": 3,
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bidTieBreak",
+   "track": "command",
+   "order": [
+    "F4",
+    "F2",
+    "F1",
+    "F3",
+    "F5"
+   ],
+   "_round": 3,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "S02": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "P02": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L04": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "S03": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L01": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L07": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {
+    "L16": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L36": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "P04": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S10": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "L18": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "P08": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L29": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S12": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L22": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S04": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L21": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "L31": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S08": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L30": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "L24": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P05": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "P06": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S07": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S06": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S05": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L25": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L28": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L06": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "L10": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L14": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L37": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "S01": {
+     "type": "raid",
+     "mod": 0,
+     "starred": true
+    },
+    "S09": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "S11": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "type": "courierDecision",
+   "faction": "F6",
+   "decision": "swapOrder",
+   "swap": {
+    "region": "S01",
+    "newOrder": {
+     "type": "support",
+     "mod": 1,
+     "starred": true
+    }
+   },
+   "_round": 3,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F4",
+   "region": "P05",
+   "target": null,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "S07",
+   "target": "S08",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F6",
+   "region": "L10",
+   "target": null,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F3",
+   "region": "L22",
+   "target": null,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F1",
+   "region": "L01",
+   "target": null,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "S06",
+   "target": "S04",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F4",
+   "region": "L24",
+   "moves": [
+    {
+     "to": "L26",
+     "units": {
+      "infantry": 1
+     }
+    }
+   ],
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "L28",
+   "moves": [
+    {
+     "to": "L30",
+     "units": {
+      "cavalry": 1,
+      "siege_engine": 1,
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "faction": "F5",
+   "type": "chooseLeaderCard",
+   "card": "F5-4",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "faction": "F4",
+   "type": "chooseLeaderCard",
+   "card": "F4-4",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "faction": "F4",
+   "type": "retreat",
+   "to": "L31",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L14",
+   "moves": [
+    {
+     "to": "L06",
+     "units": {
+      "cavalry": 0,
+      "siege_engine": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L18",
+   "moves": [
+    {
+     "to": "L15",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F2",
+   "region": "L36",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "cavalry": 3
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "S11",
+   "side": "defender",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-4",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-4",
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "useBlade",
+   "faction": "F6",
+   "use": true,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "S02",
+   "moves": [],
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L37",
+   "moves": [
+    {
+     "to": "L38",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "S12",
+   "moves": [],
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F2",
+   "region": "S10",
+   "moves": [],
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L06",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "siege_engine": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 3,
+   "_phase": "action"
+  },
+  {
+   "faction": "F4",
+   "type": "reconcileSupply",
+   "region": "S08",
+   "unitType": "warship",
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "invaderBid",
+   "amount": 2,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "invaderBid",
+   "amount": 2,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "invaderBid",
+   "amount": 2,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "invaderBid",
+   "amount": 2,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "invaderBid",
+   "amount": 1,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "type": "invaderBid",
+   "faction": "F6",
+   "amount": 1,
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "invaderTieBreak",
+   "chosen": "F4",
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "incursionCard",
+   "card": "F4-4",
+   "_round": 4,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "S03": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L04": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "S02": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L01": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L07": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "P02": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {
+    "L36": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "P04": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L16": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S10": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "P08": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L21": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L22": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L15": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L29": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "S04": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "S12": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "S08": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L31": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "P05": {
+     "type": "support",
+     "mod": 1,
+     "starred": true
+    },
+    "L26": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "S06": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "P06": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L30": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L25": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S05": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S07": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L06": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L10": {
+     "type": "rally",
+     "mod": 0,
+     "starred": true
+    },
+    "L14": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "L38": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S01": {
+     "type": "support",
+     "mod": 1,
+     "starred": true
+    },
+    "S09": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S11": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "type": "courierDecision",
+   "faction": "F6",
+   "decision": "swapOrder",
+   "swap": {
+    "region": "S09",
+    "newOrder": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 4,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "S06",
+   "target": "S04",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F6",
+   "region": "L38",
+   "target": null,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F3",
+   "region": "P08",
+   "target": null,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F1",
+   "region": "P02",
+   "target": null,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "L25",
+   "target": null,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "S07",
+   "moves": [],
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L14",
+   "moves": [
+    {
+     "to": "L36",
+     "units": {
+      "cavalry": 1,
+      "siege_engine": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-2b",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-2a",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "useBlade",
+   "faction": "F6",
+   "use": false,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "retreat",
+   "to": "L16",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L15",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "L01",
+   "moves": [
+    {
+     "to": "L18",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L06",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "siege_engine": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "S11",
+   "side": "attacker",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F3",
+   "type": "chooseLeaderCard",
+   "card": "F3-4",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-1b",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "useBlade",
+   "faction": "F6",
+   "use": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L29",
+   "moves": [
+    {
+     "to": "L30",
+     "units": {
+      "cavalry": 1,
+      "infantry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F4",
+   "type": "declareSupport",
+   "region": "S08",
+   "side": "refuse",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F3",
+   "type": "chooseLeaderCard",
+   "card": "F3-2a",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F5",
+   "type": "chooseLeaderCard",
+   "card": "F5-3",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F5",
+   "type": "retreat",
+   "to": "L28",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "L04",
+   "moves": [
+    {
+     "to": "L05",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "S09",
+   "moves": [
+    {
+     "to": "S10",
+     "units": {
+      "warship": 2
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "S11",
+   "side": "attacker",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-0",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-3",
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "S03",
+   "moves": [],
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F6",
+   "region": "L10",
+   "muster": true,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "muster",
+   "faction": "F6",
+   "region": "L10",
+   "builds": [
+    {
+     "type": "cavalry",
+     "to": "L10"
+    }
+   ],
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F3",
+   "region": "S12",
+   "muster": false,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F2",
+   "region": "L16",
+   "muster": false,
+   "_round": 4,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "reconcileSupply",
+   "region": "L16",
+   "unitType": "infantry",
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "invaderBid",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "invaderBid",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "invaderBid",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "invaderBid",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "invaderBid",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "type": "invaderBid",
+   "faction": "F6",
+   "amount": 0,
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "invaderTieBreak",
+   "chosen": "F6",
+   "_round": 5,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "L18": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L07": {
+     "type": "rally",
+     "mod": 0,
+     "starred": true
+    },
+    "S03": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L01": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L05": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S02": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "P02": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {
+    "L16": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "S12": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S04": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L22": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L30": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L21": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P08": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "S08": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L26": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "L31": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "P05": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "P06": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S05": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L25": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "S07": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L28": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S06": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L10": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L14": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L36": {
+     "type": "march",
+     "mod": 1,
+     "starred": true
+    },
+    "L38": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "S01": {
+     "type": "support",
+     "mod": 1,
+     "starred": true
+    },
+    "S09": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "S10": {
+     "type": "support",
+     "mod": 0,
+     "starred": false
+    },
+    "S11": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    }
+   },
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "type": "courierDecision",
+   "faction": "F6",
+   "decision": "peekThreatDeck",
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "type": "threatPeekPlacement",
+   "faction": "F6",
+   "placement": "top",
+   "_round": 5,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F4",
+   "region": "S08",
+   "target": "L30",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "S06",
+   "target": "S04",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F1",
+   "region": "S03",
+   "target": null,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F4",
+   "region": "P05",
+   "target": null,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "S07",
+   "moves": [],
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L10",
+   "moves": [
+    {
+     "to": "L14",
+     "units": {
+      "cavalry": 2
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "L21",
+   "moves": [
+    {
+     "to": "L18",
+     "units": {
+      "cavalry": 2
+     }
+    }
+   ],
+   "leaveControl": true,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F3",
+   "type": "chooseLeaderCard",
+   "card": "F3-3",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "chooseLeaderCard",
+   "card": "F1-4",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "retreat",
+   "to": "L04",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F2",
+   "region": "L16",
+   "moves": [
+    {
+     "to": "L36",
+     "units": {
+      "cavalry": 2
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "S10",
+   "side": "defender",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-2a",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-1a",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "useBlade",
+   "faction": "F6",
+   "use": true,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "P02",
+   "moves": [],
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L14",
+   "moves": [
+    {
+     "to": "L36",
+     "units": {
+      "siege_engine": 1,
+      "cavalry": 0
+     }
+    },
+    {
+     "to": "L16",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "chooseLeaderCard",
+   "card": "F2-1a",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-0",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "useCardAbility",
+   "use": true,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F2",
+   "type": "retreat",
+   "to": "L17",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "P08",
+   "moves": [],
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L36",
+   "moves": [
+    {
+     "to": "L01",
+     "units": {
+      "cavalry": 0,
+      "siege_engine": 2
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "declareSupport",
+   "region": "S02",
+   "side": "defender",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "L38",
+   "side": "attacker",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "declareSupport",
+   "faction": "F6",
+   "region": "S01",
+   "side": "attacker",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "chooseLeaderCard",
+   "card": "F1-3",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-0",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "retreat",
+   "to": "L05",
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F5",
+   "region": "L25",
+   "muster": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F3",
+   "region": "L22",
+   "muster": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F1",
+   "region": "L07",
+   "muster": true,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "muster",
+   "region": "L07",
+   "builds": [],
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F5",
+   "region": "P06",
+   "muster": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRally",
+   "faction": "F1",
+   "region": "L05",
+   "muster": false,
+   "_round": 5,
+   "_phase": "action"
+  },
+  {
+   "faction": "F4",
+   "type": "eventChoice",
+   "option": "supplyUpdate",
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 2,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "initiative",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "initiative",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bidTieBreak",
+   "track": "initiative",
+   "order": [
+    "F4",
+    "F5",
+    "F1",
+    "F3"
+   ],
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "prowess",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "prowess",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bidTieBreak",
+   "track": "prowess",
+   "order": [
+    "F2",
+    "F4",
+    "F5",
+    "F3"
+   ],
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bidTieBreak",
+   "track": "prowess",
+   "order": [
+    "F1",
+    "F6"
+   ],
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "bid",
+   "track": "command",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "type": "bid",
+   "faction": "F6",
+   "track": "command",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F3",
+   "type": "bid",
+   "track": "command",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F4",
+   "type": "bid",
+   "track": "command",
+   "amount": 0,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F5",
+   "type": "bid",
+   "track": "command",
+   "amount": 1,
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bidTieBreak",
+   "track": "command",
+   "order": [
+    "F2",
+    "F5"
+   ],
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F2",
+   "type": "bidTieBreak",
+   "track": "command",
+   "order": [
+    "F1",
+    "F4",
+    "F3",
+    "F6"
+   ],
+   "_round": 6,
+   "_phase": "event"
+  },
+  {
+   "faction": "F1",
+   "type": "submitOrders",
+   "orders": {
+    "L07": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L04": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "P02": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S02": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L05": {
+     "type": "rally",
+     "mod": 0,
+     "starred": true
+    },
+    "S03": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "submitOrders",
+   "orders": {},
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F3",
+   "type": "submitOrders",
+   "orders": {
+    "L18": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "P08": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "S12": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L22": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L30": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S04": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F4",
+   "type": "submitOrders",
+   "orders": {
+    "S08": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "L26": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    },
+    "L31": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "P05": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    }
+   },
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F5",
+   "type": "submitOrders",
+   "orders": {
+    "L25": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S07": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S06": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "L28": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "P06": {
+     "type": "raid",
+     "mod": 0,
+     "starred": true
+    },
+    "S05": {
+     "type": "defend",
+     "mod": 2,
+     "starred": true
+    }
+   },
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "type": "submitOrders",
+   "faction": "F6",
+   "orders": {
+    "L01": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "L14": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L16": {
+     "type": "march",
+     "mod": 0,
+     "starred": false
+    },
+    "L36": {
+     "type": "rally",
+     "mod": 0,
+     "starred": false
+    },
+    "L38": {
+     "type": "march",
+     "mod": -1,
+     "starred": false
+    },
+    "S01": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    },
+    "S09": {
+     "type": "defend",
+     "mod": 1,
+     "starred": false
+    },
+    "S11": {
+     "type": "raid",
+     "mod": 0,
+     "starred": false
+    }
+   },
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "courierDecision",
+   "decision": "peekThreatDeck",
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "faction": "F2",
+   "type": "threatPeekPlacement",
+   "placement": "bottom",
+   "_round": 6,
+   "_phase": "planning"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F4",
+   "region": "S08",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "L25",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F1",
+   "region": "P02",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F3",
+   "region": "S04",
+   "target": "S03",
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F6",
+   "region": "S01",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F5",
+   "region": "P06",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F3",
+   "region": "L22",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveRaid",
+   "faction": "F6",
+   "region": "S11",
+   "target": null,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F4",
+   "region": "P05",
+   "moves": [],
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F5",
+   "region": "L28",
+   "moves": [
+    {
+     "to": "L21",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F1",
+   "region": "L07",
+   "moves": [
+    {
+     "to": "L01",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "faction": "F1",
+   "type": "chooseLeaderCard",
+   "card": "F1-2b",
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "chooseLeaderCard",
+   "faction": "F6",
+   "card": "F6-2b",
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F3",
+   "region": "P08",
+   "moves": [],
+   "_round": 6,
+   "_phase": "action"
+  },
+  {
+   "type": "resolveMarch",
+   "faction": "F6",
+   "region": "L16",
+   "moves": [
+    {
+     "to": "L15",
+     "units": {
+      "cavalry": 1
+     }
+    }
+   ],
+   "leaveControl": false,
+   "_round": 6,
+   "_phase": "action"
+  }
+ ],
+ "outcome": {
+  "winner": "F6",
+  "round": 6,
+  "phase": "gameOver",
+  "perFaction": {
+   "F1": {
+    "seats": 2,
+    "supply": 1,
+    "authority": 1,
+    "initiative": 4
+   },
+   "F2": {
+    "seats": 0,
+    "supply": 0,
+    "authority": 2,
+    "initiative": 1
+   },
+   "F3": {
+    "seats": 4,
+    "supply": 4,
+    "authority": 3,
+    "initiative": 5
+   },
+   "F4": {
+    "seats": 2,
+    "supply": 0,
+    "authority": 2,
+    "initiative": 2
+   },
+   "F5": {
+    "seats": 3,
+    "supply": 3,
+    "authority": 2,
+    "initiative": 3
+   },
+   "F6": {
+    "seats": 7,
+    "supply": 6,
+    "authority": 0,
+    "initiative": 6
+   }
+  }
+ },
+ "telemetry": {
+  "timings": [
+   {
+    "i": 0,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 635
+   },
+   {
+    "i": 1,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 628
+   },
+   {
+    "i": 2,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 631
+   },
+   {
+    "i": 3,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 630
+   },
+   {
+    "i": 4,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 630
+   },
+   {
+    "i": 5,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 55450
+   },
+   {
+    "i": 6,
+    "type": "courierDecision",
+    "faction": "F2",
+    "thinkMs": 633
+   },
+   {
+    "i": 7,
+    "type": "threatPeekPlacement",
+    "faction": "F2",
+    "thinkMs": 627
+   },
+   {
+    "i": 8,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 642
+   },
+   {
+    "i": 9,
+    "type": "resolveMarch",
+    "faction": "F2",
+    "thinkMs": 630
+   },
+   {
+    "i": 10,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 631
+   },
+   {
+    "i": 11,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 16386
+   },
+   {
+    "i": 12,
+    "type": "resolveMarch",
+    "faction": "F4",
+    "thinkMs": 636
+   },
+   {
+    "i": 13,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 642
+   },
+   {
+    "i": 14,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 8301
+   },
+   {
+    "i": 15,
+    "type": "resolveMarch",
+    "faction": "F4",
+    "thinkMs": 633
+   },
+   {
+    "i": 16,
+    "type": "resolveRally",
+    "faction": "F3",
+    "thinkMs": 628
+   },
+   {
+    "i": 17,
+    "type": "resolveRally",
+    "faction": "F2",
+    "thinkMs": 629
+   },
+   {
+    "i": 18,
+    "type": "muster",
+    "faction": "F2",
+    "thinkMs": 632
+   },
+   {
+    "i": 19,
+    "type": "resolveRally",
+    "faction": "F1",
+    "thinkMs": 626
+   },
+   {
+    "i": 20,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 631
+   },
+   {
+    "i": 21,
+    "type": "resolveRally",
+    "faction": "F6",
+    "thinkMs": 2571
+   },
+   {
+    "i": 22,
+    "type": "resolveRally",
+    "faction": "F4",
+    "thinkMs": 630
+   },
+   {
+    "i": 23,
+    "type": "resolveRally",
+    "faction": "F2",
+    "thinkMs": 628
+   },
+   {
+    "i": 24,
+    "type": "resolveRally",
+    "faction": "F1",
+    "thinkMs": 628
+   },
+   {
+    "i": 25,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 634
+   },
+   {
+    "i": 26,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 629
+   },
+   {
+    "i": 27,
+    "type": "muster",
+    "faction": "F2",
+    "thinkMs": 634
+   },
+   {
+    "i": 28,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 632
+   },
+   {
+    "i": 29,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 632
+   },
+   {
+    "i": 30,
+    "type": "muster",
+    "faction": "F5",
+    "thinkMs": 632
+   },
+   {
+    "i": 31,
+    "type": "muster",
+    "faction": "F5",
+    "thinkMs": 634
+   },
+   {
+    "i": 32,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 14945
+   },
+   {
+    "i": 33,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 25198
+   },
+   {
+    "i": 34,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 11185
+   },
+   {
+    "i": 35,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 14381
+   },
+   {
+    "i": 36,
+    "type": "muster",
+    "faction": "F4",
+    "thinkMs": 631
+   },
+   {
+    "i": 37,
+    "type": "muster",
+    "faction": "F4",
+    "thinkMs": 632
+   },
+   {
+    "i": 38,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 633
+   },
+   {
+    "i": 39,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 632
+   },
+   {
+    "i": 40,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 632
+   },
+   {
+    "i": 41,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 634
+   },
+   {
+    "i": 42,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 632
+   },
+   {
+    "i": 43,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 63808
+   },
+   {
+    "i": 44,
+    "type": "courierDecision",
+    "faction": "F2",
+    "thinkMs": 635
+   },
+   {
+    "i": 45,
+    "type": "threatPeekPlacement",
+    "faction": "F2",
+    "thinkMs": 630
+   },
+   {
+    "i": 46,
+    "type": "resolveRaid",
+    "faction": "F3",
+    "thinkMs": 633
+   },
+   {
+    "i": 47,
+    "type": "resolveRaid",
+    "faction": "F2",
+    "thinkMs": 632
+   },
+   {
+    "i": 48,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 631
+   },
+   {
+    "i": 49,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "thinkMs": 15569
+   },
+   {
+    "i": 50,
+    "type": "resolveRaid",
+    "faction": "F4",
+    "thinkMs": 634
+   },
+   {
+    "i": 51,
+    "type": "resolveRaid",
+    "faction": "F2",
+    "thinkMs": 633
+   },
+   {
+    "i": 52,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 642
+   },
+   {
+    "i": 53,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 637
+   },
+   {
+    "i": 54,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 635
+   },
+   {
+    "i": 55,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 26472
+   },
+   {
+    "i": 56,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 633
+   },
+   {
+    "i": 57,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 17074
+   },
+   {
+    "i": 58,
+    "type": "useBlade",
+    "faction": "F6",
+    "thinkMs": 4279
+   },
+   {
+    "i": 59,
+    "type": "retreat",
+    "faction": "F2",
+    "thinkMs": 631
+   },
+   {
+    "i": 60,
+    "type": "resolveMarch",
+    "faction": "F4",
+    "thinkMs": 639
+   },
+   {
+    "i": 61,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 633
+   },
+   {
+    "i": 62,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 4787
+   },
+   {
+    "i": 63,
+    "type": "resolveRally",
+    "faction": "F2",
+    "thinkMs": 630
+   },
+   {
+    "i": 64,
+    "type": "resolveRally",
+    "faction": "F5",
+    "thinkMs": 633
+   },
+   {
+    "i": 65,
+    "type": "resolveRally",
+    "faction": "F6",
+    "thinkMs": 5347
+   },
+   {
+    "i": 66,
+    "type": "resolveRally",
+    "faction": "F4",
+    "thinkMs": 630
+   },
+   {
+    "i": 67,
+    "type": "resolveRally",
+    "faction": "F6",
+    "thinkMs": 817
+   },
+   {
+    "i": 68,
+    "type": "eventChoice",
+    "faction": "F3",
+    "thinkMs": 631
+   },
+   {
+    "i": 69,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 637
+   },
+   {
+    "i": 70,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 634
+   },
+   {
+    "i": 71,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 634
+   },
+   {
+    "i": 72,
+    "type": "muster",
+    "faction": "F3",
+    "thinkMs": 632
+   },
+   {
+    "i": 73,
+    "type": "muster",
+    "faction": "F2",
+    "thinkMs": 636
+   },
+   {
+    "i": 74,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 638
+   },
+   {
+    "i": 75,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 634
+   },
+   {
+    "i": 76,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 635
+   },
+   {
+    "i": 77,
+    "type": "muster",
+    "faction": "F5",
+    "thinkMs": 633
+   },
+   {
+    "i": 78,
+    "type": "muster",
+    "faction": "F5",
+    "thinkMs": 638
+   },
+   {
+    "i": 79,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 18334
+   },
+   {
+    "i": 80,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 22798
+   },
+   {
+    "i": 81,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 14672
+   },
+   {
+    "i": 82,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 12884
+   },
+   {
+    "i": 83,
+    "type": "muster",
+    "faction": "F4",
+    "thinkMs": 635
+   },
+   {
+    "i": 84,
+    "type": "muster",
+    "faction": "F4",
+    "thinkMs": 633
+   },
+   {
+    "i": 85,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 633
+   },
+   {
+    "i": 86,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 638
+   },
+   {
+    "i": 87,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 635
+   },
+   {
+    "i": 88,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 634
+   },
+   {
+    "i": 89,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 637
+   },
+   {
+    "i": 90,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 8143
+   },
+   {
+    "i": 91,
+    "type": "bidTieBreak",
+    "faction": "F3",
+    "thinkMs": 635
+   },
+   {
+    "i": 92,
+    "type": "bidTieBreak",
+    "faction": "F3",
+    "thinkMs": 632
+   },
+   {
+    "i": 93,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 632
+   },
+   {
+    "i": 94,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 636
+   },
+   {
+    "i": 95,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 634
+   },
+   {
+    "i": 96,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 638
+   },
+   {
+    "i": 97,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 634
+   },
+   {
+    "i": 98,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 12893
+   },
+   {
+    "i": 99,
+    "type": "bidTieBreak",
+    "faction": "F4",
+    "thinkMs": 636
+   },
+   {
+    "i": 100,
+    "type": "bidTieBreak",
+    "faction": "F4",
+    "thinkMs": 637
+   },
+   {
+    "i": 101,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 633
+   },
+   {
+    "i": 102,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 636
+   },
+   {
+    "i": 103,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 635
+   },
+   {
+    "i": 104,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 633
+   },
+   {
+    "i": 105,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 658
+   },
+   {
+    "i": 106,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 3938
+   },
+   {
+    "i": 107,
+    "type": "bidTieBreak",
+    "faction": "F4",
+    "thinkMs": 640
+   },
+   {
+    "i": 108,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 636
+   },
+   {
+    "i": 109,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 635
+   },
+   {
+    "i": 110,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 641
+   },
+   {
+    "i": 111,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 637
+   },
+   {
+    "i": 112,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 637
+   },
+   {
+    "i": 113,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 102848
+   },
+   {
+    "i": 114,
+    "type": "courierDecision",
+    "faction": "F6",
+    "thinkMs": 13857
+   },
+   {
+    "i": 115,
+    "type": "resolveRaid",
+    "faction": "F4",
+    "thinkMs": 636
+   },
+   {
+    "i": 116,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 639
+   },
+   {
+    "i": 117,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "thinkMs": 5472
+   },
+   {
+    "i": 118,
+    "type": "resolveRaid",
+    "faction": "F3",
+    "thinkMs": 635
+   },
+   {
+    "i": 119,
+    "type": "resolveRaid",
+    "faction": "F1",
+    "thinkMs": 637
+   },
+   {
+    "i": 120,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 637
+   },
+   {
+    "i": 121,
+    "type": "resolveMarch",
+    "faction": "F4",
+    "thinkMs": 642
+   },
+   {
+    "i": 122,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 644
+   },
+   {
+    "i": 123,
+    "type": "chooseLeaderCard",
+    "faction": "F5",
+    "thinkMs": 633
+   },
+   {
+    "i": 124,
+    "type": "chooseLeaderCard",
+    "faction": "F4",
+    "thinkMs": 637
+   },
+   {
+    "i": 125,
+    "type": "retreat",
+    "faction": "F4",
+    "thinkMs": 639
+   },
+   {
+    "i": 126,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 43440
+   },
+   {
+    "i": 127,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 645
+   },
+   {
+    "i": 128,
+    "type": "resolveMarch",
+    "faction": "F2",
+    "thinkMs": 643
+   },
+   {
+    "i": 129,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 12194
+   },
+   {
+    "i": 130,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 636
+   },
+   {
+    "i": 131,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 29918
+   },
+   {
+    "i": 132,
+    "type": "useBlade",
+    "faction": "F6",
+    "thinkMs": 2131
+   },
+   {
+    "i": 133,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 640
+   },
+   {
+    "i": 134,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 174793
+   },
+   {
+    "i": 135,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 644
+   },
+   {
+    "i": 136,
+    "type": "resolveMarch",
+    "faction": "F2",
+    "thinkMs": 638
+   },
+   {
+    "i": 137,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 65494
+   },
+   {
+    "i": 138,
+    "type": "reconcileSupply",
+    "faction": "F4",
+    "thinkMs": 642
+   },
+   {
+    "i": 139,
+    "type": "invaderBid",
+    "faction": "F1",
+    "thinkMs": 644
+   },
+   {
+    "i": 140,
+    "type": "invaderBid",
+    "faction": "F2",
+    "thinkMs": 639
+   },
+   {
+    "i": 141,
+    "type": "invaderBid",
+    "faction": "F3",
+    "thinkMs": 637
+   },
+   {
+    "i": 142,
+    "type": "invaderBid",
+    "faction": "F4",
+    "thinkMs": 641
+   },
+   {
+    "i": 143,
+    "type": "invaderBid",
+    "faction": "F5",
+    "thinkMs": 636
+   },
+   {
+    "i": 144,
+    "type": "invaderBid",
+    "faction": "F6",
+    "thinkMs": 14908
+   },
+   {
+    "i": 145,
+    "type": "invaderTieBreak",
+    "faction": "F4",
+    "thinkMs": 639
+   },
+   {
+    "i": 146,
+    "type": "incursionCard",
+    "faction": "F4",
+    "thinkMs": 637
+   },
+   {
+    "i": 147,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 645
+   },
+   {
+    "i": 148,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 636
+   },
+   {
+    "i": 149,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 639
+   },
+   {
+    "i": 150,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 641
+   },
+   {
+    "i": 151,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 643
+   },
+   {
+    "i": 152,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 97755
+   },
+   {
+    "i": 153,
+    "type": "courierDecision",
+    "faction": "F6",
+    "thinkMs": 75815
+   },
+   {
+    "i": 154,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 638
+   },
+   {
+    "i": 155,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "thinkMs": 48859
+   },
+   {
+    "i": 156,
+    "type": "resolveRaid",
+    "faction": "F3",
+    "thinkMs": 638
+   },
+   {
+    "i": 157,
+    "type": "resolveRaid",
+    "faction": "F1",
+    "thinkMs": 640
+   },
+   {
+    "i": 158,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 638
+   },
+   {
+    "i": 159,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 646
+   },
+   {
+    "i": 160,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 17879
+   },
+   {
+    "i": 161,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 162,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 18694
+   },
+   {
+    "i": 163,
+    "type": "useBlade",
+    "faction": "F6",
+    "thinkMs": 3287
+   },
+   {
+    "i": 164,
+    "type": "retreat",
+    "faction": "F2",
+    "thinkMs": 633
+   },
+   {
+    "i": 165,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 648
+   },
+   {
+    "i": 166,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 660
+   },
+   {
+    "i": 167,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 23605
+   },
+   {
+    "i": 168,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 9474
+   },
+   {
+    "i": 169,
+    "type": "chooseLeaderCard",
+    "faction": "F3",
+    "thinkMs": 629
+   },
+   {
+    "i": 170,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 4068
+   },
+   {
+    "i": 171,
+    "type": "useBlade",
+    "faction": "F6",
+    "thinkMs": 5256
+   },
+   {
+    "i": 172,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 633
+   },
+   {
+    "i": 173,
+    "type": "declareSupport",
+    "faction": "F4",
+    "thinkMs": 636
+   },
+   {
+    "i": 174,
+    "type": "chooseLeaderCard",
+    "faction": "F3",
+    "thinkMs": 638
+   },
+   {
+    "i": 175,
+    "type": "chooseLeaderCard",
+    "faction": "F5",
+    "thinkMs": 640
+   },
+   {
+    "i": 176,
+    "type": "retreat",
+    "faction": "F5",
+    "thinkMs": 637
+   },
+   {
+    "i": 177,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 658
+   },
+   {
+    "i": 178,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 15445
+   },
+   {
+    "i": 179,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 5696
+   },
+   {
+    "i": 180,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 181,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 1341
+   },
+   {
+    "i": 182,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 646
+   },
+   {
+    "i": 183,
+    "type": "resolveRally",
+    "faction": "F6",
+    "thinkMs": 112570
+   },
+   {
+    "i": 184,
+    "type": "muster",
+    "faction": "F6",
+    "thinkMs": 7314
+   },
+   {
+    "i": 185,
+    "type": "resolveRally",
+    "faction": "F3",
+    "thinkMs": 634
+   },
+   {
+    "i": 186,
+    "type": "resolveRally",
+    "faction": "F2",
+    "thinkMs": 637
+   },
+   {
+    "i": 187,
+    "type": "reconcileSupply",
+    "faction": "F2",
+    "thinkMs": 638
+   },
+   {
+    "i": 188,
+    "type": "invaderBid",
+    "faction": "F1",
+    "thinkMs": 638
+   },
+   {
+    "i": 189,
+    "type": "invaderBid",
+    "faction": "F2",
+    "thinkMs": 642
+   },
+   {
+    "i": 190,
+    "type": "invaderBid",
+    "faction": "F3",
+    "thinkMs": 639
+   },
+   {
+    "i": 191,
+    "type": "invaderBid",
+    "faction": "F4",
+    "thinkMs": 637
+   },
+   {
+    "i": 192,
+    "type": "invaderBid",
+    "faction": "F5",
+    "thinkMs": 641
+   },
+   {
+    "i": 193,
+    "type": "invaderBid",
+    "faction": "F6",
+    "thinkMs": 21123
+   },
+   {
+    "i": 194,
+    "type": "invaderTieBreak",
+    "faction": "F4",
+    "thinkMs": 640
+   },
+   {
+    "i": 195,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 643
+   },
+   {
+    "i": 196,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 197,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 638
+   },
+   {
+    "i": 198,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 639
+   },
+   {
+    "i": 199,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 647
+   },
+   {
+    "i": 200,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 144981
+   },
+   {
+    "i": 201,
+    "type": "courierDecision",
+    "faction": "F6",
+    "thinkMs": 192871
+   },
+   {
+    "i": 202,
+    "type": "threatPeekPlacement",
+    "faction": "F6",
+    "thinkMs": 7027
+   },
+   {
+    "i": 203,
+    "type": "resolveRaid",
+    "faction": "F4",
+    "thinkMs": 640
+   },
+   {
+    "i": 204,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 641
+   },
+   {
+    "i": 205,
+    "type": "resolveRaid",
+    "faction": "F1",
+    "thinkMs": 640
+   },
+   {
+    "i": 206,
+    "type": "resolveRaid",
+    "faction": "F4",
+    "thinkMs": 639
+   },
+   {
+    "i": 207,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 649
+   },
+   {
+    "i": 208,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 92843
+   },
+   {
+    "i": 209,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 651
+   },
+   {
+    "i": 210,
+    "type": "chooseLeaderCard",
+    "faction": "F3",
+    "thinkMs": 637
+   },
+   {
+    "i": 211,
+    "type": "chooseLeaderCard",
+    "faction": "F1",
+    "thinkMs": 642
+   },
+   {
+    "i": 212,
+    "type": "retreat",
+    "faction": "F1",
+    "thinkMs": 659
+   },
+   {
+    "i": 213,
+    "type": "resolveMarch",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 214,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 20698
+   },
+   {
+    "i": 215,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 643
+   },
+   {
+    "i": 216,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 8254
+   },
+   {
+    "i": 217,
+    "type": "useBlade",
+    "faction": "F6",
+    "thinkMs": 4128
+   },
+   {
+    "i": 218,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 637
+   },
+   {
+    "i": 219,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 65231
+   },
+   {
+    "i": 220,
+    "type": "chooseLeaderCard",
+    "faction": "F2",
+    "thinkMs": 638
+   },
+   {
+    "i": 221,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 3125
+   },
+   {
+    "i": 222,
+    "type": "useCardAbility",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 223,
+    "type": "retreat",
+    "faction": "F2",
+    "thinkMs": 639
+   },
+   {
+    "i": 224,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 640
+   },
+   {
+    "i": 225,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 20269
+   },
+   {
+    "i": 226,
+    "type": "declareSupport",
+    "faction": "F1",
+    "thinkMs": 670
+   },
+   {
+    "i": 227,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 8550
+   },
+   {
+    "i": 228,
+    "type": "declareSupport",
+    "faction": "F6",
+    "thinkMs": 14208
+   },
+   {
+    "i": 229,
+    "type": "chooseLeaderCard",
+    "faction": "F1",
+    "thinkMs": 635
+   },
+   {
+    "i": 230,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 53801
+   },
+   {
+    "i": 231,
+    "type": "retreat",
+    "faction": "F1",
+    "thinkMs": 642
+   },
+   {
+    "i": 232,
+    "type": "resolveRally",
+    "faction": "F5",
+    "thinkMs": 639
+   },
+   {
+    "i": 233,
+    "type": "resolveRally",
+    "faction": "F3",
+    "thinkMs": 638
+   },
+   {
+    "i": 234,
+    "type": "resolveRally",
+    "faction": "F1",
+    "thinkMs": 639
+   },
+   {
+    "i": 235,
+    "type": "muster",
+    "faction": "F1",
+    "thinkMs": 646
+   },
+   {
+    "i": 236,
+    "type": "resolveRally",
+    "faction": "F5",
+    "thinkMs": 640
+   },
+   {
+    "i": 237,
+    "type": "resolveRally",
+    "faction": "F1",
+    "thinkMs": 640
+   },
+   {
+    "i": 238,
+    "type": "eventChoice",
+    "faction": "F4",
+    "thinkMs": 642
+   },
+   {
+    "i": 239,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 642
+   },
+   {
+    "i": 240,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 639
+   },
+   {
+    "i": 241,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 641
+   },
+   {
+    "i": 242,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 644
+   },
+   {
+    "i": 243,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 640
+   },
+   {
+    "i": 244,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 22090
+   },
+   {
+    "i": 245,
+    "type": "bidTieBreak",
+    "faction": "F4",
+    "thinkMs": 641
+   },
+   {
+    "i": 246,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 640
+   },
+   {
+    "i": 247,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 639
+   },
+   {
+    "i": 248,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 66
+   },
+   {
+    "i": 249,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 616
+   },
+   {
+    "i": 250,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 640
+   },
+   {
+    "i": 251,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 639
+   },
+   {
+    "i": 252,
+    "type": "bidTieBreak",
+    "faction": "F2",
+    "thinkMs": 644
+   },
+   {
+    "i": 253,
+    "type": "bidTieBreak",
+    "faction": "F2",
+    "thinkMs": 637
+   },
+   {
+    "i": 254,
+    "type": "bid",
+    "faction": "F1",
+    "thinkMs": 639
+   },
+   {
+    "i": 255,
+    "type": "bid",
+    "faction": "F6",
+    "thinkMs": 480
+   },
+   {
+    "i": 256,
+    "type": "bid",
+    "faction": "F2",
+    "thinkMs": 641
+   },
+   {
+    "i": 257,
+    "type": "bid",
+    "faction": "F3",
+    "thinkMs": 639
+   },
+   {
+    "i": 258,
+    "type": "bid",
+    "faction": "F4",
+    "thinkMs": 636
+   },
+   {
+    "i": 259,
+    "type": "bid",
+    "faction": "F5",
+    "thinkMs": 636
+   },
+   {
+    "i": 260,
+    "type": "bidTieBreak",
+    "faction": "F2",
+    "thinkMs": 642
+   },
+   {
+    "i": 261,
+    "type": "bidTieBreak",
+    "faction": "F2",
+    "thinkMs": 637
+   },
+   {
+    "i": 262,
+    "type": "submitOrders",
+    "faction": "F1",
+    "thinkMs": 643
+   },
+   {
+    "i": 263,
+    "type": "submitOrders",
+    "faction": "F2",
+    "thinkMs": 644
+   },
+   {
+    "i": 264,
+    "type": "submitOrders",
+    "faction": "F3",
+    "thinkMs": 636
+   },
+   {
+    "i": 265,
+    "type": "submitOrders",
+    "faction": "F4",
+    "thinkMs": 641
+   },
+   {
+    "i": 266,
+    "type": "submitOrders",
+    "faction": "F5",
+    "thinkMs": 644
+   },
+   {
+    "i": 267,
+    "type": "submitOrders",
+    "faction": "F6",
+    "thinkMs": 161972
+   },
+   {
+    "i": 268,
+    "type": "courierDecision",
+    "faction": "F2",
+    "thinkMs": 648
+   },
+   {
+    "i": 269,
+    "type": "threatPeekPlacement",
+    "faction": "F2",
+    "thinkMs": 643
+   },
+   {
+    "i": 270,
+    "type": "resolveRaid",
+    "faction": "F4",
+    "thinkMs": 641
+   },
+   {
+    "i": 271,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 639
+   },
+   {
+    "i": 272,
+    "type": "resolveRaid",
+    "faction": "F1",
+    "thinkMs": 624
+   },
+   {
+    "i": 273,
+    "type": "resolveRaid",
+    "faction": "F3",
+    "thinkMs": 636
+   },
+   {
+    "i": 274,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "thinkMs": 11233
+   },
+   {
+    "i": 275,
+    "type": "resolveRaid",
+    "faction": "F5",
+    "thinkMs": 644
+   },
+   {
+    "i": 276,
+    "type": "resolveRaid",
+    "faction": "F3",
+    "thinkMs": 639
+   },
+   {
+    "i": 277,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "thinkMs": 1460
+   },
+   {
+    "i": 278,
+    "type": "resolveMarch",
+    "faction": "F4",
+    "thinkMs": 646
+   },
+   {
+    "i": 279,
+    "type": "resolveMarch",
+    "faction": "F5",
+    "thinkMs": 657
+   },
+   {
+    "i": 280,
+    "type": "resolveMarch",
+    "faction": "F1",
+    "thinkMs": 648
+   },
+   {
+    "i": 281,
+    "type": "chooseLeaderCard",
+    "faction": "F1",
+    "thinkMs": 638
+   },
+   {
+    "i": 282,
+    "type": "chooseLeaderCard",
+    "faction": "F6",
+    "thinkMs": 43661
+   },
+   {
+    "i": 283,
+    "type": "resolveMarch",
+    "faction": "F3",
+    "thinkMs": 648
+   },
+   {
+    "i": 284,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "thinkMs": 33222
+   }
+  ],
+  "undos": [
+   {
+    "atAction": 132,
+    "undone": {
+     "type": "useBlade",
+     "faction": "F6"
+    }
+   }
+  ],
+  "rejections": [
+   {
+    "atAction": 80,
+    "type": "muster",
+    "faction": "F6",
+    "error": "Muster would break supply at S11 (Rules p.9)",
+    "thinkMs": 15817
+   },
+   {
+    "atAction": 81,
+    "type": "muster",
+    "faction": "F6",
+    "error": "Muster would break supply at L14 (Rules p.9)",
+    "thinkMs": 8165
+   },
+   {
+    "atAction": 82,
+    "type": "muster",
+    "faction": "F6",
+    "error": "Unit pool exhausted for warship (6 total)",
+    "thinkMs": 9338
+   },
+   {
+    "atAction": 134,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "error": "F6 army of 3 exceeds supply-2 limits [3,2,2] (Rules p.8)",
+    "thinkMs": 102161
+   },
+   {
+    "atAction": 134,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "error": "F6 army of 3 exceeds supply-2 limits [3,2,2] (Rules p.8)",
+    "thinkMs": 111910
+   },
+   {
+    "atAction": 134,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "error": "F6 army of 3 exceeds supply-2 limits [3,2,2] (Rules p.8)",
+    "thinkMs": 136851
+   },
+   {
+    "atAction": 137,
+    "type": "resolveMarch",
+    "faction": "F6",
+    "error": "F6 army of 3 exceeds supply-2 limits [3,2,2] (Rules p.8)",
+    "thinkMs": 61513
+   },
+   {
+    "atAction": 155,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "error": "A land raid cannot reach S02 (Rules p.14, p.25)",
+    "thinkMs": 37225
+   },
+   {
+    "atAction": 155,
+    "type": "resolveRaid",
+    "faction": "F6",
+    "error": "Raids cannot remove march orders (Rules p.14, p.22)",
+    "thinkMs": 40609
+   }
+  ]
+ }
+}

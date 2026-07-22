@@ -19,7 +19,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e3';
+export const BUILD_ID = 'm3e6';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -135,6 +135,7 @@ function toggleSpectate(onOff) {
   if (!spectate.on) botPump(); // mixed games resume when spectate ends (M3.c)
 }
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
+import { armiesOf } from '../engine/actionPhase.js';
 import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
@@ -316,7 +317,8 @@ const posOf = rid => {
     injectIcons(); ids are stable, so this never cares which theme is live.
     currentColor = the faction tint; symbol-internal details use var(--ink). */
 function unitGlyph(u, x, y) {
-  const use = el('use', { x: x - 9, y: y - 9, width: 18, height: 18, class: 'unit-ic' });
+  // UI item 4 (owner, Jul 2026): ~2x — phone-legible silhouettes.
+  const use = el('use', { x: x - 15, y: y - 15, width: 30, height: 30, class: 'unit-ic' });
   use.setAttribute('href', `#i-unit-${u.type}`);
   use.style.color = fColor(u.faction);
   if (u.routed) use.setAttribute('opacity', '0.45');
@@ -440,9 +442,11 @@ function overlayState(svg) {
   for (const [rid, units] of Object.entries(shown().unitsByRegion)) {
     const { x, y } = posOf(rid);
     const isPort = region(rid).kind === 'port';
-    const step = 15, x0 = x - ((units.length - 1) * step) / 2;
+    const step = 22, x0 = x - ((units.length - 1) * step) / 2;
     // Port clusters hug the diamond so harbors read as occupied (owner P2).
-    units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - (isPort ? 19 : 32))));
+    // Item 4: the unit row rides higher so the bigger silhouettes never
+    // touch the (also bigger) fort marks or the order badge lane.
+    units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - (isPort ? 26 : 46))));
   }
   const staged = (ui.mode === 'planning' && ui.assignments) ? ui.assignments : null;
   const stagedFor = staged ? visibleQueries()[Math.min(ui.activeQuery ?? 0, Math.max(0, visibleQueries().length - 1))]?.faction : null;
@@ -499,7 +503,9 @@ function overlayState(svg) {
 function drawOrderBadge(g, rid, o, cls) {
   const { x, y } = posOf(rid);
   const isPort = region(rid).kind === 'port';
-  const bx = isPort ? x : x - 34, by = isPort ? y + 16 : y - 19;
+  // Item 7 (owner overlap repro, Oslo/S11): port badges step OUT from the
+  // diamond so they never stack on the anchor or a neighboring sea badge.
+  const bx = isPort ? x + 22 : x - 34, by = isPort ? y + 20 : y - 19;
   const back = cls.includes('ov-order-back');
   const square = (ICON_SETS[theme.visuals?.unitIcons]?.token || 'circle') === 'square';
   const frame = square
@@ -527,7 +533,11 @@ function tintForts() {
     const u = rg.querySelector('use.ic-fort');
     if (!u) continue;
     const c = controllerOf(shown(), rg.dataset.id);
-    u.style.color = c ? fColor(c) : 'var(--brass)';
+    // Item 8 (owner, Jul 2026): claimed vs vacant must read at phone size —
+    // vacant marks go dim-gray DASHED; claimed go faction-colored and bold.
+    u.style.color = c ? fColor(c) : 'var(--bone-dim)';
+    u.classList.toggle('fort-owned', !!c);
+    u.classList.toggle('fort-vacant', !c);
   }
 }
 
@@ -655,6 +665,17 @@ function scanForStage() {
   const fresh = shown().log.slice(stageState.seen);
   stageState.seen = shown().log.length;
   if (stageState.quiet) return;
+  // UI item 2b (owner postmortem, m3e5): a cancel is a HEADLINE beat. When
+  // one lands — always in table mode, and on the human's card in mixed —
+  // it gets its own stage card. Never again shall a Tyrion pass unnoticed.
+  const cancel = fresh.find(e => e.event === 'cardCanceled' &&
+    (!mixed.human || e.faction === mixed.human || (shown().combat && (shown().combat.attacker === mixed.human || shown().combat.defender === mixed.human))));
+  if (cancel) {
+    stageState.alert = {
+      title: '⚡ Card canceled!',
+      lines: [logLine(cancel), `${fName(cancel.faction)} fights this battle cardless — the canceled card returns to hand (no discard, no deck refresh).`],
+    };
+  }
   const beganAt = fresh.findIndex(e => e.event === 'eventPhaseBegan');
   if (beganAt === -1) return;
   const slice = fresh.slice(beganAt);
@@ -667,6 +688,17 @@ function scanForStage() {
 }
 
 function renderBatchCard(stageEl) {
+  if (stageState.alert) {
+    const a = stageState.alert;
+    stageEl.innerHTML = `<div class="stage-card stage-alert">
+      <div class="stage-head"><span class="stage-title">${esc(a.title)}</span></div>
+      <div class="stage-lines">${a.lines.map(l => `<div>${l}</div>`).join('')}</div>
+      <button class="stage-ok" data-stage-ok>Continue</button></div>`;
+    stageEl.querySelector('[data-stage-ok]').addEventListener('click', () => {
+      stageState.alert = null; renderTurnPanel();
+    });
+    return;
+  }
   if (!stageState.batch) { stageEl.innerHTML = ''; return; }
   const b = stageState.batch;
   stageEl.innerHTML = `<div class="stage-card">
@@ -688,6 +720,22 @@ function renderBatchCard(stageEl) {
 // Mid-decision reference: any seat's hand, discard, and vitals, without
 // leaving the stage. Table mode renders full state by design (contract §4);
 // mixed human/bot games (M3.c) will scope this to viewFor.
+
+/** UI item 3 (owner, repeated): the supply ladder, readable at a glance —
+    "supply 2 · 3/3 2/2 —/2" = armies (sorted desc) against their limits. */
+function supplyLadder(f) {
+  const lvl = shown().supply[f] ?? 0;
+  const limits = SETUP.supplyLimits[lvl] || [];
+  const armies = armiesOf(shown(), f).sort((a, b) => b - a);
+  const cells = limits.map((cap, i) => {
+    const have = armies[i];
+    const over = have > cap;
+    return `<span class="ladder-cell${over ? ' over' : ''}">${have ?? '—'}/${cap}</span>`;
+  });
+  const extra = armies.slice(limits.length).map(a => `<span class="ladder-cell over">${a}/✗</span>`);
+  return `<span class="ladder" title="armies vs supply limits">${cells.concat(extra).join(' ')}</span>`;
+}
+
 function renderInspector() {
   const el = $('#inspector-body');
   if (!el || !shown()) return;
@@ -698,7 +746,7 @@ function renderInspector() {
     <div class="insp-chips">${shown().factions.map(x =>
       `<button class="insp-chip ${x === f ? 'on' : ''}" data-insp="${x}" style="border-left:3px solid ${fColor(x)}">${fGlyph(x)}</button>`).join('')}</div>
     <div class="insp-stats">${fGlyph(f)} <b>${esc(fName(f))}</b> ·
-      ${pic('i-fort-castle')}${seatsControlled(shown(), f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]} supply ·
+      ${pic('i-fort-castle')}${seatsControlled(shown(), f)} seats · ${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]} supply ${supplyLadder(f)} ·
       ${pic('i-coin')}${shown().authority[f]} ${esc(theme.terms.authority)} ·
       ${esc(theme.terms.threat || 'threat')} ${shown().threat}/12</div>
     <div class="insp-cards">${hand.map(id => cardChip(id, { withText: false })).join('') || '<span class="dim">no cards in hand</span>'}</div>
@@ -824,6 +872,7 @@ function musterForm(q) {
   const staged = ui.musterBuilds || [];
   const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
   const left = q.points - spent;
+  const ladderHint = `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[q.faction]} · ${supplyLadder(q.faction)}</div>`;
   const port = PORTS.find(pp => pp.landId === q.region);
   // Offer only destinations the engine will accept: seas holding another
   // faction's ships are closed to mustering (Rules p.25 — owner P1, Jul 2026).
@@ -920,7 +969,7 @@ function incursionUnitsForm(q) {
       Object.entries(types).map(([t, n]) => {
         const c = chosenHere(t);
         const disabled = picks.length >= q.count || c >= n || (lockRegion && lockRegion !== rid);
-        return `<button class="opt" data-incpick='${JSON.stringify({ region: rid, type: t })}' ${disabled ? 'disabled' : ''}>` +
+        return `${ladderHint}<button class="opt" data-incpick='${JSON.stringify({ region: rid, type: t })}' ${disabled ? 'disabled' : ''}>` +
           `${incUnitLabel(q.purpose)} ${esc(unitName(t) || t)}${c ? ` <b>×${c}</b>` : ''} <span class="dim">(${n})</span></button>`;
       }).join(' ') + `</div>`);
   }
@@ -1019,7 +1068,18 @@ function casualtyForm(q) {
 
 function abilityForm(q) {
   const cost = q.cost ? ` (costs ${q.cost} ${esc(theme.terms.authority)})` : '';
-  return `<p>${fGlyph(q.faction)} ${cardChip(q.card)}</p>
+  // UI item 2a (owner, Jul 2026): a cancel decision without the opponent's
+  // revealed card is a blind decision. Show both sides of the table.
+  const c = shown()?.combat;
+  let theirs = '';
+  if (c) {
+    const opp = q.faction === c.attacker ? c.defender : c.attacker;
+    const oppCard = c.cards?.[opp];
+    if (oppCard && typeof oppCard === 'string') {
+      theirs = `<div class="opp-card"><span class="dim">their revealed card:</span> ${fGlyph(opp)} ${cardChip(oppCard)}</div>`;
+    }
+  }
+  return `<p>${fGlyph(q.faction)} ${cardChip(q.card)}</p>${theirs}
     <p>Invoke the ability${esc(cost)}?</p>
     <div class="btn-col">
       <button data-ability="1">Use it</button>
@@ -1069,7 +1129,12 @@ function planningForm(q) {
   html += `</div>`;
   if (ui.awaitTokenFor) {
     const banned = shown().roundFlags.bannedOrders || [];
-    html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div><div class="token-grid">` + remaining.map((t, i) => {
+    html += `<div class="sec-label sec-orders">Orders — assign to ${esc(rName(ui.awaitTokenFor))}</div>`;
+    // UI item 5 (owner trap, Jul 2026): a spent pool must never lock a plan.
+    if (ui.assignments[ui.awaitTokenFor]) {
+      html += `<button class="ghost" id="tok-clear">✕ Clear this order (return the token)</button>`;
+    }
+    html += `<div class="token-grid">` + remaining.map((t, i) => {
       const ban = banned.length && orderClasses(t).find(c => banned.includes(c));
       return `<button class="token" data-tok="${i}" ${ban || (t.starred && stars >= limit) ? 'disabled' : ''}
         ${ban ? `title="forbidden this round (event card)"` : ''}>
@@ -1182,7 +1247,13 @@ function marchForm(q) {
   html += `<button data-adddest ${ui.awaitDest ? 'class="picking"' : ''}>${ui.awaitDest ? 'Tap a destination on the map…' : '+ Add destination'}</button>`;
   const wouldVacate = Object.keys(avail).every(t => (committed[t] || 0) >= avail[t]) && Object.keys(avail).length > 0;
   if (wouldVacate && byId[ui.region].kind === 'land' && byId[ui.region].home !== q.faction) {
-    html += `<label class="toggle-label"><input type="checkbox" id="leave-control" ${ui.leaveControl ? 'checked' : ''}>
+    // UI item 6 (owner, Jul 2026): the marker matters only when this march
+    // VACATES ground you control — every unit leaving, your flag at stake.
+    const _mineHere = (shown().unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction && !u.routed).length;
+    const _leaving = ui.moves.reduce((a, mv) => a + Object.values(mv.units).reduce((x, y) => x + y, 0), 0);
+    const _showLC = _leaving >= _mineHere && controllerOf(shown(), ui.region) === q.faction;
+    html += `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[q.faction]} · ${supplyLadder(q.faction)}</div>`;
+    if (_showLC) html += `<label class="toggle-label"><input type="checkbox" id="leave-control" ${ui.leaveControl ? 'checked' : ''}>
       Leave a control marker (1 ${esc(theme.terms.authority)})</label>`;
   }
   html += `<button class="primary" id="do-march">Resolve march</button>`;
@@ -1368,6 +1439,11 @@ function bindForm(panel, q) {
     return;
   }
 
+  panel.querySelector('#tok-clear')?.addEventListener('click', () => {
+    ui.assignments[ui.awaitTokenFor] = null;
+    ui.awaitTokenFor = undefined;
+    renderTurnPanel();
+  });
   panel.querySelector('#do-submit')?.addEventListener('click', () =>
     dispatch({ type: 'submitOrders', faction: q.faction,
       orders: Object.fromEntries(Object.entries(ui.assignments).filter(([, o]) => o)) }));
@@ -1573,10 +1649,19 @@ function logLine(e) {
   }
 }
 
+// UI item 1 (owner, repeated twice): the Chronicle yields the phone screen.
+// Collapsed by default on narrow viewports — last few lines visible, one tap
+// to open the full scroll. Desktop keeps the old behavior.
+let logCollapsed = (typeof window !== 'undefined' && window.innerWidth < 700);
 function renderLog() {
   const box = $('#log');
-  box.innerHTML = shown().log.map(logLine).filter(Boolean).map(l => `<div>${l}</div>`).join('');
+  const lines = shown().log.map(logLine).filter(Boolean);
+  const shownLines = logCollapsed ? lines.slice(-3) : lines;
+  box.classList.toggle('collapsed', logCollapsed);
+  box.innerHTML = shownLines.map(l => `<div>${l}</div>`).join('');
   box.scrollTop = box.scrollHeight;
+  const t = $('#log-toggle');
+  if (t) t.textContent = logCollapsed ? `▸ ${lines.length}` : '▾';
 }
 
 // ---------- top-level render ----------
@@ -1672,6 +1757,7 @@ function init() {
     if (raw && Number.isFinite(+raw)) newGame(+raw);
   });
   $('#btn-undo').addEventListener('click', undo);
+  $('#log-toggle')?.addEventListener('click', () => { logCollapsed = !logCollapsed; renderLog(); });
   $('#btn-spectate')?.addEventListener('click', () => toggleSpectate());
   $('#spectate-speed')?.addEventListener('input', () => { if (spectate.on) toggleSpectate(true); });
   $('#zoom-in')?.addEventListener('click', () => cameraZoomBy($('#map'), 1.35));

@@ -548,3 +548,23 @@ tests.push(
     ok(!r.ordersByRegion['L14'], 'the rally is torn off the board');
   }},
 );
+
+tests.push(
+  { name: 'ROUTED DEFENDERS: marching onto routed-only enemies still BEGINS COMBAT, and they fight at strength 0 (owner report; Rules p.20)', fn() {
+    const s = stage({
+      strip: ['L04', 'L05'],
+      plants: {
+        L04: [['F1', 'infantry', true], ['F1', 'infantry', true]], // routed pair
+        L05: [['F2', 'infantry'], ['F2', 'infantry']],
+      },
+      orders: { F2: { L05: M(0) } },
+    });
+    // plants helper may not carry the routed flag — force it explicitly:
+    for (const u of s.unitsByRegion['L04']) if (u.faction === 'F1') u.routed = true;
+    const r = applyAction(driveToMarch(s, 'F2', 'L05'),
+      { type: 'resolveMarch', faction: 'F2', region: 'L05', moves: [{ to: 'L04', units: { infantry: 2 } }] }).state;
+    ok(r.combat && r.combat.region === 'L04', 'a battle begins even against the broken');
+    const str = combatStrengths(r);
+    eq(str.defender ?? str.def ?? 0, 0, 'routed defenders contribute nothing');
+  }},
+);

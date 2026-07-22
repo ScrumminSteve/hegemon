@@ -114,3 +114,16 @@ if (!skipped) tests.push(
     ok(faces === 0, `no order FACE is visible before the reveal (got ${faces})`);
   }},
 );
+
+if (!skipped) tests.push(
+  { name: 'm3e6 UI sprint smoke: chronicle toggle exists, fort marks carry owned/vacant classes, unit silhouettes are phone-size', fn() {
+    const doc = dom.window.document;
+    ok(doc.querySelector('#log-toggle'), 'chronicle toggle present');
+    const forts = doc.querySelectorAll('#map use.ic-fort');
+    ok(forts.length > 0, 'fort marks placed');
+    ok([...forts].every(f => f.classList.contains('fort-owned') || f.classList.contains('fort-vacant')),
+      'every pentagon declares owned or vacant');
+    const u = doc.querySelector('#map .unit-ic');
+    ok(u && u.getAttribute('width') === '30', 'unit silhouettes at 30px');
+  }},
+);

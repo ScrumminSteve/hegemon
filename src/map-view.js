@@ -298,7 +298,9 @@ export function renderMap(svg, theme, { onSelect } = {}) {
       if (r.muster > 0) {
         // M2.f.3 — themed seat marks: castle (muster 1) vs citadel (muster 2),
         // distinguishable at a glance (owner request). Replaces the interim ring.
-        const fort = svgEl('use', { x: r.x + 12, y: r.y - 46, width: 21, height: 21, class: 'ic-fort' });
+        // Item 4 (owner): fort marks ~2x, pushed to the hex crown so the
+        // bigger unit rows below never collide with them.
+        const fort = svgEl('use', { x: r.x + 14, y: r.y - 64, width: 34, height: 34, class: 'ic-fort' });
         fort.setAttribute('href', r.muster >= 2 ? '#i-fort-citadel' : '#i-fort-castle');
         g.appendChild(fort);
       }

@@ -17,7 +17,9 @@ export const THEME_CORE = {
       accent: '#C9A84C', text: '#D9D2C0', textDim: '#9aa3ad',
       hair: 'rgba(217, 210, 192, 0.14)',
     },
-    canvas: null,      // M2.f.2: { w, h, background, anchors }
+    // Item 10 (owner, Jul 2026): the Sundered Realm rides the ASOIAF map
+    // art — same geometry, same anchors, its own names and icon language.
+    canvas: { background: 'assets/map-asoiaf.webp', x: -48, y: -47, w: 1124, h: 1745 },
     unitIcons: 'core', // M2.f.3 symbol set (src/icons.js)   // M2.f.3: per-theme SVG symbol ids
   },
   terms: {
