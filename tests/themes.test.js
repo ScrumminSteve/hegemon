@@ -72,3 +72,17 @@ export const tests = [
   }},
 
 ];
+
+tests.push(
+  { name: 'briefings are well-formed wherever they exist: title, story, objectives, closing all present (m3e16 — future houses inherit the check)', async fn() {
+    const { THEME_WARROSES } = await import('../src/themes/warroses.js');
+    const briefs = THEME_WARROSES.briefings || {};
+    ok(Object.keys(briefs).length >= 2, 'York and the Kingmaker at minimum');
+    for (const [fid, b] of Object.entries(briefs)) {
+      ok(b.title && b.title.length > 3, `${fid}: titled`);
+      ok(Array.isArray(b.story) && b.story.length >= 2 && b.story.every(x => x.length > 20), `${fid}: a story worth telling`);
+      ok(Array.isArray(b.objectives) && b.objectives.length === 3, `${fid}: exactly three glory-marks`);
+      ok(b.closing && b.closing.length > 10, `${fid}: a closing line`);
+    }
+  }},
+);

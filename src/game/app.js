@@ -20,7 +20,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e11';
+export const BUILD_ID = 'm3e23';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -137,7 +137,7 @@ function toggleSpectate(onOff) {
 }
 import { createGame, serialize, deserialize, region, seatsControlled, STAR_ALLOWANCE, controllerOf, regionProps } from '../engine/state.js';
 import { armiesOf } from '../engine/actionPhase.js';
-import { applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt, episodeRecord } from '../engine/engine.js';
+import { replayGame, applyAction, beginPlanning, orderClasses, orderableRegions, starLimit, ORDER_TOKENS, maxPlaceableOrders, cpAllowedAt, episodeRecord } from '../engine/engine.js';
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
@@ -212,6 +212,16 @@ function newGame(seed) {
   mixed.agents = null; mixed.key = null; mixed.rng = null;
   clearTimeout(mixed.timer); mixed.timer = null;
   inspectorFid = mixed.human || 'F1'; // G3-3: your hand first
+  // m3e15 (owner): house briefings — history's hook and marching orders,
+  // shown once as the banners rise. Theme-provided; glory-marks, not rules.
+  const brief = mixed.human && theme.briefings?.[mixed.human];
+  if (brief) {
+    stageState.alert = {
+      title: `${fGlyph(mixed.human)} ${brief.title}`,
+      lines: [...brief.story.map(esc), '<hr class="brief-rule">',
+              ...brief.objectives.map(esc), `<i>${esc(brief.closing)}</i>`],
+    };
+  }
   if (Number.isFinite(seed)) {
     game = createGame(6, { seed: Math.floor(seed) });
     beginPlanning(game);
@@ -257,6 +267,26 @@ function dispatch(action) {
 
 function restoreFromText(text) {
   const parsed = JSON.parse(text);
+  // m3e18 (owner's Kingmaker, lost to a refresh): EPISODES ARE SAVES.
+  // An episode carries config + every action — replaying it IS the state,
+  // durable across cleared storage, refreshes, and devices. Feed the Load
+  // box an episode export and the game resumes exactly where it stood.
+  if (parsed && parsed.schema && parsed.config && Array.isArray(parsed.actions)) {
+    game = replayGame(parsed.config, parsed.actions);
+    const human = Object.entries(parsed.meta?.seatControllers || {})
+      .find(([, c]) => c === 'human')?.[0] || null;
+    mixed.human = human;
+    mixed.policy = 'heuristic';
+    mixed.agents = null; mixed.key = null; mixed.rng = null;
+    clearTimeout(mixed.timer); mixed.timer = null;
+    _viewCache = null;
+    history = [serialize(game)];
+    ui = {};
+    resetTelemetry();
+    inspectorFid = mixed.human || 'F1';
+    flash(`Episode resumed at round ${game.round} — ${human ? fName(human) + ' is yours again' : 'table mode'}.`);
+    return;
+  }
   if (parsed && parsed.save === 'hegemon-save/2') {
     game = deserialize(JSON.stringify(parsed.engine));
     mixed.human = parsed.controllers?.human ?? null;
@@ -893,11 +923,18 @@ function bidTieBreakForm(q) {
 }
 
 const MUSTER_COSTS_UI = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, upgrade: 1 };
+
+/** The supply hint line, shared by every form that shrinks or grows armies.
+    (m3e17: born from a P1 — a regex-injected local crashed the LOSSES form
+    with a ReferenceError and froze the owner's Kingmaker game. Templates
+    get edits by hand and helpers by name, never by regex, ever again.) */
+function ladderHintFor(fid) {
+  return `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[fid]} · ${supplyLadder(fid)}</div>`;
+}
 function musterForm(q) {
   const staged = ui.musterBuilds || [];
   const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
   const left = q.points - spent;
-  const ladderHint = `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[q.faction]} · ${supplyLadder(q.faction)}</div>`;
   const port = PORTS.find(pp => pp.landId === q.region);
   // Offer only destinations the engine will accept: seas holding another
   // faction's ships are closed to mustering (Rules p.25 — owner P1, Jul 2026).
@@ -911,7 +948,7 @@ function musterForm(q) {
     `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
   const stagedRows = staged.map((b, i) =>
     `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
-  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) +
+  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) + ladderHintFor(q.faction) +
     battleless() +
     btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
     btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
@@ -994,12 +1031,12 @@ function incursionUnitsForm(q) {
       Object.entries(types).map(([t, n]) => {
         const c = chosenHere(t);
         const disabled = picks.length >= q.count || c >= n || (lockRegion && lockRegion !== rid);
-        return `${ladderHint}<button class="opt" data-incpick='${JSON.stringify({ region: rid, type: t })}' ${disabled ? 'disabled' : ''}>` +
+        return `<button class="opt" data-incpick='${JSON.stringify({ region: rid, type: t })}' ${disabled ? 'disabled' : ''}>` +
           `${incUnitLabel(q.purpose)} ${esc(unitName(t) || t)}${c ? ` <b>×${c}</b>` : ''} <span class="dim">(${n})</span></button>`;
       }).join(' ') + `</div>`);
   }
   const ready = q.optional ? true : picks.length === q.count;
-  return incursionBanner() + header(q, `${incUnitLabel(q.purpose)} ${q.optional ? 'up to ' : ''}${q.count} unit(s)`) +
+  return incursionBanner() + header(q, `${incUnitLabel(q.purpose)} ${q.optional ? 'up to ' : ''}${q.count} unit(s)`) + ladderHintFor(q.faction) +
     rows.join('') +
     (picks.length ? `<div class="hint">Chosen: ${picks.map(p => `${esc(unitName(p.type))} @ ${esc(rName(p.region))}`).join(', ')} <button class="opt" data-increset>start over</button></div>` : '') +
     `<button class="primary" data-inccommit ${ready ? '' : 'disabled'}>${q.optional && !picks.length ? 'Promote none (pass)' : 'Confirm ' + picks.length}</button>` +
@@ -1288,7 +1325,7 @@ function marchForm(q) {
     const _leaving = ui.moves.reduce((a, mv) => a + Object.values(mv.units).reduce((x, y) => x + y, 0), 0);
     const _showLC = _leaving >= _mineHere && controllerOf(shown(), ui.region) === q.faction &&
       shown().controlMarkers?.[ui.region] !== q.faction && region(ui.region)?.home !== q.faction; // B1: never offer what's already yours (or free)
-    html += `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[q.faction]} · ${supplyLadder(q.faction)}</div>`;
+    html += ladderHintFor(q.faction);
     if (_showLC) html += `<label class="toggle-label"><input type="checkbox" id="leave-control" ${ui.leaveControl ? 'checked' : ''}>
       Leave a control marker to KEEP OWNERSHIP of ${esc(rName(ui.region))} (costs 1 ${esc(theme.terms.authority)} — Rules p.24)</label>`;
   }
@@ -1682,7 +1719,7 @@ function logLine(e) {
     case 'cleanUp': return `— Round ${e.round} ends —`;
     case 'eventPhasePending': return `(${esc(theme.terms.eventPhase)} arrives in M2 — straight to planning.)`;
     case 'actionPhaseBegan': return `— The armies move —`;
-    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the shown() ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
+    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the war ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
     default: return null;
   }
 }
@@ -1817,13 +1854,40 @@ function init() {
           controllers: { human: mixed.human, policy: mixed.policy },
           engine: JSON.parse(serialize(game)) })
       : serialize(game);
-    const blob = new Blob([payload], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `hegemon-round${game.round}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    exportWithFallback(payload, `hegemon-round${game.round}.json`, 'Save exported');
   });
+  // m3e19 (owner in Documents-by-Readdle: viewer blocked the download):
+  // sandboxed HTML viewers exist, so every export gets a universal fallback —
+  // a copy-paste overlay that works wherever text can be selected.
+  function exportWithFallback(payload, filename, label) {
+    let downloaded = false;
+    try {
+      const blob = new Blob([payload], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      downloaded = true;
+    } catch { /* the overlay below is the answer */ }
+    navigator.clipboard?.writeText(payload).catch(() => {});
+    const ov = document.createElement('div');
+    ov.className = 'export-overlay';
+    ov.innerHTML = `<div class="export-box">
+      <b>${esc(label)}</b>
+      <p class="hint">${downloaded ? 'Download attempted, and the' : 'The'} full text is below (also sent to your clipboard).
+      If the download was blocked, select-all → copy → paste into Notes or any file. The Load box accepts it right back.</p>
+      <textarea readonly class="export-text"></textarea>
+      <div><button id="exp-copy">Copy</button> <button id="exp-close">Close</button></div></div>`;
+    ov.querySelector('.export-text').value = payload;
+    ov.querySelector('#exp-copy').addEventListener('click', () => {
+      ov.querySelector('.export-text').select();
+      document.execCommand('copy');
+      navigator.clipboard?.writeText(payload).catch(() => {});
+    });
+    ov.querySelector('#exp-close').addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  }
   $('#btn-episode').addEventListener('click', () => {
     const title = prompt('Episode title (e.g. "Stark northern clamp — opener v1"):') || '';
     const notes = title ? (prompt('Notes (optional):') || '') : '';
@@ -1833,12 +1897,9 @@ function init() {
         [f, mixed.human ? (f === mixed.human ? 'human' : mixedAgents()[f].id) : 'human'])), // M3.c: bots self-declare
     });
     ep.telemetry = telemetry; // Tier-2 sidecar: latency/undo/rejection observations
-    const blob = new Blob([JSON.stringify(ep, null, 1)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `episode-${(title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-r${game.round}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    exportWithFallback(JSON.stringify(ep, null, 1),
+      `episode-${(title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-r${game.round}.json`,
+      'Episode exported');
     flash('Episode exported.');
   });
   $('#btn-load').addEventListener('click', () => $('#load-box').classList.toggle('hidden'));

@@ -414,3 +414,8 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 .stage-alert { border: 1px solid #f0c060; }
 .ic-fort.fort-owned { stroke-width: 2.8; filter: drop-shadow(0 0 3px currentColor); }
 .ic-fort.fort-vacant { opacity: .55; stroke-dasharray: 3 3; }
+.brief-rule { border: none; border-top: 1px solid var(--hair); margin: 8px 0; }
+.stage-alert .stage-lines div { margin: 5px 0; line-height: 1.45; }
+.export-overlay { position: fixed; inset: 0; background: rgba(10,8,14,.82); z-index: 60; display: flex; align-items: center; justify-content: center; }
+.export-box { background: var(--panel, #1c1520); border: 1px solid var(--hair); border-radius: 10px; padding: 14px; width: min(560px, 92vw); }
+.export-text { width: 100%; height: 34vh; margin: 8px 0; font-family: monospace; font-size: 11px; background: rgba(0,0,0,.3); color: inherit; border: 1px solid var(--hair); }

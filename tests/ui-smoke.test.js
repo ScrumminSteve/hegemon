@@ -144,3 +144,72 @@ if (!skipped) tests.push(
     await new Promise(r => setTimeout(r, 20));
   }},
 );
+
+if (!skipped) tests.push(
+  { name: 'm3e15: a Roses game as York opens on the Sun in Splendour briefing — story, objectives, Continue (owner intro)', async fn() {
+    const doc = dom.window.document;
+    doc.querySelector('#theme-select').value = 'warroses';
+    doc.querySelector('#theme-select').dispatchEvent(new dom.window.Event('change'));
+    await new Promise(r => setTimeout(r, 30));
+    doc.querySelector('#seat-select').value = 'F1';
+    doc.querySelector('#btn-new').click();
+    await new Promise(r => setTimeout(r, 60));
+    const stage = doc.body.innerHTML;
+    ok(stage.includes('The Sun in Splendour'), 'briefing title on stage');
+    ok(stage.includes('St Albans') && stage.includes('London'), 'objectives name their ground');
+    ok(stage.includes('Wakefield'), 'and history has its hook');
+    // restore for later tests
+    doc.querySelector('[data-stage-ok]')?.click();
+    doc.querySelector('#theme-select').value = 'core';
+    doc.querySelector('#theme-select').dispatchEvent(new dom.window.Event('change'));
+    doc.querySelector('#seat-select').value = 'table';
+    await new Promise(r => setTimeout(r, 30));
+  }},
+);
+
+if (!skipped) tests.push(
+  { name: 'm3e17: no bare ladderHint tokens survive — the shared helper is defined once and only called (P1 regression, Kingmaker freeze)', fn() {
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    const bare = src.match(/\$\{ladderHint\}/g) || [];
+    ok(bare.length === 0, 'no orphaned template tokens');
+    ok((src.match(/function ladderHintFor/g) || []).length === 1, 'one helper, by name');
+    ok((src.match(/ladderHintFor\(/g) || []).length >= 4, 'called from muster, march, and losses at least');
+  }},
+);
+
+if (!skipped) tests.push(
+  { name: 'm3e18: EPISODES ARE SAVES — pasting an episode into the Load box resumes the game at its round with the human seat restored', async fn() {
+    const doc = dom.window.document;
+    const ep = JSON.stringify({
+      schema: 'hegemon-episode/1', engine: 'x', rulesRevision: 11,
+      meta: { seatControllers: { F1: 'bot', F2: 'human', F3: 'bot', F4: 'bot', F5: 'bot', F6: 'bot' } },
+      config: { seatCount: 6, seed: 4242 }, actions: [],
+    });
+    doc.querySelector('#btn-load').click();
+    const box = doc.querySelector('#load-text');
+    box.value = ep;
+    doc.querySelector('#btn-load-confirm').click();
+    await new Promise(r => setTimeout(r, 60));
+    const body = doc.body.textContent;
+    ok(/seed 4242/.test(body), 'the episode game is live (seed on the status line)');
+    ok(!/Can't find variable|undefined is not/.test(body), 'no render crashes');
+  }},
+);
+
+if (!skipped) tests.push(
+  { name: 'm3e19: exports survive sandboxed viewers — the Episode button raises the copy-paste overlay with the full JSON; and the victory line lost its shown()', async fn() {
+    const doc = dom.window.document;
+    const realPrompt = globalThis.prompt;
+    globalThis.prompt = () => 'smoke-test';
+    dom.window.prompt = globalThis.prompt;
+    doc.querySelector('#btn-episode').click();
+    await new Promise(r => setTimeout(r, 40));
+    globalThis.prompt = realPrompt;
+    const ta = doc.querySelector('.export-text');
+    ok(ta, 'overlay raised');
+    ok(ta.value.includes('"schema"') && ta.value.includes('seatControllers'), 'the full episode is in the box');
+    doc.querySelector('#exp-close').click();
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(!src.includes('the shown() ends'), 'the war ends at once — as it should');
+  }},
+);

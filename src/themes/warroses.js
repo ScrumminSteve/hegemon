@@ -89,6 +89,82 @@ export const THEME_WARROSES = {
     'F6-0': 'Anne Beauchamp',
   },
 
+  // House briefings (owner request, m3e15): a hook of history and marching
+  // orders a new player can hold in one hand. Objectives are GLORY-MARKS —
+  // guidance, not engine rules; the crown still falls at 7 seats.
+  briefings: {
+    F1: {
+      title: 'The Sun in Splendour',
+      story: [
+        'Twice Protector of the Realm, twice cast aside — Richard of York asked only what the law owed him, and the Queen answered at Wakefield with his head on a spike wearing a paper crown.',
+        'Now his son Edward — eighteen years old, six foot four, undefeated — watches three suns rise over the morning of battle and calls it an omen.',
+        'The north is yours. The road south is long. At the end of it sits a throne held by a sleeping king and the she-wolf who rules through him.',
+      ],
+      objectives: [
+        '⚔ MARCH SOUTH — take St Albans, the twice-bloodied gateway. Every crown won this century passed through it.',
+        '👑 BE CROWNED — take London and hold it. The realm follows whoever the city cheers.',
+        '🏰 NEVER AGAIN WAKEFIELD — York must not fall while you campaign. Garrison the home your father died defending.',
+      ],
+      closing: 'These are marks of glory, not chains — the crown falls to whoever holds seven seats, by any road. But history is watching, Edward.',
+    },
+    F2: {
+      title: 'The She-Wolf of France',
+      story: [
+        'Your husband the king sleeps with his eyes open — a saint, they say, which is another word for useless. Fine. England does not need him awake; England has you.',
+        'They put a paper crown on York\'s severed head at Wakefield because you ordered it so, and the realm learned what the she-wolf does to those who touch her son\'s inheritance.',
+        'Now York\'s giant boy calls himself king, half the lords smell which way the wind blows, and the only crown that matters is the one your Edward will wear — or none shall wear any at all.',
+      ],
+      objectives: [
+        '🌹 THE KING MUST BE KEPT — Lancaster is the dynasty\'s heart: garrison it, and never let the home fires fall while you campaign.',
+        '⚔ BREAK THE PRETENDER — carry the red rose to St Albans as you did before, and then to the city of York itself. Let them keep the paper crown.',
+        '👑 THE SON\'S INHERITANCE — this house does not yield. Take the seven seats if the field allows — and if it does not, stand highest when the final round closes. Margaret fights to the last day of the last year.',
+      ],
+      closing: 'They call you the she-wolf as an insult, madam. Wear it as the wolves do.',
+    },
+    F3: {
+      title: 'The Last Dragon',
+      story: [
+        'You have been in exile since you were a boy — a Welsh name, a thin claim, and a mother who has spent twenty years turning both into a crown with nothing but letters and patience.',
+        'The men across the water call you the last hope of a broken cause. The men around you call you something better: unbeaten. No one has ever beaten Henry Tudor, because Henry Tudor has never fought.',
+        'You get one landing. One. The dynasties that rule England have armies, castles, generations of dead ancestors in every church. You have a fleet, an omen, and a red dragon on a white-and-green field. It was enough for Cadwaladr. It will be enough.',
+      ],
+      objectives: [
+        '⚓ THE FLEET BEFORE THE THRONE — do not leave Carisbrooke before the fourth year. Build the ships, count the coin, let them forget you exist.',
+        '🐉 ONE LANDING — when you descend, descend once: take a beachhead on the mainland and NEVER lose it. There is no second fleet.',
+        '⚔ BOSWORTH — find whichever head currently wears the crown highest, and bring it down in open battle. Kingdoms change hands in an afternoon.',
+      ],
+      closing: 'Twenty years of letters, Henry. Try to be worth them.',
+    },
+    F4: {
+      title: 'The Swan Between Millstones',
+      story: [
+        'Your blood runs from Edward III down both sides of your family, which in this England is less an honor than a death sentence pending scheduling.',
+        'To your north the roses tear each other apart; to your coasts the fleets prowl; and every house that ever reached too high has learned what the grinding stones do to grain.',
+        'But the Stafford swan has outlived bolder birds by knowing the oldest truth of the middle lands: you need not be the strongest house in England. You need only be standing, and owed favors, when the strong have bled each other white.',
+      ],
+      objectives: [
+        '🦢 THE SWAN ENDURES — hold both your home seats to the very last round. The millstones grind whoever lets go of the ground.',
+        '🕊 FRIEND TO ALL, SERVANT TO NONE — never be at war with more than one house in the same year. Feuds are for houses that can afford them.',
+        '⚖ THE THIRD MILLSTONE — when the roses have ground each other fine, stand above them BOTH when the final round closes. Let them keep their war; you keep the realm.',
+      ],
+      closing: 'Patience, your grace. Swans look serene precisely because the work happens beneath the water.',
+    },
+    F6: {
+      title: 'The Kingmaker',
+      story: [
+        'You are the richest subject in England, captain of the narrow seas — and twice now a king has worn his crown because you decided he should.',
+        'From the Isle of Man your carracks reach every coast; your table feeds half of London; your name opens gates that armies cannot.',
+        'But gratitude runs short in kings, and the boy you crowned grows tired of owing you. Perhaps it is time he learned: what the Kingmaker gives, the Kingmaker takes away.',
+      ],
+      objectives: [
+        '🌊 RULE THE NARROW SEAS — the Manx Sea stays yours, and no coast in the realm sleeps safe from your raids.',
+        '🐻 SETTLE THE FEUD — hold Middleham against all comers, and carry the bear and ragged staff to Alnwick. Percy has held the north over your family long enough.',
+        '👑 MAKE A KING — OR BE ONE — win the Crown at bid and order the realm as its sovereign. And when they forget what they owe you, take the seven seats yourself.',
+      ],
+      closing: 'Kings are made by stronger men than kings, my lord. The fog at Barnet is not yet written.',
+    },
+  },
+
   regions: {
     L01: 'York',              L02: 'Bamburgh',           L03: 'The Cumbrian Coast',
     L04: 'Newcastle',         L05: 'Scarborough',        L06: 'Furness',

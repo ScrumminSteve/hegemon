@@ -329,6 +329,188 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## THE SHE-WOLF CERTIFIED (m3e22, doc)
+
+Margaret's campaign, hash-verified (rev 11, r10, end reason ROUNDS —
+**the corpus's first deliberate round-limit standings victory**): all
+three glory-marks achieved — Lancaster NEVER fell; St Albans r1, city of
+York r3; and the discipline proven mechanically: **peak seats 6 the
+entire game** — the player self-capped below the 7-seat trigger through
+seven rounds of dominance and won on final standings as the briefing
+demanded. York ANNIHILATED (0 units/markers/seats — second total
+extinction). **First-ever triple crown: Crown + Marshalcy + Council all
+held at the end.** Supply maxed at 6, dominance as spread garrisons.
+Human record: **16–0.** Unique corpus donation: rounds 8–10 endgame play
+(standings management, sub-threshold discipline) — systems no prior
+human game contains. Saga candidate #2 (chronicles/ awaits on request).
+Scenario-discipline doctrine updated: briefing-bound constraints HOLD
+(She-Wolf, Kingmaker) where free-form intentions dissolved (Percy feud) —
+write the constraint into the mission and the player keeps it.
+
+## THE CHRONICLE OF THE KINGMAKER'S WAR (m3e20, doc)
+
+The owner's full Kingmaker campaign chronicle (recovered via direct file
+upload — chat-extraction of rich-text exports fails; ATTACH AS .txt) is
+written up as the first official saga: **docs/chronicles/kingmaker.md**.
+The strategic heart, banked for the strategy record: NEVILLE WON TWO
+BATTLES ON TIES (4-4 vs Percy's revenge; 10-10 storming Lancaster — the
+decisive battle) because ties fall to the higher Marshalcy combatant,
+AND HE HAD ORDERED THAT TRACK HIMSELF as perpetual sovereign in r4.
+Crown Token held from r2 to the end; Sword of State from r4; Alnwick
+stormed then used as his own muster ground from r5. All three
+glory-marks achieved. This is the deepest track-politics demonstration
+in the corpus — exactly the system the bots exercise least. 15-0.
+
+## EXPORTS SURVIVE SANDBOXES · the fog is written (build m3e19)
+
+**Owner WON the Kingmaker game** — Neville seizes the 7th seat (resumed
+from the m3e18 rescue; 15–0). The victory screenshot ALSO caught a text
+leak in the proudest line in the game: "the shown() ends at once" — an
+internal name in the crown announcement. Fixed: "the war ends at once."
+
+**Export fallback (owner blocked inside Documents-by-Readdle's HTML
+viewer):** Episode and Save now route through `exportWithFallback` —
+download attempted, clipboard written, and a COPY-PASTE OVERLAY with the
+full JSON always raised; sandboxed viewers that block blob downloads
+can't block selecting text. Paired with m3e18's episodes-are-saves Load,
+the full loop (export → Notes → paste → resume) works in ANY container.
+Immediate unblock also given: Documents ⚙ → "Block external links in
+HTML viewer" → off. Smoke-locked (and the smoke's own prompt-stub bug
+fixed en route: the app reads global prompt, not window.prompt, under
+harness globals). Suite: 257. PWA remains the banked right answer for
+iPhone.
+
+## EPISODES ARE SAVES (build m3e18)
+
+The owner's Kingmaker run died to a refresh — the exact localStorage
+caveat the standalone banked. Permanent answer: **the Load box now
+accepts episode exports** — an episode carries config + every action, so
+replaying it IS the state; resume lands on the same round with the human
+seat restored from seatControllers ground truth. Durable across cleared
+storage, refreshes, and devices; the offline standalone's save story is
+now: EXPORT EPISODES, always. Smoke-locked. (Record corrected in
+passing: in the reaver defeat the owner was the SOVEREIGN breaking the
+lowest-bidder tie — glory-mark #3 achieved in r2, choosing which house
+the reavers ruin — while the Percy bot made its own 2-knights choice;
+the frozen form was merely the owner's routine 1-unit toll.)
+
+## P1: THE KINGMAKER FREEZE (build m3e17)
+
+Owner's Neville game froze at r2 on "Can't find variable: ladderHint" —
+a raw ReferenceError CRASHING the invader-losses form on every render,
+unrecoverable at that decision. Root cause: the m3e11 supply-hint patch
+injected its template token BY REGEX, which landed inside the WRONG
+function's per-option .map (the losses picker) while the const sat unused
+in musterForm — the muster panel never even had its ladder. Engine
+verified perfectly healthy at the stuck point (replay clean; legal menu
+of 11 waiting). Fix is structural: ONE named top-level helper
+`ladderHintFor(fid)`, deliberately called from muster, march, AND (as a
+single header line) the losses form. Source-hygiene golden: no bare
+tokens, one helper, ≥ its three call sites. **Banned practice, on the
+board in bold: templates get edits by hand and helpers by name — NEVER
+by regex.** Honest gap also banked: jsdom smoke boots the app but
+renders only the forms the boot path reaches; a form-render harness
+(rig each query type, render, assert no throw) is QUEUED as the real
+guard. Recovery: install m3e17, load the save — the form renders, the
+game continues. Suite: 255.
+
+**Rules answer for the owner (Preemptive-Raid-class defeat):** the lowest
+bidder CHOOSES between destroying units (the count shown) anywhere they
+own, or falling on their highest track; everyone else is spared. The
+reaver card's on-screen explanation is part of the banked card-display +
+red-alert overhaul.
+
+## HOUSE BRIEFINGS — the Sun in Splendour (build m3e15)
+
+Owner: pull the player in with backstory + graspable objectives. Shipped
+as a THEME-DATA FEATURE: `theme.briefings[fid]` = { title, story[],
+objectives[], closing } → rendered as the opening stage card when a mixed
+game starts on a briefed seat (reuses the m3e6 alert stage; smoke-locked).
+Objectives are GLORY-MARKS, guidance not rules — the copy says so.
+
+**York ships first:** Wakefield's paper crown → Edward and the three suns
+→ marching orders: take St Albans (the twice-bloodied gateway), be
+crowned in London, and never again Wakefield (garrison the home seat).
+
+**Neville SHIPPED (m3e16) — "The Kingmaker":** the narrow seas, the feud
+carried to Alnwick, and make-a-king-or-be-one; closes on the unwritten
+fog at Barnet. Shape golden added: every briefing, present and future,
+must carry title + story(≥2) + exactly three glory-marks + closing.
+**Lancaster SHIPPED (m3e21) — "The She-Wolf of France":** Wakefield
+owned with pride (the mirror of York's grief); marks: keep the dynasty's
+heart garrisoned, break the pretender at St Albans then York, and — the
+mechanically pointed one — WIN BY STANDINGS if not by seats, pushing the
+corpus's first deliberate full-length round-limit game. **Tudor and Stafford SHIPPED (m3e23):** "The Last Dragon" — fleet
+before throne (no mainland move before r4), ONE landing never lost, and
+Bosworth (defeat the current seat-leader in open battle); "The Swan
+Between Millstones" — both home seats to the last round, war with at
+most ONE house per year, and finish above BOTH roses on final standings.
+All marks transcript-gradable. **Remaining:** Percy (the Marches and the
+feud) — the finale. Then: ASOIAF/2026 briefing sets if the
+feature earns love; a "re-read briefing" affordance in the system area;
+possible future: objective TRACKING (checkmarks when a glory-mark falls).
+
+## THE SCENARIO MENU — ten lore-grounded manual tests (m3e14, doc)
+
+Owner-driven corpus scenarios (Wars of the Roses lore), each stressing a
+distinct system, export titles fixed for miner tagging:
+1. feud-percy-neville — private war amid a growing realm (two-front neglect).
+2. ludford-rout — York refuses battle, mass retreat everywhere (retreat
+   chains, routed rules; HIGHEST loss potential).
+3. kingmakers-turn — Neville allies with York 3 rounds, then falls on them
+   (mid-game reversal; do bots re-evaluate?).
+4. margarets-march — Lancaster's one long drive on York, homeland bare
+   (marker trail economics, supply on the move, abandonment punishment).
+5. towton — engineered maximal battle, every component committed both
+   sides (rare-path stress; the battle-ledger exhibit).
+6. loveday-farce — three rounds of deliberate peace, then war (do bots
+   exploit pacifism; recovery from tempo deficit).
+7. exiles-descent — Tudor never leaves Carisbrooke before r4, then one
+   Bosworth landing (massed transports; single-strike ceiling; export
+   win OR loss).
+8. wardens-fail — Percy bids zero on the Border, Reivers at strength 12
+   (invader punishment paths; profit from chaos).
+9. attainder — self-hostile decrees all game (play under permanent bans).
+10. sun-in-splendour — York wins by r4 or resigns on record (tempo
+    ceiling; the books' fastest-win line).
+Bonus: fauconbergs-raid — Neville takes London by sea, single objective.
+Loss-hunting grounds: 2, 6, 7, 8. Engine rare-paths: 5, 7. Book contrast:
+3, 4, 9, 10. NOTE: the owner's feud episode arrived detached — awaiting
+re-upload for verification.
+
+## OFFLINE IN ONE FILE (build m3e13)
+
+Owner: "encapsulate this game so I can play it offline." Done —
+`node tools/build-standalone.mjs` emits **dist/hegemon.html (~2 MB)**:
+every module bundled (esbuild, iife), styles inlined, both map arts
+embedded as data URIs. Opens from file://, a USB stick, an AirDropped
+file — no server, no network, no install. Suite golden builds AND boots
+it from file:// every run, so the offline artifact can never rot
+silently. Known caveats, banked honestly: saves live in localStorage,
+whose persistence for file:// pages varies by platform (iOS Safari
+especially) — EXPORT EPISODES remain the durable record; the standalone
+is a snapshot, not auto-updating — rebuild per drop. dist/ gitignored;
+esbuild is a devDependency.
+
+## The Storming of York — engine exonerated, ledger mandated (m3e12, doc)
+
+Owner-reported "wrong defense calc" (Roses episode, final battle, r5):
+AUDITED CORRECT to the point — defender 14 = 3 cav (6) + defend★ (+2) +
+citadel garrison (2) + carrack sea-support (1) + Richard of York (3);
+attacker 14 = 5 units + bombard-vs-fort support★ (5) + Henry Tudor (4);
+tie to F3 on the Marshalcy, per the rules. Hash-exact, zero log anomalies.
+First Roses + first rev-11 episode; human win #12.
+
+**The finding is the UI's:** five defense components, two invisible
+(garrison; siege-counts-vs-fort), and no arithmetic shown anywhere.
+**UI item 11 now REQUIRES the BATTLE MATH LEDGER** — live per-side
+decomposition (units + order + garrison + supports + card + blade = total)
+in the battle spotlight. The owner's confusion is the spec.
+
+Owner task day issued (walk 12 items · e11 re-baseline scans (seatbias
+700000+, eval 5000000+) · corpus sprint: loss hunt, within-faction
+contrast games, Roses shakedown, spectate blunder-list v2).
+
 ## PACKAGE A SHIPS — fixes, discipline, and a new realm (build m3e11)
 
 **Engine [RULES_REVISION → 11]:** B1 double-claim fixed — a standing
