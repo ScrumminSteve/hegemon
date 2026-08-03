@@ -149,6 +149,20 @@ export const THEME_WARROSES = {
       ],
       closing: 'Patience, your grace. Swans look serene precisely because the work happens beneath the water.',
     },
+    F5: {
+      title: 'Esperance',
+      story: [
+        'Yours is the oldest fighting name in the north — Wardens of the Marches since before the roses learned to hate each other, the house that stood between England and the reivers when the crowns were too busy killing cousins to notice.',
+        'And what has the realm paid you for it? Neville bears carried fire to Alnwick. Dragons have hunted your knights for sport. Every chronicle of every war seems to spend a chapter breaking Percy — and yet here Percy stands, because the Marches do not fall, they endure.',
+        'Your battle cry is Esperance. It means hope. On Percy lips it has always meant something harder: we have been burned before, and we are still here, and now it is our turn.',
+      ],
+      objectives: [
+        '🛡 WARDEN OF THE MARCHES — the Border is YOUR charge: when the Reivers bid opens, no house pays more than Percy. Top every invader bid, alone or tied, all game.',
+        '🐻 THE FEUD REPAID — they came to Alnwick once. Carry the blue lion to Middleham, and hold the bear\'s own seat when the game ends.',
+        '🦁 ALNWICK ENDURES — twice in living memory the banners burned. NEVER AGAIN: Alnwick does not fall, not for one round, from first year to last.',
+      ],
+      closing: 'Esperance, my lord. Say it the old way — through your teeth.',
+    },
     F6: {
       title: 'The Kingmaker',
       story: [

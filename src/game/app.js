@@ -6,8 +6,6 @@ import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
 import { INVADER_CARDS } from '../data/invaderCards.js';
 import { LEADER_CARDS } from '../data/leaderCards.js';
-import { THEME_CORE } from '../themes/core.js';
-import { THEME_ASOIAF } from '../themes/asoiaf.js';
 import { THEME_WARROSES } from '../themes/warroses.js';
 import { THEME_2026 } from '../themes/modern2026.js';
 import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
@@ -20,7 +18,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e23';
+export const BUILD_ID = 'm3e32';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -85,9 +83,11 @@ function botPump() {
     const q2 = game.pendingQueries.find(x => isBotSeat(x.faction));
     if (!q2 || spectate.on || game.phase === 'gameOver') return;
     try {
-      const menu = legalActions(game, q2);
+      const agent = mixedAgents()[q2.faction];
+      const view = viewFor(game, q2.faction);
+      const menu = legalActions(game, q2, { guide: agent.makeGuide?.(view, q2) });
       mixed.rng = mixed.rng || botRng((((game.config?.seed ?? 1) * 977) + 41) | 0);
-      dispatch(mixedAgents()[q2.faction].decide(viewFor(game, q2.faction), q2, menu, mixed.rng));
+      dispatch(agent.decide(view, q2, menu, mixed.rng));
     } catch (e) {
       console.error('bot halted:', e);
       flash(`Bot error (${q2.faction}): ${e.message}`);
@@ -114,8 +114,10 @@ function spectateTick() {
   const q = currentQuery(game);
   if (!q) return; // engine settling; next tick
   try {
-    const menu = legalActions(game, q);
-    dispatch(spectateAgents()[q.faction].decide(viewFor(game, q.faction), q, menu, spectate.rng));
+    const agent = spectateAgents()[q.faction];
+    const view = viewFor(game, q.faction);
+    const menu = legalActions(game, q, { guide: agent.makeGuide?.(view, q) });
+    dispatch(agent.decide(view, q, menu, spectate.rng));
   } catch (e) {
     console.error('spectate halted:', e);
     toggleSpectate(false);
@@ -143,12 +145,16 @@ import { transportReachable, landAreasControlled } from '../engine/actionPhase.j
 import { SETUP } from '../data/setup.js';
 const SETUP_VICTORY_TARGET = SETUP.victoryTarget;
 
-const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF, warroses: THEME_WARROSES, modern2026: THEME_2026 };
+// Owner decision (Aug 2026): Wars of the Roses is THE game; Global 2026
+// stays available on the back burner; Core (Sundered Realm) and ASOIAF are
+// dropped from play. core.js survives ONLY as the theme key-space reference
+// the mirror golden checks packs against — it is not selectable.
+const THEMES = { warroses: THEME_WARROSES, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
 const byId = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r]));
 const factionById = Object.fromEntries(FACTIONS.map(f => [f.id, f]));
 
-let theme = THEME_CORE;
+let theme = THEME_WARROSES;
 let game = null;
 
 // M2.f.0 — a theme owns the whole chrome: its palette is written onto the
@@ -1826,7 +1832,7 @@ function fillSeatSelect() {
 
 function init() {
   fillSeatSelect();
-  $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value]; fillSeatSelect(); render(); });
+  $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value] ?? THEME_WARROSES; fillSeatSelect(); render(); });
   $('#btn-new').addEventListener('click', () => newGame());
   $('#seed-line').addEventListener('click', () => {
     const raw = prompt('Start a new game with a specific seed (blank cancels):');

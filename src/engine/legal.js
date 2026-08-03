@@ -69,13 +69,13 @@ export function currentQuery(state) {
  * Menu of complete, engine-validated actions for the current query.
  * Every item satisfies: applyAction(state, item) does not throw.
  */
-export function legalActions(state, query = currentQuery(state)) {
+export function legalActions(state, query = currentQuery(state), opts = {}) {
   if (!query) return [];
   const gen = GENERATORS[query.type];
   if (!gen) throw new Error(`legalActions: no generator for query type '${query.type}' — every query MUST be enumerable (M3.a contract)`);
   const r = rng((state.actionLog.length * 2654435761) ^ (state.round * 97) ^ query.type.length);
   const sim = simulator(state);
-  const menu = gen(state, query, r).filter(sim);
+  const menu = gen(state, query, r, opts).filter(sim);
   if (!menu.length) {
     throw new Error(`legalActions: EMPTY menu for ${query.type} (${query.faction}) — either the generator is incomplete or the engine posed an unanswerable query. Both are bugs.`);
   }
@@ -89,9 +89,104 @@ export function legalActions(state, query = currentQuery(state)) {
 const pick = (q, extra) => ({ faction: q.faction, ...extra });
 const fromOptions = field => (state, q) => q.options.map(o => pick(q, { type: q.type, [field]: o }));
 
+/**
+ * Guided top-K order sets (Package B, M3.e): when the caller supplies a
+ * guide — a per-placement scoring closure the heuristic agent builds over
+ * its OWN redacted view (never state; the redaction contract holds) — the
+ * planning menu is CONSTRUCTED instead of sampled. Set 0 is pure greedy:
+ * regions ranked by their best-scoring affordable token, best token
+ * assigned. Sets 1..K-1 are seeded perturbations of the same walk (region
+ * priority nudges + occasional second-choice tokens), so the menu is K
+ * distinct good-faith plans rather than 8 rolls of the dice — the fix the
+ * blunder bank prescribed for duds surviving inside best-of-8 sampled sets
+ * (#3). Everything still passes the simulator; soundness is unchanged.
+ */
+function guidedOrderSets(state, q, r, guide) {
+  const eligible = orderableRegions(state, q.faction);
+  const required = maxPlaceableOrders(state, q.faction);
+  const banned = state.roundFlags.bannedOrders || [];
+  const isBanned = t => orderClasses(t).some(c => banned.includes(c)) ||
+                        (banned.includes('starred') && t.starred);
+  const allowance = starLimit(state, q.faction);
+  const inventory = ORDER_TOKENS.filter(t => !isBanned(t));
+
+  // Score every (region, distinct token) once through the guide's lens.
+  const distinct = [...new Map(inventory.map(t => [`${t.type}|${t.mod}|${t.starred}`, t])).values()];
+  const table = {}; // rid -> [{t, s}] sorted desc
+  for (const rid of eligible) {
+    table[rid] = distinct
+      .map(t => ({ t, s: guide.scorePlacement(rid, { type: t.type, mod: t.mod, starred: t.starred }) }))
+      .sort((a, b) => b.s - a.s);
+  }
+
+  const K = 8, out = [], seen = new Set();
+  const sigOf = orders => Object.entries(orders).map(([rid, o]) => `${rid}:${o.type}${o.mod}${o.starred}`).sort().join('|');
+  const push = orders => {
+    const sig = sigOf(orders);
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    out.push({ faction: q.faction, type: 'submitOrders', orders });
+  };
+
+  // Candidate sets from the guide (Package B: the teacher's graded book
+  // lines) go on the table FIRST — the simulator downstream still arbitrates
+  // legality (a decree can ban a line; it is then pruned, never patched).
+  for (const orders of guide.candidateSets?.() ?? []) push(orders);
+
+  // Perturbation noise scales with the guide's own score spread — a strong
+  // prior (the book) must not flatten diversity into one repeated set.
+  const allScores = eligible.flatMap(rid => table[rid].map(e => e.s)).filter(Number.isFinite);
+  const spread = allScores.length ? Math.max(...allScores) - Math.min(...allScores) : 1;
+  const noise = Math.max(0.4, spread * 0.25);
+
+  for (let k = 0; k < K * 4 && out.length < K; k++) {
+    const pool = inventory.slice();
+    const orders = {};
+    let stars = 0, placed = 0;
+    // Region priority: best available score first; perturbed for k > 0.
+    const ranked = eligible
+      .map(rid => ({ rid, s: table[rid][0]?.s ?? -Infinity }))
+      .sort((a, b) => b.s - a.s || (a.rid < b.rid ? -1 : 1))
+      .map((e, i) => ({ ...e, s: e.s + (k === 0 ? 0 : (r() - 0.5) * (i + 1) * noise) }))
+      .sort((a, b) => b.s - a.s)
+      .map(e => e.rid);
+    for (const rid of ranked) {
+      if (placed === required) break;
+      // The guide's choices for this region, best first; k > 0 sometimes
+      // takes the runner-up for diversity.
+      // Symmetric noise on every entry (k > 0): runner-up tokens can WIN a
+      // perturbed walk — an index-scaled demotion can only push losers down,
+      // which rebuilt the same greedy set 32 times (the diversity collapse).
+      const prefs = k === 0 ? table[rid]
+        : table[rid].map(e => ({ ...e, s: e.s + (r() - 0.5) * noise * 1.5 })).sort((a, b) => b.s - a.s);
+      let taken = false;
+      for (const { t } of prefs) {
+        if (t.starred && stars >= allowance) continue;
+        const idx = pool.findIndex(p => p.type === t.type && p.mod === t.mod && p.starred === t.starred);
+        if (idx === -1) continue;
+        pool.splice(idx, 1);
+        if (t.starred) stars++;
+        orders[rid] = { type: t.type, mod: t.mod, starred: t.starred };
+        placed++; taken = true;
+        break;
+      }
+      if (!taken) continue; // this area goes without; later areas may still place
+    }
+    if (placed !== required) continue;
+    push(orders);
+  }
+  return out;
+}
+
 const GENERATORS = {
   // ----- planning -----
-  submitOrders(state, q, r) {
+  submitOrders(state, q, r, opts) {
+    if (opts?.guide) {
+      const guided = guidedOrderSets(state, q, r, opts.guide);
+      if (guided.length) return guided;
+      // A guide that can't build a legal set (exotic decree) falls through
+      // to the sampler — an empty menu is forbidden, guided or not.
+    }
     const eligible = orderableRegions(state, q.faction);
     const required = maxPlaceableOrders(state, q.faction);
     const banned = state.roundFlags.bannedOrders || [];

@@ -52,8 +52,10 @@ export function playGame(seed, botSeed, seatCount = 6, mix = 'random') {
     if (++steps > MAX_ACTIONS) throw new Error(`seed ${seed}: exceeded ${MAX_ACTIONS} actions — the game is stuck (engine bug)`);
     const q = currentQuery(s);
     if (!q) throw new Error(`seed ${seed}: no pending query but game not over (phase ${s.phase}) — the engine stalled`);
-    const menu = legalActions(s, q);
-    const action = agents[q.faction].decide(viewFor(s, q.faction), q, menu, rng);
+    const view = viewFor(s, q.faction);
+    const agent = agents[q.faction];
+    const menu = legalActions(s, q, { guide: agent.makeGuide?.(view, q) });
+    const action = agent.decide(view, q, menu, rng);
     try {
       s = applyAction(s, action).state;
     } catch (e) {

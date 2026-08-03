@@ -17,8 +17,9 @@ import { tests as standaloneTests } from './standalone.test.js';
 import { tests as agentTests } from './agents.test.js';
 import { tests as heuristicTests } from './heuristic.test.js';
 import { tests as harnessTests } from './harness.test.js';
+import { tests as packagebTests } from './packageb.test.js';
 
-const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests], ['bidding', biddingTests], ['invaders', invaderTests], ['victory', victoryTests], ['ui-smoke', uiSmokeTests], ['standalone', standaloneTests], ['agents', agentTests], ['heuristic', heuristicTests], ['harness', harnessTests]];
+const suites = [['setup', setupTests], ['planning', planningTests], ['action', actionTests], ['combat', combatTests], ['cards', cardsTests], ['abilities', abilityTests], ['faq', faqTests], ['events', eventTests], ['muster', musterTests], ['themes', themeTests], ['bidding', biddingTests], ['invaders', invaderTests], ['victory', victoryTests], ['ui-smoke', uiSmokeTests], ['standalone', standaloneTests], ['agents', agentTests], ['heuristic', heuristicTests], ['harness', harnessTests], ['packageb', packagebTests]];
 let pass = 0, fail = 0;
 for (const [suite, tests] of suites) {
   for (const t of tests) {

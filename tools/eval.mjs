@@ -52,6 +52,9 @@ export function playEvalGame({ seed, challengerSeat, challengerCfg = null, incum
     // which moved to v2 in m3d7. 'current' fields whatever ships today.
     else agents[fid] = incumbent === 'random' ? createRandomAgent()
       : incumbent === 'current' ? createHeuristicAgent({})
+      // 'legacy' = the pre-Package-B bot (G1's opponent): active weights,
+      // random-sampled menus, adjacency-only threat, no book.
+      : incumbent === 'legacy' ? createHeuristicAgent({ guided: false, weights: { tTransport: 0, bookBias: 0 } })
       : createHeuristicAgent({ weights: { ...WEIGHTS_V1 } });
   }
   const rng = botRng(seed * 31 + 7);
@@ -60,7 +63,8 @@ export function playEvalGame({ seed, challengerSeat, challengerCfg = null, incum
     if (++steps > MAX_ACTIONS) throw new Error(`eval seed ${seed}: stuck after ${steps} actions`);
     const q = currentQuery(s);
     try {
-      const menu = legalActions(s, q);
+      const view = viewFor(s, q.faction);
+      const menu = legalActions(s, q, { guide: agents[q.faction].makeGuide?.(view, q) });
       // Any throw aborts the whole run — an engine bug found by eval is a
       // P1, not a data point to average over.
       s = applyAction(s, agents[q.faction].decide(viewFor(s, q.faction), q, menu, rng)).state;

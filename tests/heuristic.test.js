@@ -11,7 +11,7 @@ import { createGame } from '../src/engine/state.js';
 import { beginPlanning, applyAction, stateHash } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, jitterWeights, WEIGHTS } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, jitterWeights, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { createRandomAgent, botRng } from '../src/agents/random.js';
 import { eq, ok } from './assert.js';
 
@@ -54,12 +54,15 @@ export const tests = [
   }},
 
   { name: 'jitter: same seed = same personality, different seed = different; effective weights are exposed for episode recording', fn() {
-    const w1 = jitterWeights(WEIGHTS, 555);
-    const w2 = jitterWeights(WEIGHTS, 555);
-    const w3 = jitterWeights(WEIGHTS, 556);
+    // Package B: the agent's base is M3E defaults merged UNDER the active
+    // vector (new keys only — the V1/V2 freeze is untouched).
+    const BASE = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const w1 = jitterWeights(BASE, 555);
+    const w2 = jitterWeights(BASE, 555);
+    const w3 = jitterWeights(BASE, 556);
     eq(JSON.stringify(w1), JSON.stringify(w2), 'jitter is deterministic');
     ok(JSON.stringify(w1) !== JSON.stringify(w3), 'a different seed is a different personality');
-    ok(Object.keys(w1).every(k => Math.abs(w1[k] - WEIGHTS[k]) <= Math.abs(WEIGHTS[k]) * 0.2 + 1e-9),
+    ok(Object.keys(w1).every(k => Math.abs(w1[k] - BASE[k]) <= Math.abs(BASE[k]) * 0.2 + 1e-9),
       'jitter stays inside the magnitude envelope');
     const agent = createHeuristicAgent({ jitterSeed: 555 });
     eq(agent.id, 'heuristic-v1+j555', 'the id names the personality');

@@ -139,8 +139,7 @@ if (!skipped) tests.push(
     const html = doc.body.innerHTML;
     ok(html.includes('House of York') || html.includes('York'), 'York on the board');
     ok(!/undefined/.test(doc.querySelector('#turn-panel')?.textContent || ''), 'no undefined leaks in the panel');
-    sel.value = 'core';
-    sel.dispatchEvent(new dom.window.Event('change'));
+    // warroses IS the default now (owner decision, Aug 2026) — nothing to restore
     await new Promise(r => setTimeout(r, 20));
   }},
 );
@@ -160,7 +159,7 @@ if (!skipped) tests.push(
     ok(stage.includes('Wakefield'), 'and history has its hook');
     // restore for later tests
     doc.querySelector('[data-stage-ok]')?.click();
-    doc.querySelector('#theme-select').value = 'core';
+    doc.querySelector('#theme-select').value = 'warroses';
     doc.querySelector('#theme-select').dispatchEvent(new dom.window.Event('change'));
     doc.querySelector('#seat-select').value = 'table';
     await new Promise(r => setTimeout(r, 30));

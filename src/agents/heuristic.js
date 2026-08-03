@@ -20,6 +20,7 @@ import { regionProps, region, controllerOf, seatsControlled, adjacency } from '.
 import { unitStrength } from '../engine/actionPhase.js';
 import { card } from '../engine/cards.js';
 import { botRng } from './random.js';
+import { bookPrior, bookLines, BOOKS } from './books.js';
 import { combatStrengths } from '../engine/combat.js';
 
 const ADJ = adjacency();
@@ -140,6 +141,31 @@ export const WEIGHTS_V2 = Object.freeze({
 /** The ACTIVE default vector — what shipped bots play. */
 export const WEIGHTS = WEIGHTS_V2;
 
+/**
+ * Package B additions (M3.e) — NEW keys only, so the V1/V2 freeze holds:
+ * neither frozen vector is edited; these defaults merge UNDER them (and any
+ * explicit override) in createHeuristicAgent/effectiveWeights. Tunable like
+ * everything else once the next SPSA run includes them.
+ */
+export const WEIGHTS_M3E = Object.freeze({
+  tTransport: 0.6,  // transported-reach threat scale (blunder #5): strength
+                    //   an enemy can LAND here via its warship chains counts
+                    //   toward pressure, discounted for the extra tempo
+  // BOOK DEFAULTS TO INERT (m3e31 finding): four paired smoke arms (N=36
+  // each, same block, vs legacy) all put the book UNDER the no-book bot —
+  // no book 25.0% · bias1.5/temp.4 13.9% · r1-only 16.7% · sharp-temp
+  // 19.4% · bias2/temp.8 11.1%. Fog at that N, but every arm leans the
+  // same way, and the pre-registered gate ships nothing on a negative
+  // read: the teacher's openings replayed without the teacher's
+  // follow-through are a costume, not a strategy — until a real-N run
+  // proves otherwise. The whole book apparatus stays live behind ONE
+  // weight key: bookBias > 0 turns on priors, line premium, menu
+  // injection, and graded sampling together; SPSA tunes all three keys.
+  bookBias: 0,      // opening-book pull; 0 = book inert (m3e31 default)
+  bookDecay: 0.5,   // per-round decay past round 1 (owner: later rounds riff)
+  bookTemp: 0.4,    // softmax temp over graded lines when sampling fires
+});
+
 
 /** Seeded multiplicative jitter over a weight vector (M3.b owner decision):
     every seat gets its own personality; same jitterSeed = same personality,
@@ -152,23 +178,66 @@ export function jitterWeights(base, jitterSeed, magnitude = 0.2) {
 }
 
 export function createHeuristicAgent(opts = {}) {
-  const { weights = {}, jitterSeed = null, jitterMagnitude = 0.2 } = opts;
-  let W = { ...WEIGHTS, ...weights };
+  const { weights = {}, jitterSeed = null, jitterMagnitude = 0.2, guided = true } = opts;
+  let W = { ...WEIGHTS_M3E, ...WEIGHTS, ...weights };
   if (jitterSeed !== null && jitterSeed !== undefined) W = jitterWeights(W, jitterSeed, jitterMagnitude);
-  return {
+  const agent = {
     id: jitterSeed != null ? `heuristic-v1+j${jitterSeed}` : 'heuristic-v1',
     weights: W,
     decide(view, query, menu, rng) {
       const scorer = SCORERS[query.type] || (() => 0);
+      const scored = menu.map(a => ({ a, s: scorer(view, query, a, W) }));
       let best = [], bestScore = -Infinity;
-      for (const a of menu) {
-        const s = scorer(view, query, a, W);
+      for (const { a, s } of scored) {
         if (s > bestScore + 1e-9) { bestScore = s; best = [a]; }
         else if (s > bestScore - 1e-9) best.push(a);
+      }
+      // Package B (owner decision): when the teacher's graded lines are on
+      // the table AND one of them leads the menu, the bot samples among the
+      // book lines by grade instead of always taking the top choice — play
+      // stays varied without ever preferring a line the scorer ranks worse
+      // than the best off-book plan. Everywhere else: argmax, as ever.
+      if (query.type === 'submitOrders') {
+        const lines = bookLines(query.faction, view.round ?? 1);
+        if (lines.length > 1) {
+          const sigOf = orders => Object.entries(orders)
+            .map(([rid, o]) => `${rid}:${o.type}|${o.mod}|${o.starred}`).sort().join(' ');
+          const lineSigs = new Set(lines.map(l => sigOf(l.orders)));
+          const bookItems = scored.filter(x => lineSigs.has(sigOf(x.a.orders)));
+          if (bookItems.length > 1 && bookItems.some(x => x.s >= bestScore - 1e-9)) {
+            const T = Math.max(0.05, W.bookTemp ?? WEIGHTS_M3E.bookTemp);
+            const m = Math.max(...bookItems.map(x => x.s));
+            const wts = bookItems.map(x => Math.exp((x.s - m) / T));
+            let roll = rng() * wts.reduce((a, b) => a + b, 0);
+            for (let i = 0; i < bookItems.length; i++) {
+              roll -= wts[i];
+              if (roll <= 0) return bookItems[i].a;
+            }
+            return bookItems[bookItems.length - 1].a;
+          }
+        }
       }
       return best[Math.floor(rng() * best.length)];
     },
   };
+  if (guided) {
+    /** Guided menu construction (Package B): a per-placement scoring closure
+        legal.js uses to build top-K order sets. Same lens as the scorer.
+        guided:false fields the pre-Package-B bot (random-sampled menus) —
+        the LEGACY incumbent the G1 gate measures against. */
+    agent.makeGuide = (view, query) => ({
+      scorePlacement: (rid, o) => scorePlacement(view, query.faction, rid, o, W),
+      // The teacher's graded lines for this seat+round, offered to the menu
+      // builder as candidate sets (the simulator still arbitrates legality).
+      // Top-2 graded lines only (injecting every line displaced constructed
+      // breadth from the K-capped menu — m3e31 smoke finding), and only
+      // while the book is live: an inert book must not narrow menus either.
+      candidateSets: () => (W.bookBias ?? 0) > 0
+        ? bookLines(query.faction, view.round ?? 1).slice(0, 2).map(l => l.orders)
+        : [],
+    });
+  }
+  return agent;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,6 +270,70 @@ function pressureOn(view, rid, fid) {
   return p;
 }
 
+// --- transported reach (blunder #5, Package B) ------------------------------
+// The owner's own amphibious wins are the exploit the old adjacency-only
+// threat model missed: a coast is under threat from any army that can EMBARK
+// onto a friendly warship chain touching it. Computed once per view (WeakMap
+// cache): for each faction, connect its warship-holding seas into components;
+// every land/port region on a component's shore is both an embarkation point
+// and a landing zone. The component's threat is the strength of that
+// faction's land forces standing on its shore; every shore region inherits
+// it. Deliberately an over-estimate at the margin (an army adjacent by land
+// AND by sea counts twice; embarked strength isn't split across landings) —
+// this is a THREAT model, and tTransport scales it down for the tempo a
+// landing costs.
+
+const THREAT_CACHE = new WeakMap();
+
+function transportedThreatMap(view) {
+  let map = THREAT_CACHE.get(view);
+  if (map) return map;
+  map = {}; // rid -> { faction: max component strength }
+  for (const fid of view.factions) {
+    const hasShips = rid => (view.unitsByRegion[rid] || [])
+      .some(u => u.faction === fid && u.type === 'warship' && !u.routed);
+    const seas = Object.keys(view.unitsByRegion)
+      .filter(rid => region(rid)?.kind === 'maritime' && hasShips(rid));
+    const seen = new Set();
+    for (const s0 of seas) {
+      if (seen.has(s0)) continue;
+      const comp = [s0]; seen.add(s0);
+      for (let i = 0; i < comp.length; i++) {
+        for (const n of ADJ[comp[i]] || []) {
+          if (!seen.has(n) && seas.includes(n)) { seen.add(n); comp.push(n); }
+        }
+      }
+      const shore = new Set();
+      for (const sea of comp) for (const n of ADJ[sea] || []) {
+        if (region(n)?.kind !== 'maritime') shore.add(n);
+      }
+      let str = 0;
+      for (const rid of shore) for (const u of view.unitsByRegion[rid] || []) {
+        if (u.faction === fid && !u.routed && u.type !== 'warship') {
+          str += unitStrength(u, { fortified: false });
+        }
+      }
+      if (!str) continue;
+      for (const rid of shore) {
+        (map[rid] ??= {});
+        map[rid][fid] = Math.max(map[rid][fid] ?? 0, str);
+      }
+    }
+  }
+  THREAT_CACHE.set(view, map);
+  return map;
+}
+
+/** pressureOn + what the enemy can LAND here — the full threat signal. */
+function threatOn(view, rid, fid, W) {
+  let t = pressureOn(view, rid, fid);
+  const tm = transportedThreatMap(view)[rid];
+  if (tm) for (const [e, s] of Object.entries(tm)) {
+    if (e !== fid) t += s * (W.tTransport ?? WEIGHTS_M3E.tTransport);
+  }
+  return t;
+}
+
 /** What owning this region is worth to fid. */
 function regionValue(view, rid, W) {
   const r = region(rid);
@@ -227,63 +360,112 @@ function attackScore(view, to, myStr, fid, W) {
 // scorers — one per query type; unknown types fall through to uniform random
 // ---------------------------------------------------------------------------
 
+/**
+ * Score ONE order placement — the shared lens (Package B): the submitOrders
+ * scorer sums it over a set, and the guided menu builder in legal.js calls it
+ * (via the agent's makeGuide closure) to construct top-K order sets. One
+ * function, so the menu the bot is offered and the choice it makes among
+ * menus can never disagree about what a placement is worth. Threat here is
+ * threatOn — adjacency PLUS transported reach (blunder #5): a quiet border
+ * with an enemy fleet off the coast is not quiet.
+ */
+/** Book key format — MUST match tools/mine.mjs tokenKey exactly. */
+const tokenKey = o => `${o.type}${o.mod > 0 ? '+1' : o.mod < 0 ? '-1' : ''}${o.starred ? '*' : ''}`;
+
+/** The opening book's pull on one placement: prior × bookBias, decaying per
+    round past the first (owner decision, Package B: "further rounds have less
+    certainty to stick with books or riff"). Zero wherever the book is silent. */
+function bookBonus(fid, round, rid, o, W) {
+  const prior = bookPrior(fid, round, rid, tokenKey(o));
+  if (!prior) return 0;
+  return prior * (W.bookBias ?? WEIGHTS_M3E.bookBias) *
+    Math.pow(W.bookDecay ?? WEIGHTS_M3E.bookDecay, Math.max(0, round - 1));
+}
+
+export function scorePlacement(view, fid, rid, o, W) {
+  const threat = threatOn(view, rid, fid, W);
+  const mine = myStrengthAt(view, rid, fid);
+  const here = regionValue(view, rid, W);
+  const props = region(rid)?.kind === 'maritime' ? { muster: 0 } : regionProps(view, rid);
+  let s = 0;
+  switch (o.type) {
+    case 'defend':
+      if (region(rid)?.kind === 'port') {
+        // Dumb-but-legal (owner ruling, Jul 2026): battles never occur in
+        // ports, so a port defend does nothing — waste it never.
+        s -= W.pDefend * 0.5;
+        break;
+      }
+      s += W.pDefend * Math.min(threat, mine + 2) * (here / W.wLand) * 0.3 + (o.mod || 0) * 0.3;
+      break;
+    case 'march': {
+      let best = 0;
+      for (const nbr of ADJ[rid] || []) best = Math.max(best, attackScore(view, nbr, mine + (o.mod || 0), fid, W));
+      s += W.pMarch * best * 0.4;
+      if (threat > mine) s += 0.5; // an exit when outmatched
+      break;
+    }
+    case 'support': {
+      let need = 0;
+      for (const nbr of ADJ[rid] || []) {
+        if (controllerOf(view, nbr) === fid) need = Math.max(need, threatOn(view, nbr, fid, W));
+      }
+      s += W.pSupport * Math.min(need, mine) * 0.3;
+      break;
+    }
+    case 'rally': // canonical type (the theme may DISPLAY it as Consolidate Power)
+      if (region(rid)?.kind === 'maritime') {
+        // Dumb-but-legal (owner ruling m3e1): sea rallies collect nothing.
+        // Legality moved out of the rules; avoidance lives HERE.
+        s -= W.pRally;
+        break;
+      }
+      s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (threat === 0 ? 1 : 0.4);
+      break;
+    case 'raid': {
+      let targets = 0;
+      for (const nbr of ADJ[rid] || []) if (enemyStrengthAt(view, nbr, fid) > 0) targets++;
+      // Owner blunder bank #3: a raid with nobody to raid is a wasted token.
+      s += targets ? W.pRaid * Math.min(targets, 2) * 0.6 : -W.pRaid * 0.4;
+      break;
+    }
+  }
+  // Owner blunder bank #6: a starred rally off-fort burns the star
+  // allowance for nothing a plain rally wouldn't give.
+  if (o.starred) {
+    const fortHere = o.type === 'rally' && region(rid)?.kind !== 'maritime'
+      ? regionProps(view, rid).muster > 0 : true;
+    s += o.type === 'rally' && !fortHere ? -W.pStarBonus : W.pStarBonus;
+  }
+  s += bookBonus(fid, view.round ?? 1, rid, o, W);
+  return s;
+}
+
 const SCORERS = {
   // ----- planning -----
   submitOrders(view, q, a, W) {
     let s = 0;
     for (const [rid, o] of Object.entries(a.orders)) {
-      const pressure = pressureOn(view, rid, q.faction);
-      const mine = myStrengthAt(view, rid, q.faction);
-      const here = regionValue(view, rid, W);
-      const props = region(rid)?.kind === 'maritime' ? { muster: 0 } : regionProps(view, rid);
-      switch (o.type) {
-        case 'defend':
-          if (region(rid)?.kind === 'port') {
-            // Dumb-but-legal (owner ruling, Jul 2026): battles never occur in
-            // ports, so a port defend does nothing — waste it never.
-            s -= W.pDefend * 0.5;
-            break;
-          }
-          s += W.pDefend * Math.min(pressure, mine + 2) * (here / W.wLand) * 0.3 + (o.mod || 0) * 0.3;
-          break;
-        case 'march': {
-          let best = 0;
-          for (const nbr of ADJ[rid] || []) best = Math.max(best, attackScore(view, nbr, mine + (o.mod || 0), q.faction, W));
-          s += W.pMarch * best * 0.4;
-          if (pressure > mine) s += 0.5; // an exit when outmatched
-          break;
-        }
-        case 'support': {
-          let need = 0;
-          for (const nbr of ADJ[rid] || []) {
-            if (controllerOf(view, nbr) === q.faction) need = Math.max(need, pressureOn(view, nbr, q.faction));
-          }
-          s += W.pSupport * Math.min(need, mine) * 0.3;
+      s += scorePlacement(view, q.faction, rid, o, W);
+    }
+    // Coherence premium (Package B): a set matching one of the teacher's
+    // graded lines EXACTLY is a proven whole; a greedy blend of the best
+    // placements cherry-picked ACROSS lines is not, and without this term
+    // the blend outscores every real line by construction — the bot would
+    // hold the book and never play from it. Premium scales with the line's
+    // grade and decays with rounds like the rest of the book's pull.
+    const round = view.round ?? 1;
+    const lines = bookLines(q.faction, round);
+    if (lines.length) {
+      const sig = Object.entries(a.orders).map(([rid, o]) => `${rid}:${o.type}|${o.mod}|${o.starred}`).sort().join(' ');
+      for (const line of lines) {
+        const lsig = Object.entries(line.orders).map(([rid, o]) => `${rid}:${o.type}|${o.mod}|${o.starred}`).sort().join(' ');
+        if (sig === lsig) {
+          const grade = line.n / (BOOKS[q.faction]?.games || 1);
+          s += (W.bookBias ?? WEIGHTS_M3E.bookBias) * (2 + grade) *
+            Math.pow(W.bookDecay ?? WEIGHTS_M3E.bookDecay, Math.max(0, round - 1));
           break;
         }
-        case 'rally': // canonical type (the theme may DISPLAY it as Consolidate Power)
-          if (region(rid)?.kind === 'maritime') {
-            // Dumb-but-legal (owner ruling m3e1): sea rallies collect nothing.
-            // Legality moved out of the rules; avoidance lives HERE.
-            s -= W.pRally;
-            break;
-          }
-          s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (pressure === 0 ? 1 : 0.4);
-          break;
-        case 'raid': {
-          let targets = 0;
-          for (const nbr of ADJ[rid] || []) if (enemyStrengthAt(view, nbr, q.faction) > 0) targets++;
-          // Owner blunder bank #3: a raid with nobody to raid is a wasted token.
-          s += targets ? W.pRaid * Math.min(targets, 2) * 0.6 : -W.pRaid * 0.4;
-          break;
-        }
-      }
-      // Owner blunder bank #6: a starred rally off-fort burns the star
-      // allowance for nothing a plain rally wouldn't give.
-      if (o.starred) {
-        const fortHere = o.type === 'rally' && region(rid)?.kind !== 'maritime'
-          ? regionProps(view, rid).muster > 0 : true;
-        s += o.type === 'rally' && !fortHere ? -W.pStarBonus : W.pStarBonus;
       }
     }
     return s;
@@ -333,7 +515,7 @@ const SCORERS = {
     }
     // abandoning an owned seat with hostiles on the border
     const props = region(a.region)?.kind === 'maritime' ? { muster: 0 } : regionProps(view, a.region);
-    if (props.muster > 0 && leftBehind <= 0 && pressureOn(view, a.region, q.faction) > 0) {
+    if (props.muster > 0 && leftBehind <= 0 && threatOn(view, a.region, q.faction, W) > 0) {
       s -= W.mAbandonSeat;
       if (a.leaveControl) s += W.mLeaveControl;
     }
@@ -466,7 +648,7 @@ const SCORERS = {
 
   retreat(view, q, a, W) {
     const fid = q.faction;
-    let s = -pressureOn(view, a.to, fid) * W.rtSafety * 0.2;
+    let s = -threatOn(view, a.to, fid, W) * W.rtSafety * 0.2;
     if (controllerOf(view, a.to) === fid) s += W.rtHome;
     return s;
   },
@@ -507,9 +689,9 @@ const SCORERS = {
  * weights files never break.
  */
 export function effectiveWeights(cfg, fid) {
-  if (!cfg) return { ...WEIGHTS };
-  if (!cfg.shared && !cfg.perFaction) return { ...WEIGHTS, ...cfg }; // legacy flat
-  const out = { ...WEIGHTS, ...(cfg.shared || {}) };
+  if (!cfg) return { ...WEIGHTS_M3E, ...WEIGHTS };
+  if (!cfg.shared && !cfg.perFaction) return { ...WEIGHTS_M3E, ...WEIGHTS, ...cfg }; // legacy flat
+  const out = { ...WEIGHTS_M3E, ...WEIGHTS, ...(cfg.shared || {}) };
   const delta = cfg.perFaction?.[fid];
   if (delta) for (const k of Object.keys(delta)) out[k] = (out[k] ?? 0) * delta[k];
   return out;

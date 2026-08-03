@@ -27,7 +27,8 @@ export function playSymmetricGame(seed) {
   while (s.phase !== 'gameOver') {
     if (++steps > 6000) throw new Error(`seatbias seed ${seed}: stuck`);
     const q = currentQuery(s);
-    s = applyAction(s, agent.decide(viewFor(s, q.faction), q, legalActions(s, q), rng)).state;
+    const view = viewFor(s, q.faction);
+    s = applyAction(s, agent.decide(view, q, legalActions(s, q, { guide: agent.makeGuide?.(view, q) }), rng)).state;
   }
   const over = s.log.filter(e => e.event === 'gameOver').pop();
   return { winner: over.standings[0], standings: over.standings, rounds: s.round };

@@ -1,15 +1,15 @@
 import { REGIONS, PORTS, buildAdjacency } from './data/map.js';
 import { FACTIONS } from './data/factions.js';
-import { THEME_CORE } from './themes/core.js';
-import { THEME_ASOIAF } from './themes/asoiaf.js';
+import { THEME_WARROSES } from './themes/warroses.js';
+import { THEME_2026 } from './themes/modern2026.js';
 import { renderMap, markSelected } from './map-view.js';
 import { SETUP } from './data/setup.js';
 
-const THEMES = { core: THEME_CORE, asoiaf: THEME_ASOIAF };
+const THEMES = { warroses: THEME_WARROSES, modern2026: THEME_2026 };
 const ADJ = buildAdjacency();
 const byId = Object.fromEntries([...REGIONS, ...PORTS].map(r => [r.id, r]));
 
-let theme = THEME_CORE;
+let theme = THEME_WARROSES;
 let selectedId = null;
 
 const $ = s => document.querySelector(s);

@@ -329,6 +329,194 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## THE ROSES TAKE THE BOARD — theme cut + standalone (m3e32)
+
+**Owner decision (Aug 2026): Wars of the Roses IS the game.** Core (The
+Sundered Realm) and ASOIAF are dropped from play — removed from both
+pickers (game + explorer) and the THEMES maps; asoiaf.js deleted. Global
+2026 stays available on the back burner (second in the picker). WotR is
+the default everywhere; an unknown picker value falls back to it.
+core.js SURVIVES as the theme KEY-SPACE REFERENCE the mirror golden
+checks packs against — it is not selectable. The painted map
+(assets/map-asoiaf.webp — owner's own art) stays: the WotR canvas rides
+on it. Mirror golden now covers warroses + modern2026 against core.
+Standalone rebuilt (dist/hegemon.html, ~1.0 MB, WotR default, books
+bundled) — plays from file://, a USB stick, or an AirDropped file.
+Suite: **267**.
+
+## M3.e PACKAGE B SHIPS — the miner, the books, the guided menus (m3e31)
+
+**"Package B, go" executed in full.** Suite **267/0**. What landed:
+
+**tools/mine.mjs — the corpus miner, doctrine made mechanical.** Admission:
+finished win + winner's seat controlled by human (ground truth over titles)
++ stepwise replay under the CURRENT engine reproducing the recorded hash.
+Output is a GENERATED module (src/agents/books.js) carrying per-faction
+books — per-round placement priors AND the distinct graded LINES (whole
+order sets with win counts) — plus full provenance: every admitted file
+with its verified hash, every quarantined file with its reason.
+
+**CORPUS FINDING: 12 of 21 admitted; 8 wins STALE.** Rev-8/9/10 episodes
+replay legally but hash-diverge under rev 11 — quarantined per the
+check-episode doctrine, never silently learned from. The effective book
+is 12 wins (F1 1 · F2 1 · F3 4 · F4 2 · F5 3 · F6 1); the ONLY Greyjoy-era
+Lannister, Stark-easy, Tyrell-strategy, France, Iran, and spectate wins
+all went stale. Owner activity 4 (new wins, varied openings) is now worth
+double — every rev-11 win auto-admits on the next mine.
+
+**Guided top-K planning menus (legal.js).** legalActions grows opts.guide —
+a per-placement scoring closure the agent builds over its OWN redacted view
+(redaction contract intact; the engine never leaks state into menu
+construction). With a guide, submitOrders menus are CONSTRUCTED: set 0 pure
+greedy, the rest seeded perturbations — K distinct good-faith plans, the fix
+blunder #3's dud-survival demanded. No guide = the M3.a sampler byte-for-byte
+(fuzz breadth preserved; golden). All four dispatch paths (selfplay, eval,
+seatbias, UI mixed/spectate) pass the guide. Build bug found and fixed:
+index-scaled perturbation could never displace a rank-0 token — 32 attempts
+rebuilt one set; symmetric spread-scaled noise restored diversity.
+
+**Transported-reach threat model (blunder #5 CLOSED).** threatOn = adjacency
+pressure + what the enemy can LAND here: per-faction warship-sea components,
+every shore region both embarkation and landing zone, component strength
+inherited by its whole shore, scaled by tTransport. Feeds defend/support/
+rally-quiet scoring, march-exit, seat abandonment, and retreat safety.
+Deliberate over-estimate at the margin — it is a threat model. Golden
+constructs the amphibious situation (the setup map separates home seas —
+verified zero lift at setup, so the fleets must sail before coasts feel it).
+
+**OWNER DECISIONS (recorded):** Book strength — the mined lines are GRADED
+candidates; the bot samples among leading lines by softmax (bookTemp)
+rather than always taking the top choice; the book's pull decays per round
+(bookDecay) so later rounds riff. Book scope — PER FACTION as mined
+(region-keyed placements ARE the signal; per-archetype pooling would lose
+the map); scope explained and delegated back, per-faction adopted.
+A coherence premium makes an exactly-matched line outscore the greedy
+blend that cherry-picks placements ACROSS lines — without it the bot holds
+the book and never plays from it.
+
+**MEASUREMENT FINDING — THE BOOK SHIPS INERT (bookBias 0).** Four paired
+smoke arms (N=36, same seed block, guided+threat challenger vs legacy
+incumbents): **no book 25.0% · book@bias2/temp.8 11.1% · r1-only 16.7% ·
+sharp-temp 19.4% · retuned bias1.5/temp.4 13.9%; stock-inert regression
+22.2%.** Fog at N=36, but every book arm sits under the no-book bot: the
+teacher's openings replayed without the teacher's follow-through are a
+costume, not a strategy — until a real-N run says otherwise. The entire
+apparatus (priors, premium, injection, graded sampling) sits behind ONE
+weight key: bookBias > 0 turns it all on; bookBias/bookDecay/bookTemp are
+ordinary weight keys the next SPSA run tunes. Menu injection is capped at
+the top-2 graded lines (full injection displaced constructed breadth from
+the K-capped menu) and disabled entirely while inert.
+
+**The G1 gate (owner, ~30m compute) — the phase's only open gate:**
+`node tools/eval.mjs --games 600 --seed 90000 --incumbent legacy --workers 15`
+— 'legacy' fields the pre-Package-B bot (active weights, sampled menus,
+adjacency-only threat, no book). Ship bar: CI-lo > 16.7%. Second arm to
+adjudicate the book at real N:
+`--challenger '{"shared":{"bookBias":1.5}}'` (same block = paired).
+If the book arm wins at real N, flip the WEIGHTS_M3E default and re-golden.
+M1 seatbias N=6000 vs the anchor and the F3/F6 island-lift question follow
+G1. New Package B weight keys: tTransport 0.6 · bookBias 0 · bookDecay 0.5
+· bookTemp 0.4.
+
+## ESPERANCE: 3/3 — THE CAMPAIGN CYCLE COMPLETE (m3e30, doc)
+
+Percy finale hash-verified (seats win r6 — human win #20, **20-0**).
+ALL THREE MARKS: Warden (topped both invader bids — r5 the portrait:
+whole realm bid 0, Percy alone paid for the border); Feud Repaid
+(Middleham held at end, Neville reduced to 1 seat); Alnwick Endures
+(ownership timeline ONE ENTRY long — never changed hands; the
+never-clause finally survived). Tudor annihilated (0 seats) in Percy's
+own campaign — the chronicle keeps its accounts.
+
+**CYCLE COMPLETE — all six houses briefed, seven campaigns graded:**
+York 3/3 · Kingmaker 3/3 · She-Wolf 3/3 · Swan 2/3 · Dragon 2/3 ·
+Dragon II 2/3 · Esperance 3/3. Corpus at 20 human wins, 0 losses; four
+total annihilations; one triple crown; every game system now carries
+human campaign data (bidding was last — the Warden closed it).
+
+**CHAT BOUNDARY MILESTONE:** this conversation ends here by design.
+NEXT SESSION OPENS WITH: "Package B, go" — tools/mine.mjs, per-faction
+opening books from the 20-win corpus, guided top-K menus, the
+transported-reach threat model; G1 (beat the m3e11+ bots, CI-lo>16.7%)
+is the phase's only open gate. Owner design decisions to surface
+mid-build: book strength (hard prior vs decaying), book scope
+(per-faction vs per-archetype). All state lives in this README, the
+rulings, and the transcripts — the fresh chat pulls the repo and knows
+everything.
+
+## DRAGON v2 GRADED: 2 OF 3 — the suspended Bosworth (m3e28, doc)
+
+Tudor v2 hash-verified (seats win r8 — human win #19, 19-0). Mark 1
+ACHIEVED (r1 S04→P08 ruled HOME WATERS: P08 is Carisbrooke's own port —
+fleet-building, not crossing). Mark 2 ACHIEVED PERFECTLY: beachhead
+Dover (L21) taken r4, never lost, held at end — the one landing v1
+failed, executed clean. **Mark 3 NOT ACHIEVED — SUSPENDED ALL GAME:**
+crown timeline is r1:F3 and never moves; under the Bosworth Clause the
+mark suspends while Tudor reigns, and he reigned wire to wire — 11
+battles, 10 wins, 0 eligible. Failure trilogy now: Swan failed
+RESTRAINT, Dragon-1 failed HOLDING, Dragon-2 failed by TOTAL REIGN.
+Path to 3/3 recorded: refuse the Crown until after the regicide, or
+deliberately abdicate at Parliament to crown a victim (the anti-
+Kingmaker gambit — make a king purely to destroy him in the field).
+**Bot watch: Neville peaked 6 seats and finished 2nd at 6 — one castle
+from ending the streak; the island lift is real and hunting.** Percy
+annihilated (0 seats; 7 of the human's 11 battles).
+
+## THE LAST DRAGON GRADED: 2 OF 3 — Bosworth at sea (m3e27, doc)
+
+Tudor campaign hash-verified (rev 11, seats win r8 — human win #18,
+18-0). **Mark 1 ACHIEVED flawless** (zero pre-r4 marches). **Mark 3
+ACHIEVED r4 — AT SEA:** the descent's opening battle broke crowned
+York's fleet in the Narrow Sea (Bosworth Clause satisfied on the water;
+repeated r5 at L07 for good measure; Crown seized by Tudor at r6 and
+held to the end). **Mark 2 FAILED:** beachhead L07 taken r5, LOST r6
+(and the second foothold L29 lost the same round) — recaptured r7, but
+"never" broke; there was a second fleet, and a third. Second consecutive
+2/3: the marks are calibrated to fail even undefeated play. Grader
+methodology note: victor-attribution bug found and fixed mid-grading
+(combatResolved now matched to its combatBegan, not appended to the
+last human battle) — all verdicts re-derived from the corrected pass.
+York ends at 0 seats / 2 units. Loss shelf: still empty; even the
+loss-hunt scenario produced a win.
+
+## RULING: THE BOSWORTH CLAUSE (m3e26, doc — supersedes prior gloss)
+
+"Crowned head" = the CROWN TRACK holder at the moment the battle begins
+— NOT the seat leader (earlier seat-based gloss and the 4-4 co-leader
+tie ruling are superseded; the track never ties). Winning the Crown at
+bid is NOT Bosworth: the mark demands the battlefield. If Tudor tops the
+Crown track himself, the mark SUSPENDS while he reigns — no crowned head
+exists to bring down. Grading bound accordingly. (On the owner's live
+r4 board both readings point at York; no strategic impact.)
+
+## RULING: THE WEALD CLAUSE — Tudor's mainland estates (m3e25, doc)
+
+Owner pre-play question: Tudor STARTS with The Weald (L20) — how do the
+Dragon's marks treat it? RULING (Richmond-in-exile doctrine): The Weald
+is the exile's ESTATES, not his invasion. Mark 1 binds the HOST: the
+Weald garrison may hold/defend/rally/fight in place but nothing marches
+OUT of it, and nothing crosses the sea, before year 4; losing The Weald
+pre-r4 breaks nothing (confiscation is the exile's tax). Mark 2: The
+Weald is NOT the beachhead — the beachhead is the first mainland capture
+by sea-crossing forces in year ≥4 (if that capture is a RE-TAKEN Weald,
+it becomes the beachhead from recapture). Mark 3 unaffected; a defensive
+win vs the seat-leader counts. Grading is bound to this ruling.
+
+## THE SWAN GRADED: 2 OF 3 — the first non-sweep (m3e24, doc)
+
+Stafford/Swan campaign hash-verified (rev 11, seats win r6 — human win
+#17, 17-0). Mark 1 ACHIEVED w/ asterisks (L33 lost r2/regained r3; L30
+lost+regained inside r5; both held at the end). **Mark 2 FAILED, strict
+and lenient:** r5 shows war with Percy AND Tudor — including a
+counter-ATTACK on Tudor (F3 atk), so even initiated-only scoring reads
+two wars in one year. First failed glory-mark on record; the
+certification has teeth. Finding banked: defensive entanglement breaks
+single-front discipline the moment the player punches back — a human
+decision pattern for future bot modeling. Mark 3 ACHIEVED (F4 · F2 · F1
+— above both roses; early seats win supersedes the standings clause).
+Note: container reset mid-session; repo recloned from the owner's pushed
+m3e23 — state continuous.
+
 ## THE SHE-WOLF CERTIFIED (m3e22, doc)
 
 Margaret's campaign, hash-verified (rev 11, r10, end reason ROUNDS —
@@ -445,8 +633,13 @@ before throne (no mainland move before r4), ONE landing never lost, and
 Bosworth (defeat the current seat-leader in open battle); "The Swan
 Between Millstones" — both home seats to the last round, war with at
 most ONE house per year, and finish above BOTH roses on final standings.
-All marks transcript-gradable. **Remaining:** Percy (the Marches and the
-feud) — the finale. Then: ASOIAF/2026 briefing sets if the
+All marks transcript-gradable. **Percy SHIPPED (m3e29) — "Esperance" — THE SET IS COMPLETE, all six
+houses brief.** Marks: WARDEN (top every invader bid, alone or tied, all
+game — the corpus-thin bidding system finally gets a campaign), THE FEUD
+REPAID (hold Middleham at end — the bound offensive target), ALNWICK
+ENDURES (the never-clause, where campaigns go to die). Backstory owns
+the corpus's own history: the Kingmaker's sack and the Dragon's
+annihilation are Percy's scars now. Then: ASOIAF/2026 briefing sets if the
 feature earns love; a "re-read briefing" affordance in the system area;
 possible future: objective TRACKING (checkmarks when a glory-mark falls).
 

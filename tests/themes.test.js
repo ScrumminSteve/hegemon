@@ -3,13 +3,15 @@
 
 import { THEME_CORE } from '../src/themes/core.js';
 import { ICON_SETS, REQUIRED_ICONS } from '../src/icons.js';
-import { THEME_ASOIAF } from '../src/themes/asoiaf.js';
+import { THEME_WARROSES } from '../src/themes/warroses.js';
 import { THEME_2026 } from '../src/themes/modern2026.js';
 import { LEADER_CARDS } from '../src/data/leaderCards.js';
 import { REGIONS } from '../src/data/map.js';
 import { eq, ok } from './assert.js';
 
-const PACKS = { asoiaf: THEME_ASOIAF, modern2026: THEME_2026 };
+// Owner decision (Aug 2026): the PLAYABLE packs are warroses (default) and
+// modern2026; core remains the key-space reference these are mirrored against.
+const PACKS = { warroses: THEME_WARROSES, modern2026: THEME_2026 };
 
 export const tests = [
 
