@@ -329,6 +329,27 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## G2 GRADED — THE GATE FALLS, AND A ZERO EATS 600 GAMES (m3e35)
+
+**G2 stock (seed 91000, N=600): 30.0% [26.5–33.8] vs the 16.7% bar —
+EMPHATIC PASS.** Both pre-registered predictions confirmed: F3 1→15/100,
+F6 1→17/100 (the amphibious eyes were the real island fix); worst-seat
+mean rank 5.2→3.6. The m3e34 bot nearly doubles the legacy bot. This is
+the new anchor for everything downstream.
+
+**The book arm was VOID — my bug, banked in full:** g2-book345 came back
+byte-identical to stock because effectiveWeights treats perFaction as
+MULTIPLIERS (the SPSA convention) and the stock bookBias default is 0.
+The pre-registered config ran 600 games of 0 × 1.5 = 0. Nothing about
+the book was tested; the hypothesis stands untried, not refuted. Fix:
+perFactionSet (ABSOLUTE overrides) added beside perFaction, the
+zero-trap locked in a golden, books-f345.json regenerated to use it.
+The book arm re-runs on the SAME seed 91000 — still paired with the
+banked stock result:
+`node tools/eval.mjs --games 600 --seed 91000 --incumbent legacy --workers 15 --challenger books-f345.json > g2-book345-v2.txt`
+
+Suite: **270**.
+
 ## THE ISLAND SEATS GET THEIR EYES — m3e34 (island fix, tie beat, telemetry reader)
 
 **FORENSIC CORRECTION FIRST (banked so it never misleads again):** the

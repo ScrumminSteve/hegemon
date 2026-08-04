@@ -13,7 +13,7 @@ import * as stateApi from '../src/engine/state.js';
 import { beginPlanning, applyAction, stateHash } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, scorePlacement, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, scorePlacement, effectiveWeights, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { botRng } from '../src/agents/random.js';
 import { BOOKS, BOOK_PROVENANCE, bookPrior, bookLines } from '../src/agents/books.js';
 import { eq, ok } from './assert.js';
@@ -251,6 +251,17 @@ export const tests = [
     eq(scorePlacement(v, fid, rigged.rid, rally, W),
        scorePlacement(v, fid, rigged.rid, rally, Woff),
       'tTransport has ZERO effect on rally scoring');
+  }},
+
+  { name: 'the zero-trap (m3e35, G2 forensics): perFaction multiplies and can NEVER lift a zeroed weight; perFactionSet overrides absolutely — both proven', fn() {
+    const mult = { perFaction: { F3: { bookBias: 1.5 } } };
+    eq(effectiveWeights(mult, 'F3').bookBias, 0,
+      'the 600-game lesson: 0 × 1.5 = 0 — the book arm that silently ran stock');
+    const abs = { perFactionSet: { F3: { bookBias: 1.5 } } };
+    eq(effectiveWeights(abs, 'F3').bookBias, 1.5, 'perFactionSet lifts the zero');
+    eq(effectiveWeights(abs, 'F1').bookBias, 0, 'other seats untouched');
+    eq(effectiveWeights(abs, 'F3').tTransport, effectiveWeights(null, 'F3').tTransport,
+      'unmentioned keys keep their defaults');
   }},
 
   { name: 'guided all-heuristic table plays a full game with zero rejections and is deterministic (the Package B fuzz)', fn() {

@@ -733,9 +733,15 @@ const SCORERS = {
  */
 export function effectiveWeights(cfg, fid) {
   if (!cfg) return { ...WEIGHTS_M3E, ...WEIGHTS };
-  if (!cfg.shared && !cfg.perFaction) return { ...WEIGHTS_M3E, ...WEIGHTS, ...cfg }; // legacy flat
+  if (!cfg.shared && !cfg.perFaction && !cfg.perFactionSet) return { ...WEIGHTS_M3E, ...WEIGHTS, ...cfg }; // legacy flat
   const out = { ...WEIGHTS_M3E, ...WEIGHTS, ...(cfg.shared || {}) };
+  // perFaction = MULTIPLIERS (the SPSA convention). The G2 lesson (m3e35):
+  // a multiplier can never lift a zero-default weight — the pre-registered
+  // book arm ran 600 games of bookBias 0 × 1.5 = 0 and reproduced stock
+  // byte-for-byte. perFactionSet = ABSOLUTE overrides, for exactly that.
   const delta = cfg.perFaction?.[fid];
   if (delta) for (const k of Object.keys(delta)) out[k] = (out[k] ?? 0) * delta[k];
+  const abs = cfg.perFactionSet?.[fid];
+  if (abs) for (const k of Object.keys(abs)) out[k] = abs[k];
   return out;
 }
