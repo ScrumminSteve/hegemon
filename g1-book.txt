@@ -1,0 +1,4 @@
+challenger book.json vs legacy — 600 games, 15 worker(s), 370.9s
+win rate 18.5% [15.6–21.8] (null 16.7%)
+mean rank 3.507 · worst seat 5.11 · mean rounds 9.94
+per seat: F6 1/100 r5.11  F2 11/100 r4  F5 31/100 r2.67  F4 21/100 r2.78  F3 20/100 r3.37  F1 27/100 r3.11

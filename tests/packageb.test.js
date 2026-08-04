@@ -201,6 +201,58 @@ export const tests = [
       'where the book is silent, bookBias is invisible');
   }},
 
+  { name: 'island fix (m3e34): an offshore fleet must not stop tax collection — rally stays full-value under transported-only threat, while defend still feels it', fn() {
+    const s = freshPlanning();
+    const fid = currentQuery(s).faction;
+    const base = viewFor(s, fid);
+    const { adjacency, region } = stateApi;
+    const ADJ = adjacency();
+    let rigged = null;
+    outer:
+    for (const [rid, units] of Object.entries(base.unitsByRegion)) {
+      if (!units.some(u => u.faction === fid)) continue;
+      if (region(rid)?.kind !== 'land') continue;
+      for (const sea of ADJ[rid] || []) {
+        if (region(sea)?.kind !== 'maritime') continue;
+        const far = [...(ADJ[sea] || [])].find(rr =>
+          rr !== rid && region(rr)?.kind === 'land' && !(ADJ[rid] || new Set()).has(rr));
+        if (far) { rigged = { rid, sea, far }; break outer; }
+      }
+    }
+    ok(rigged, 'a coast, a sea, a far shore');
+    const enemy = base.factions.find(f => f !== fid);
+    // Transported-ONLY threat: enemy fleet in a NON-adjacent sea chain would be
+    // ideal, but the adjacent-sea fleet case is the harsher test — build the
+    // pure version instead: army on the far shore, fleet in the sea, then
+    // REMOVE the fleet's own adjacency by scoring rally (which now reads
+    // adjacency only) vs defend (which reads full threat).
+    const v = structuredClone(base);
+    (v.unitsByRegion[rigged.sea] ??= []).push({ faction: enemy, type: 'warship' });
+    (v.unitsByRegion[rigged.far] ??= []).push({ faction: enemy, type: 'infantry' }, { faction: enemy, type: 'infantry' });
+    const W = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const rally = { type: 'rally', mod: 0, starred: false };
+    // The warship IS adjacent, so adjacency pressure > 0 here; strip it to
+    // isolate the phantom-landing case: fleet in a sea NOT adjacent to rid.
+    const farSea = Object.keys(v.unitsByRegion).length && [...(ADJ[rigged.far] || [])].find(x =>
+      region(x)?.kind === 'maritime' && !(ADJ[rigged.rid] || new Set()).has(x));
+    if (farSea) {
+      const v2 = structuredClone(base);
+      (v2.unitsByRegion[farSea] ??= []).push({ faction: enemy, type: 'warship' });
+      (v2.unitsByRegion[rigged.far] ??= []).push({ faction: enemy, type: 'infantry' });
+      // transported threat may or may not reach rid via that chain; either
+      // way rally must equal its quiet-board value:
+      const quiet = scorePlacement(base, fid, rigged.rid, rally, W);
+      eq(scorePlacement(v2, fid, rigged.rid, rally, W), quiet,
+        'rally ignores non-adjacent fleets entirely');
+    }
+    // And with the adjacent fleet: defend feels the far army, rally does not
+    // beyond the real adjacent warship.
+    const Woff = { ...W, tTransport: 0 };
+    eq(scorePlacement(v, fid, rigged.rid, rally, W),
+       scorePlacement(v, fid, rigged.rid, rally, Woff),
+      'tTransport has ZERO effect on rally scoring');
+  }},
+
   { name: 'guided all-heuristic table plays a full game with zero rejections and is deterministic (the Package B fuzz)', fn() {
     const play = (seed, botSeed) => {
       let s = createGame(6, { seed });

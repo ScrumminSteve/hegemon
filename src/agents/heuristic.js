@@ -148,6 +148,9 @@ export const WEIGHTS = WEIGHTS_V2;
  * everything else once the next SPSA run includes them.
  */
 export const WEIGHTS_M3E = Object.freeze({
+  tOpportunity: 0.8, // transported-reach OPPORTUNITY scale: landings my own
+                    //   fleets enable count in march scoring, discounted for
+                    //   the crossing (m3e34 island fix, the real one)
   tTransport: 0.6,  // transported-reach threat scale (blunder #5): strength
                     //   an enemy can LAND here via its warship chains counts
                     //   toward pressure, discounted for the extra tempo
@@ -324,6 +327,34 @@ function transportedThreatMap(view) {
   return map;
 }
 
+/** Transported OPPORTUNITY (m3e34 — the island seats' missing eyes): the
+    landing zones MY warship chains open from a given embarkation region.
+    Mirror of the threat map: my warship-sea components adjacent to rid;
+    every land/port shore of those components is a place my army can land.
+    G1 forensics: F3/F6 at 1/100 was never a threat-model regression — the
+    pre-learning anchor already had Baratheon at 2.5%. March scoring only
+    ever looked at ADJ neighbors, so amphibious seats could not SEE their
+    own doctrine ("the fleet is the kingdom"). Now they can. */
+function landingZonesFrom(view, rid, fid) {
+  const zones = new Set();
+  const hasShips = sea => (view.unitsByRegion[sea] || [])
+    .some(u => u.faction === fid && u.type === 'warship' && !u.routed);
+  const seen = new Set();
+  for (const sea0 of ADJ[rid] || []) {
+    if (region(sea0)?.kind !== 'maritime' || !hasShips(sea0) || seen.has(sea0)) continue;
+    const comp = [sea0]; seen.add(sea0);
+    for (let i = 0; i < comp.length; i++) {
+      for (const n of ADJ[comp[i]] || []) {
+        if (!seen.has(n) && region(n)?.kind === 'maritime' && hasShips(n)) { seen.add(n); comp.push(n); }
+      }
+    }
+    for (const sea of comp) for (const n of ADJ[sea] || []) {
+      if (n !== rid && region(n)?.kind !== 'maritime') zones.add(n);
+    }
+  }
+  return zones;
+}
+
 /** pressureOn + what the enemy can LAND here — the full threat signal. */
 function threatOn(view, rid, fid, W) {
   let t = pressureOn(view, rid, fid);
@@ -401,6 +432,12 @@ export function scorePlacement(view, fid, rid, o, W) {
     case 'march': {
       let best = 0;
       for (const nbr of ADJ[rid] || []) best = Math.max(best, attackScore(view, nbr, mine + (o.mod || 0), fid, W));
+      // Amphibious eyes (m3e34): destinations MY fleets open count too,
+      // discounted for the crossing (tOpportunity). This is what lets the
+      // island seats rate a march that becomes a landing.
+      for (const dest of landingZonesFrom(view, rid, fid)) {
+        best = Math.max(best, attackScore(view, dest, mine + (o.mod || 0), fid, W) * (W.tOpportunity ?? WEIGHTS_M3E.tOpportunity));
+      }
       s += W.pMarch * best * 0.4;
       if (threat > mine) s += 0.5; // an exit when outmatched
       break;
@@ -420,7 +457,13 @@ export function scorePlacement(view, fid, rid, o, W) {
         s -= W.pRally;
         break;
       }
-      s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (threat === 0 ? 1 : 0.4);
+      // ISLAND FIX (m3e34; G1 forensics): rally quietness is judged by
+      // ADJACENCY pressure alone, never transported reach. On island seats
+      // every region is coastal, so the fleet-landing threat model made
+      // NOWHERE quiet — F3/F6 spent whole games hunkered and broke
+      // (1/100 each in the 600-game run). A fleet offshore is a reason to
+      // defend the walls, not a reason to stop collecting taxes.
+      s += W.pRally * (props.muster > 0 ? W.pRallyFort * props.muster : 1) * (pressureOn(view, rid, fid) === 0 ? 1 : 0.4);
       break;
     case 'raid': {
       let targets = 0;

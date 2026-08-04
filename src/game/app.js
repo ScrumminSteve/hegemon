@@ -18,7 +18,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e32';
+export const BUILD_ID = 'm3e34';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -143,6 +143,7 @@ import { replayGame, applyAction, beginPlanning, orderClasses, orderableRegions,
 import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
+import { casualtyCount, card as leaderCard } from '../engine/cards.js';
 const SETUP_VICTORY_TARGET = SETUP.victoryTarget;
 
 // Owner decision (Aug 2026): Wars of the Roses is THE game; Global 2026
@@ -701,6 +702,35 @@ function renderTurnPanel() {
   }));
 }
 
+/** Tie-break stage beat (owner request, Aug 2026): who won the tied battle
+    and WHY, and what the cards now do about it — the winner's ⚔ minus the
+    loser's 🛡, immunity called out. Pure over (state, resolvedEvent);
+    exported for the golden. */
+export function tieBeat(state, e) {
+  const c = state.combat;
+  if (!c || !e.tie) return null;
+  const victor = e.victor;
+  const loser = victor === c.attacker ? c.defender : c.attacker;
+  const fN = fid => theme.factions?.[fid]?.name ?? fid;
+  const pos = fid => state.tracks.prowess.indexOf(fid) + 1;
+  const lines = [
+    `⚖ ${e.attacker} vs ${e.defender} — dead even. ${theme.terms?.trackProwess ?? 'Prowess'} decides: ${fN(victor)} stands #${pos(victor)}, ${fN(loser)} #${pos(loser)} — <b>${fN(victor)} prevails</b>.`,
+  ];
+  if (c.cards) {
+    const vc = c.cards[victor] && typeof c.cards[victor] === 'string' ? leaderCard(c.cards[victor]) : null;
+    const lc = c.cards[loser] && typeof c.cards[loser] === 'string' ? leaderCard(c.cards[loser]) : null;
+    const sw = vc?.swords ?? 0, ft = lc?.forts ?? 0;
+    const immune = lc?.hook?.type === 'casualtyImmunity';
+    let n = 0;
+    try { n = casualtyCount(state, victor); } catch { n = Math.max(0, sw - ft); }
+    lines.push(`${fN(victor)}'s card: ${'⚔'.repeat(sw) || 'no swords'} · ${fN(loser)}'s card: ${'🛡'.repeat(ft) || 'no shields'}${immune ? ' (immune to casualties)' : ''}`);
+    lines.push(n > 0
+      ? `The swords fall: <b>${fN(loser)} loses ${n} unit${n === 1 ? '' : 's'}</b>.`
+      : `No casualties — the shields hold.`);
+  }
+  return { title: '⚖ Tied battle — the track decides', lines };
+}
+
 // ---------- M2.f.1 — presentation queue ----------
 // Scan newly logged events once per dispatch; an Event Phase's reveals become
 // one 3-card stage batch (the physical table's "flip all three" moment).
@@ -722,6 +752,16 @@ function scanForStage() {
       title: '⚡ Card canceled!',
       lines: [logLine(cancel), `${fName(cancel.faction)} fights this battle cardless — the canceled card returns to hand (no discard, no deck refresh).`],
     };
+  }
+  // Owner request (Aug 2026, ahead of usability testing): when a battle
+  // TIES and Prowess breaks it, the punishment/reward arithmetic of the
+  // revealed cards must be SEEN, not inferred — testers (and the owner)
+  // should never wonder why units died after an even fight.
+  const tie = fresh.find(e => e.event === 'combatResolved' && e.tie &&
+    (!mixed.human || (shown().combat && (shown().combat.attacker === mixed.human || shown().combat.defender === mixed.human))));
+  if (tie && shown().combat) {
+    const beat = tieBeat(shown(), tie);
+    if (beat) stageState.alert = beat;
   }
   const beganAt = fresh.findIndex(e => e.event === 'eventPhaseBegan');
   if (beganAt === -1) {

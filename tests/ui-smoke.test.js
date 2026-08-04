@@ -212,3 +212,22 @@ if (!skipped) tests.push(
     ok(!src.includes('the shown() ends'), 'the war ends at once — as it should');
   }},
 );
+
+tests.push(
+  { name: 'm3e34: the tie beat shows the track verdict AND the card arithmetic — swords vs shields, casualties named or shields hold', async fn() {
+    const { tieBeat } = await import('../src/game/app.js');
+    const fake = {
+      tracks: { prowess: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'] },
+      combat: { attacker: 'F1', defender: 'F2', cards: { F1: 'F1-4', F2: 'F2-2b' } },
+    };
+    const beat = tieBeat(fake, { tie: true, victor: 'F1', attacker: 7, defender: 7 });
+    ok(beat && /Tied battle/.test(beat.title), 'the beat exists and headlines the tie');
+    ok(/prevails/.test(beat.lines[0]) && /#1/.test(beat.lines[0]), 'the track verdict is spelled out');
+    ok(/⚔⚔/.test(beat.lines[1]) && /🛡🛡/.test(beat.lines[1]), "both cards' icons shown (F1-4 ⚔2 vs F2-2b 🛡2)");
+    ok(/shields hold/.test(beat.lines[2]), '2 swords − 2 shields = no casualties, said plainly');
+    fake.combat.cards.F2 = 'F2-3';
+    const bloody = tieBeat(fake, { tie: true, victor: 'F1', attacker: 7, defender: 7 });
+    ok(/loses 2 units/.test(bloody.lines[2]), 'swords minus nothing = 2 casualties, named');
+    ok(tieBeat(fake, { tie: false, victor: 'F1' }) === null, 'ordinary victories stay off the tie stage');
+  }},
+);

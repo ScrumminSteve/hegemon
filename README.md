@@ -329,6 +329,98 @@ matches its structural 4%), as expected — the shared vector can't fix a
 seat; that's the per-faction delta / opening-book track, fed by the
 owner's F3/F6 showcase games (doctrine below).
 
+## THE ISLAND SEATS GET THEIR EYES — m3e34 (island fix, tie beat, telemetry reader)
+
+**FORENSIC CORRECTION FIRST (banked so it never misleads again):** the
+m3e33 theory — "transported threat drowns island seats in phantom
+invasions" — was WRONG. The rally-quiet fix built on it changed ZERO
+transcripts in the paired block (identical 36 games). The pre-learning
+anchor already had Baratheon at 2.5%: the island seats were never
+regressed by Package B; they were ALWAYS blind. Root cause: march
+scoring only ever rated ADJ neighbors — an amphibious seat could not
+SEE a landing as an option. The fleet was the kingdom and the bot had
+no eyes for it.
+
+**The real fix — transported OPPORTUNITY (mirror of the threat model):**
+landingZonesFrom(view, rid, fid) = shores of my own warship components
+adjacent to the embarkation region; march scoring rates those
+destinations too, discounted by tOpportunity (0.8, tunable). Paired
+smoke, same block: **27.8% overall (best arm yet; stock was 22.2%), and
+F3/F6 mean rank 5.3/5.7 → 4.3/4.3** — dead last to mid-table. The
+principled rally fix (quietness = adjacency only, transported reach
+never vetoes tax collection) stays too, with its golden.
+
+**Tie beat (owner request, pre-usability-testing):** tied battles now
+stage a headline — the Prowess verdict spelled out (#positions, who
+prevails) and the card arithmetic shown (winner's ⚔ vs loser's 🛡,
+immunity called out, casualties named or "the shields hold"). Pure
+compositor tieBeat() exported + golden.
+
+**Telemetry reader — tools/telemetry-report.mjs:** the Tier-2 sidecar
+(per-action thinkMs, undos, rejections — recorded since the telemetry
+pass) finally has its reader. Per episode: human think-time total,
+top-10 hesitation map with replay-derived context (round·phase·query),
+every rejection (each one an interface finding), undo count. Proven on
+the owner's own episodes (found a 68m walk-away and a supply rejection
+in the Lancaster win). This IS the usability-testing instrument: tester
+exports their episode → one command → hesitation map.
+
+**UI queue audit for the tester build:** items 2a (cancel decision shows
+opponent's card), 2b (cancel headline beat), 5 (supply ladder), 6
+(chronicle collapsed on mobile) — ALL already shipped in earlier
+sessions. Item 8 (2x icons) deliberately deferred: blind visual surgery
+the day before user testing is how you hand testers a broken board;
+needs owner eyes on-device.
+
+**PRE-REGISTERED before any new data (winner's-curse discipline):**
+fresh block, seed 91000, two arms:
+`node tools/eval.mjs --games 600 --seed 91000 --incumbent legacy --workers 15 > g2-stock.txt`
+`node tools/eval.mjs --games 600 --seed 91000 --incumbent legacy --workers 15 --challenger books-f345.json > g2-book345.txt`
+books-f345.json (in repo) = book ON for F3/F4/F5 only — the m3e31 600
+said the book rescues weak-judgment seats and shackles strong ones;
+this is that hypothesis, stated BEFORE the confirming run. Predictions
+on record: stock arm F3/F6 wins rise well above 1/100; book arm beats
+stock overall.
+
+Suite: **269**.
+
+**Late addition (same session, data-only):** fourth Neville win admitted
+(r3, hash-verified, vs guided bots) — F6 book now 4 games / 3 distinct
+r1 lines, tied with F3 as deepest; stable core P03:rally + S11:support
+at 3/4. F6 joining the per-faction book arm is NOTED FOR A FOLLOW-UP
+ARM ONLY — books-f345.json stays as pre-registered for seed 91000.
+
+## THE CORPUS GROWS BACK — three fresh wins, all vs the guided bots (m3e33)
+
+Data-only build: corpus + regenerated books.js, no code. Three new
+hash-verified wins, ALL played against the m3e32 guided bots (the
+strongest opposition the corpus has seen): Lancaster r5, Neville r3
+(non-objective), Neville r4 (non-objective, different opening). Ledger:
+F3 x4 · F6 x3 · F5 x3 · F2 x2 · F4 x2 · F1 x1 — 15 verified wins; every
+stale-purge hole patched except York (F1 still 1 game).
+
+Owner findings banked: (1) Lancaster's two wins share ONE anchor —
+starred rally on L36, round 1, both games — everything else riffs.
+(2) Neville's "ignore the objectives" opening came out placement-for-
+placement IDENTICAL to the objective-chasing one; the styles diverge
+from round 2 — evidence the r1 book generalizes across play styles for
+that seat. (3) Owner named the imitation ceiling out loud (objective
+marks ≠ best bot strategy) — matches the m3e31 arms (book hurt F1/F2
+where bot judgment was strong, rescued F3 where it wasn't).
+
+**Package C sketched (owner-initiated):** position-strength evaluator →
+per-round credit ("did this round gain ground?") → losses and bot rounds
+become training signal (corpus grows ~100x) → tuning fuel for the scorer
+weights, NOT a midgame lookup book (positions never repeat; the m3e31
+costume finding stands). Plus: mine BID amounts and LEADER-card picks —
+small repeatable decisions, genuinely book-able, sitting unmined in every
+episode today. Sequencing unchanged: island threat fix + fresh-block
+re-run FIRST (F3/F6 at 1/100 — suspected: transported threat makes island
+seats see phantom landings everywhere, rally-quiet never fires; the
+pre-registered per-faction book config rides the same re-run).
+
+NEXT SESSION OPENS WITH: "Island fix, go"
+
 ## THE ROSES TAKE THE BOARD — theme cut + standalone (m3e32)
 
 **Owner decision (Aug 2026): Wars of the Roses IS the game.** Core (The
