@@ -320,3 +320,18 @@ tests.push(
     ok(doc.querySelector('details#score-detail #tracks-panel'), 'the influence tracks collapse as a group');
   }},
 );
+
+tests.push(
+  { name: 'm3e39: the scoreboard details spans threat, tracks, AND houses; a fresh open deals a random house; map taps retarget planning (owner on-device findings)', async fn() {
+    const doc = dom.window.document;
+    const sd = doc.querySelector('details#score-detail');
+    ok(sd && sd.querySelector('#vitals-panel') && sd.querySelector('#tracks-panel') && sd.querySelector('#houses-panel'),
+      'everything between the red lines collapses as one');
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(/sel\.value \|\| 'random'/.test(src), 'random house is the fresh-open default');
+    ok(/ui\.mode === 'planning' && ui\.assignments && rid in ui\.assignments\) \{\n    ui\.awaitTokenFor = rid/.test(src),
+      'a map tap in planning ALWAYS retargets the assignment (no first-pick monopoly)');
+    ok(/function scrollToDecision/.test(src) && /scrollToDecision\(\)/.test(src),
+      'the panel comes to the decision');
+  }},
+);

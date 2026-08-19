@@ -2,6 +2,12 @@
 // visibility; every UI form is generated from the engine's pendingQueries,
 // and every button dispatches through applyAction. The UI holds no rules.
 
+// jsdom's script sandbox lacks structuredClone (every real browser has it);
+// engine state is plain JSON by contract, so the fallback is lossless.
+if (typeof globalThis.structuredClone !== 'function') {
+  globalThis.structuredClone = o => JSON.parse(JSON.stringify(o));
+}
+
 import { REGIONS, PORTS, buildAdjacency } from '../data/map.js';
 import { FACTIONS } from '../data/factions.js';
 import { INVADER_CARDS } from '../data/invaderCards.js';
@@ -18,7 +24,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e38';
+export const BUILD_ID = 'm3e39';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -662,7 +668,10 @@ function rLink(rid) { return `<span class="rlink" data-rid="${rid}">${esc(rName(
 
 // ---------- region taps feed the active form ----------
 function handleRegionTap(rid) {
-  if (ui.awaitTokenFor === undefined && ui.mode === 'planning' && ui.assignments && rid in ui.assignments) {
+  // Owner (on-device, m3e39): tapping a DIFFERENT territory on the map must
+  // retarget the order assignment — before, the map only worked for the
+  // first pick and the list held a monopoly on switching.
+  if (ui.mode === 'planning' && ui.assignments && rid in ui.assignments) {
     ui.awaitTokenFor = rid; renderTurnPanel(); return;
   }
   if (ui.mode === 'march' && ui.awaitDest) {
@@ -691,6 +700,7 @@ function handleRegionTap(rid) {
 function renderTurnPanel() {
   overlayState($('#map'));
   syncSpotlight();
+  scrollToDecision();
   const panel = $('#turn-panel');
   if (!shown()) { panel.innerHTML = ''; return; }
 
@@ -1964,6 +1974,20 @@ function renderHouses() {
     </div>`).join('');
 }
 
+// Owner (on-device, m3e39): when a decision arrives for the HUMAN, the
+// panel comes to it — wherever you were scrolled (Game options, chronicle),
+// the active form shifts into view. Once per distinct decision.
+let decisionKey = null;
+function scrollToDecision() {
+  const qs = shown()?.pendingQueries ?? [];
+  const q = qs.find(x => !mixed.human || x.faction === mixed.human);
+  if (!q || shown().phase === 'gameOver') { decisionKey = null; return; }
+  const key = `${shown().round}:${q.type}:${q.faction}:${q.region ?? ''}:${q.step ?? ''}`;
+  if (key === decisionKey) return;
+  decisionKey = key;
+  $('#turn-panel')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); // optional-call: jsdom lacks it
+}
+
 let trackAttnKey = null;
 function renderTracks() {
   const el = $('#tracks-panel');
@@ -2045,11 +2069,11 @@ function render() {
 function fillSeatSelect() {
   const sel = $('#seat-select');
   if (!sel) return;
-  const cur = sel.value || 'table';
+  const cur = sel.value || 'random'; // owner (m3e39): a fresh open deals you a house
   sel.innerHTML = `<option value="table">table mode (all seats)</option>` +
     `<option value="random">🎲 random house</option>` +
     FACTIONS.map(f => `<option value="${f.id}">play ${esc(fName(f.id))}</option>`).join('');
-  sel.value = [...sel.options].some(o => o.value === cur) ? cur : 'table';
+  sel.value = [...sel.options].some(o => o.value === cur) ? cur : 'random';
 }
 
 function init() {

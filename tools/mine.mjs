@@ -32,7 +32,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning, stateHash, RULES_REVISION } from '../src/engine/engine.js';
 
@@ -51,9 +51,11 @@ const flag = (name, dflt) => {
 const dry = args.includes('--dry');
 if (dry) args.splice(args.indexOf('--dry'), 1);
 const ROUNDS = +flag('--rounds', 3);
-const OUT = flag('--out', new URL('../src/agents/books.js', import.meta.url).pathname);
+// fileURLToPath, NOT URL.pathname — the latter yields /C:/... on Windows and
+// writeFileSync doubles the drive letter (owner hit C:\C:\... on first mine).
+const OUT = flag('--out', fileURLToPath(new URL('../src/agents/books.js', import.meta.url)));
 
-const inputs = args.length ? args : [new URL('../corpus/episodes', import.meta.url).pathname];
+const inputs = args.length ? args : [fileURLToPath(new URL('../corpus/episodes', import.meta.url))];
 const files = inputs.flatMap(p => {
   try {
     return statSync(p).isDirectory()
@@ -195,4 +197,3 @@ export function bookLines(fid, round) {
   writeFileSync(OUT, src);
   console.log(`\nwrote ${OUT}`);
 }
-void pathToFileURL;

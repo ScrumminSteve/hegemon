@@ -8,6 +8,36 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## THE PANEL COMES TO YOU — first on-device pass (m3e39)
+
+Owner's first hands-on with the m3e38 UI produced four findings; all
+shipped same-session:
+
+1. **The panel comes to the decision.** Wherever you're scrolled (Game
+   options, the chronicle), the moment a decision arrives for YOUR house
+   the active form shifts into view — once per distinct decision, keyed
+   on round/type/faction/region so repaints don't jitter.
+2. **Map taps retarget planning.** The first-pick monopoly is gone: in
+   order assignment, tapping any assignable territory on the MAP now
+   switches the target (list highlight and token input follow), exactly
+   as tapping it in the list always did.
+3. **The scoreboard is ONE collapsible.** Threat meter, standings row,
+   influence tracks, and the houses list all sit inside a single
+   "Scoreboard" details (the owner's red-pen span). Track-decision
+   attention still auto-opens it. The compact redesign remains a
+   phase-2 exploration.
+4. **A fresh open deals you a house.** Seat default is 🎲 random house
+   instead of table mode — new players land IN a seat.
+
+Plus a portability fix discovered by the standalone golden: the random-
+house default makes boot start a mixed game, whose bot views need
+structuredClone — present in every real browser, absent in jsdom's
+sandbox; shimmed with a lossless JSON fallback (engine state is plain
+JSON by contract). And tools/mine.mjs is Windows-safe (fileURLToPath —
+the owner's C:\C:\ mine crash).
+
+Suite: **278**.
+
 ## OWNER INPUT LANDS — combat clarity + the Game options shelf (m3e38)
 
 Owner joined the panel study with five directives; all shipped:
