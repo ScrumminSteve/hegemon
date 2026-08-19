@@ -8,6 +8,71 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## OWNER INPUT LANDS — combat clarity + the Game options shelf (m3e38)
+
+Owner joined the panel study with five directives; all shipped:
+
+**Combat clarity:** the leader-card choice now opens with the SAME
+army-vs-army banner the support decision shows — no more picking a
+leader blind. The muster menu HIDES any unit type whose pool (Rules
+p.2 component list) is spent on the board + staged builds — a doomed
+option is no option (the owner's own warship-pool rejection, retired).
+
+**Panel study inputs (PANEL_STUDY.md updated by these):** a collapsible
+"Game options" shelf now lives at the bottom — house selector (labeled,
+first), theme pack, bot policy, spectate controls, quiet mode; the
+toolbar keeps only the five verbs (New/Undo/Save/Episode/Load). The
+threat + influence-tracks block is collapsible ("to be explored" compact
+scoreboard stays on the phase-2 slate). And whenever a TRACK decision is
+on the table for the human (bids, tie-breaks, reiver auctions, incursion
+track picks), the scoreboard opens itself, flashes, and scrolls into
+view — once per decision, and it is outlined for as long as the
+decision stands.
+
+Suite: **277**.
+
+## THE PANEL LEARNS TO POINT — UI blitz phase 1 (m3e37)
+
+**Owner's three offenders, all addressed** (evidence: 20 rejections + ~40
+min measured hesitation across the first tester + the owner's own games;
+full study in PANEL_STUDY.md, phase 2 scoped there):
+
+**#1 Focus sync — one focus, three surfaces.** focusRegion(rid, source):
+map taps select + spotlight + feed the active form; any region NAME in
+the panel (rLink, [data-rid] delegation) flies the camera and flashes
+every mention; march origin picks fly the camera. No surface holds a
+private selection anymore.
+
+**#2 Adjacency spotlight — sticky, honest, gentle.** The old system was
+hover-only (touch players NEVER saw it) with opacity-.28 dim (the
+owner's "illegibly dark"). Now: persistent tap spotlight; accessible
+regions get a luminous lift; the rest recede by brightness, not
+disappearance; and during a march the lit set is marchCandidates —
+the engine's OWN reach math, amphibious landings included. "Tap a
+destination on the map…" finally shows which taps will be accepted.
+
+**#3 Panel — project, don't describe.** Root cause of 9-of-20
+rejections: the supply ladder hint described the CURRENT position while
+the staged plan broke the FUTURE one. supplyProjection() mirrors the
+engine's checkSupply over the form's staged builds/moves; muster and
+march now warn — with the exact armies-vs-limits arithmetic — BEFORE
+dispatch. Query tabs stick to the panel top. PANEL_STUDY.md banks the
+full findings (F1–F6), principles, and the phase-2 slate (visual-weight
+pass, rLink-everywhere, first-planning-screen guidance — needs owner
+eyes on-device; 2× icons rides along).
+
+**Restore note:** this build is based on the pushed repo (which predates
+the m3e35 reseal); roundsVerdict, the glory scorer (objectives.js,
+derived footprints), styles, and their goldens were restored from
+session context and re-locked. The pushed repo carries NO corpus —
+books.js was left untouched (re-mining 2 files would gut the 17-win
+book); the two in-session verified wins (tudor-awesomesauce,
+percy-fun — F5's crescendo conquest, marks 3/3, golden-locked) are
+staged in corpus/inbox/ with merge instructions. MERGE YOUR LOCAL
+CORPUS BEFORE MINING.
+
+Suite: **275**.
+
 ## Architecture (three layers)
 
 1. **Engine** (`src/engine/`) — headless, deterministic rules engine. No DOM, no rendering.

@@ -23,16 +23,12 @@
       <h1>Hegemon</h1>
       <p id="status-line"></p>
       <div id="vitals-panel"></div>
-      <div id="tracks-panel"></div>
+      <details id="score-detail" open>
+        <summary>Threat &amp; influence tracks</summary>
+        <div id="tracks-panel"></div>
+      </details>
       <div id="houses-panel"></div>
     </header>
-    <div class="field">
-      <label for="theme-select">Theme pack</label>
-      <select id="theme-select">
-        <option value="warroses" selected>Historical — The Wars of the Roses</option>
-        <option value="modern2026">2026 — The Concert of Powers</option>
-      </select>
-    </div>
     <section id="turn-panel"></section>
     <details id="inspector-panel">
       <summary>Seat inspector</summary>
@@ -48,16 +44,32 @@
       <button id="btn-save">Save</button>
       <button id="btn-episode" title="Export a labeled learning episode (transcript + outcome)">Episode</button>
       <button id="btn-load">Load</button>
-      <select id="seat-select" title="Your seat for the next New game — bots play the rest (M3.c)"></select>
-      <select id="spectate-policy" title="Bot policy (mixed-seat opponents and spectate)">
-        <option value="heuristic" selected>heuristic bots</option>
-        <option value="random">random bots</option>
-      </select>
+    </div>
+    <details id="game-options">
+      <summary>Game options</summary>
+      <div class="field">
+        <label for="seat-select">Your house</label>
+        <select id="seat-select" title="Your seat for the next New game — bots play the rest (M3.c)"></select>
+      </div>
+      <div class="field">
+        <label for="theme-select">Theme pack</label>
+        <select id="theme-select">
+          <option value="warroses" selected>Historical — The Wars of the Roses</option>
+          <option value="modern2026">2026 — The Concert of Powers</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="spectate-policy">Bot policy</label>
+        <select id="spectate-policy" title="Bot policy (mixed-seat opponents and spectate)">
+          <option value="heuristic" selected>heuristic bots</option>
+          <option value="random">random bots</option>
+        </select>
+      </div>
       <button id="btn-spectate" title="Bots play every seat">Spectate</button>
       <input id="spectate-speed" type="range" min="120" max="2000" step="40" value="600"
         title="Spectate speed (ms per decision)"/>
       <button id="btn-quiet" title="Quiet mode: event reveals go to the Chronicle only, no stage cards">Quiet: off</button>
-    </div>
+    </details>
     <div id="load-box" class="hidden">
       <button id="btn-load-file">Load a save file…</button>
       <input type="file" id="load-file" accept="application/json,.json" hidden>

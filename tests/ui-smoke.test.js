@@ -11,7 +11,7 @@
 // single skipped-pass so the golden runner stays hermetic offline.
 
 import { readFileSync } from 'node:fs';
-import { ok } from './assert.js';
+import { ok, eq } from './assert.js';
 
 async function boot() {
   const { JSDOM } = await import('jsdom');
@@ -229,5 +229,94 @@ tests.push(
     const bloody = tieBeat(fake, { tie: true, victor: 'F1', attacker: 7, defender: 7 });
     ok(/loses 2 units/.test(bloody.lines[2]), 'swords minus nothing = 2 casualties, named');
     ok(tieBeat(fake, { tie: false, victor: 'F1' }) === null, 'ordinary victories stay off the tie stage');
+  }},
+);
+
+tests.push(
+  { name: 'm3e36 (restored): the standings verdict shows its arithmetic — the Tudor 4-4-4 game names land areas (10 vs 5 vs 4) with the tied rivals', async fn() {
+    const { roundsVerdict } = await import('../src/game/app.js');
+    const { readFileSync } = await import('node:fs');
+    const { createGame } = await import('../src/engine/state.js');
+    const { applyAction, beginPlanning } = await import('../src/engine/engine.js');
+    const ep = JSON.parse(readFileSync(new URL('../corpus/inbox/episode-tudor-awesomesauce-r10.json', import.meta.url), 'utf8'));
+    let s = createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    for (const a of ep.actions) s = applyAction(s, a).state;
+    const v = roundsVerdict(s);
+    ok(v && /land areas held/.test(v) && /10 vs 5 vs 4|10 vs 4 vs 5/.test(v), `true criterion + arithmetic (got: ${v})`);
+    ok(/Stafford/.test(v) && /Neville/.test(v) && /tied at 4 seats/.test(v), 'rivals and the tie itself named');
+  }},
+  { name: 'm3e36 (restored): marks of glory — the derived footprint acquits Henry (⭐⭐⭐ on awesomesauce), Percy fun grades 3/3, checks align with every briefing', async fn() {
+    const { scoreGlory, starLine, GLORY_CHECKS, startingFootprint } = await import('../src/game/objectives.js');
+    const { readFileSync } = await import('node:fs');
+    const { createGame } = await import('../src/engine/state.js');
+    const { applyAction, beginPlanning } = await import('../src/engine/engine.js');
+    const replay = f => {
+      const ep = JSON.parse(readFileSync(new URL('../corpus/inbox/' + f, import.meta.url), 'utf8'));
+      let s = createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+      beginPlanning(s);
+      for (const a of ep.actions) s = applyAction(s, a).state;
+      return s;
+    };
+    ok(startingFootprint('F3').includes('L20'), 'The Weald IS Tudor home ground — the false conviction stays fixed');
+    const tudor = scoreGlory(replay('episode-tudor-awesomesauce-r10.json'), 'F3');
+    eq(JSON.stringify(tudor.map(m => m.met)), '[true,true,true]', 'Tudor: waited, landed, Bosworth — ⭐⭐⭐');
+    const percy = scoreGlory(replay('episode-percy-fun-r10.json'), 'F5');
+    eq(JSON.stringify(percy.map(m => m.met)), '[true,true,true]', 'Percy: warden of every incursion, Middleham held, Alnwick endured');
+    ok(/3 of 3/.test(starLine(percy)), 'the star line counts honestly');
+    const { THEME_WARROSES } = await import('../src/themes/warroses.js');
+    for (const fid of Object.keys(GLORY_CHECKS)) {
+      eq(GLORY_CHECKS[fid].length, THEME_WARROSES.briefings[fid].objectives.length, `${fid} checks align with its briefing`);
+    }
+  }},
+);
+
+tests.push(
+  { name: 'm3e37: tap-spotlight is sticky and honest — origin lit, accessible lifted, the rest receded gently; clear restores everything (owner UI offender #2)', async fn() {
+    const { spotlight, clearSpotlight } = await import('../src/map-view.js');
+    const svg = dom.window.document.querySelector('#map');
+    ok(svg && svg.querySelectorAll('.region').length > 30, 'the booted map is populated');
+    spotlight(svg, 'L01', new Set(['L05']));
+    const at = id => svg.querySelector(`.region[data-id="${id}"]`);
+    ok(at('L01').classList.contains('spot-hl'), 'origin takes the spotlight');
+    ok(at('L05').classList.contains('spot-adj'), 'the accessible region is lifted');
+    ok(at('L19').classList.contains('spot-dim'), 'the rest recede');
+    clearSpotlight(svg);
+    ok(!at('L01').classList.contains('spot-hl') && !at('L19').classList.contains('spot-dim'), 'clear restores the whole map');
+  }},
+  { name: 'm3e37: a map tap focuses all three surfaces — the tapped region is selected AND spotlit without hover (owner UI offender #1)', async fn() {
+    const doc = dom.window.document;
+    const node = doc.querySelector('.region[data-id="L01"]');
+    node.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 30));
+    ok(node.classList.contains('selected'), 'tap selects');
+    ok(node.classList.contains('spot-hl'), 'tap spotlights persistently — no mouse required');
+  }},
+  { name: 'm3e37: the supply projection mirrors the engine law — legal plans stay quiet, an illegal split warns BEFORE dispatch (the double-tester finding)', async fn() {
+    const { supplyProjection } = await import('../src/game/app.js');
+    const clean = supplyProjection('F1', []);
+    ok(!clean.over, 'the standing position is legal');
+    // Pile hypothetical units into new regions until the army count must break.
+    const flood = ['L05','L09','L13','L17','L23','L29'].map(r => ({ region: r, add: 3 }));
+    const broken = supplyProjection('F1', flood);
+    ok(broken.over, 'six new 3-stacks cannot be legal at starting supply');
+    ok(broken.armies.length > broken.limits.length || broken.armies.some((n,i) => n > broken.limits[i]),
+      'the projection exposes WHICH law broke');
+  }},
+);
+
+tests.push(
+  { name: 'm3e38: leader-card choice shows the armies (battleBanner precedes the hand) and the muster menu hides pool-spent unit types — verified structurally', async fn() {
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(/leaderCardForm\(q\) \{[\s\S]{0,400}battleBanner\(\)/.test(src), 'the card form opens with the army-vs-army banner');
+    ok(/poolLeft\(poolType\) <= 0 \? '' :/.test(src), 'pool-exhausted options render as NOTHING, not as taps that fail');
+    ok(/SETUP\.unitPool\[t\]/.test(src), 'pool math reads the Rules p.2 component list, not a copy');
+  }},
+  { name: 'm3e38: Game options exists at the bottom with the house selector inside; the tracks scoreboard is collapsible — the panel-study inputs landed', async fn() {
+    const doc = dom.window.document;
+    const go = doc.querySelector('details#game-options');
+    ok(go, 'Game options is a collapsible area');
+    ok(go.querySelector('#seat-select') && go.querySelector('#theme-select'), 'house + theme selectors live inside it');
+    ok(doc.querySelector('details#score-detail #tracks-panel'), 'the influence tracks collapse as a group');
   }},
 );

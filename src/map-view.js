@@ -349,6 +349,27 @@ export function renderMap(svg, theme, { onSelect } = {}) {
   }
 }
 
+/** Persistent spotlight (m3e37, owner UI offender #2): tap-driven, so touch
+    players finally get what hover users had — origin lit, ACCESSIBLE regions
+    lifted luminously, the rest gently receded (never the old opacity-crush).
+    `accessible` is caller-supplied ground truth (e.g. marchCandidates), so
+    the map shows exactly what the engine will accept. Hover highlight keeps
+    its own classes and continues to work transiently on top. */
+export function spotlight(svg, id, accessible = ADJ[id] || new Set()) {
+  const acc = accessible instanceof Set ? accessible : new Set(accessible);
+  svg.querySelectorAll('.region').forEach(el => {
+    const rid = el.dataset.id;
+    el.classList.toggle('spot-hl', rid === id);
+    el.classList.toggle('spot-adj', rid !== id && acc.has(rid));
+    el.classList.toggle('spot-dim', rid !== id && !acc.has(rid));
+  });
+}
+
+export function clearSpotlight(svg) {
+  svg.querySelectorAll('.spot-hl,.spot-adj,.spot-dim').forEach(el =>
+    el.classList.remove('spot-hl', 'spot-adj', 'spot-dim'));
+}
+
 export function markSelected(svg, id) {
   svg.querySelectorAll('.region.selected').forEach(el => el.classList.remove('selected'));
   if (id) svg.querySelector(`.region[data-id="${id}"]`)?.classList.add('selected');

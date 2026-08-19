@@ -86,7 +86,24 @@ dd { margin: 0; }
 .edge-hl   { stroke: var(--brass); stroke-width: 2.4; stroke-dasharray: none; }
 
 .region { cursor: pointer; transition: opacity .12s ease; }
-.region.dim { opacity: 0.28; }
+/* m3e37 (owner UI offender #2): the old dim was opacity .28 — everything
+   around the highlight went illegible. Both hover-dim and tap-spotlight now
+   recede GENTLY (brightness, not disappearance), and accessible regions get
+   a luminous lift instead of a lonely border. */
+.region.dim, .region.spot-dim { filter: brightness(.68) saturate(.7); opacity: .85; }
+.region.spot-hl .shape { stroke: var(--brass); stroke-width: 3.4; filter: drop-shadow(0 0 7px rgba(227,195,76,.75)); }
+.region.spot-adj .shape { stroke: #FFE9A0; stroke-width: 2.6; filter: brightness(1.22) drop-shadow(0 0 6px rgba(255,233,160,.5)); }
+.region.spot-adj text, .region.spot-hl text { filter: none; }
+.rlink { text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
+.rlink:active { color: var(--brass); }
+@keyframes rowflash { 0% { background: rgba(227,195,76,.45); } 100% { background: transparent; } }
+.flash { animation: rowflash .9s ease-out; }
+.query-tabs { position: sticky; top: 0; z-index: 5; background: var(--panel, #17131c); padding-top: 4px; }
+.ladder-inline { margin: 4px 0 8px; }
+#tracks-panel.attn { outline: 1px solid var(--brass); outline-offset: 3px; border-radius: 6px; }
+#game-options { margin-top: 8px; }
+#game-options summary, #score-detail summary { cursor: pointer; font: 600 12px system-ui; letter-spacing: .06em; text-transform: uppercase; color: var(--bone-dim, #b8ad9d); padding: 4px 0; }
+.supply-warn { margin: 6px 0; padding: 6px 8px; border: 1px solid #B5484D; border-radius: 6px; color: #F0B9BC; background: rgba(181,72,77,.12); font-size: 12.5px; }
 .land-hex { fill: var(--slate); stroke: rgba(217,210,192,.45); stroke-width: 1.6; }
 .sea-outer { fill: var(--sea); stroke: rgba(120,170,210,.5); stroke-width: 1.2; stroke-dasharray: 3 4; }
 .sea-inner { fill: none; stroke: rgba(120,170,210,.28); stroke-width: 1; }
@@ -147,6 +164,12 @@ button.picking { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass);
 .battle-side b { display: block; font: 700 26px "Big Shoulders Display", sans-serif; color: var(--brass); }
 .battle-vs { font-size: 12px; color: var(--bone-dim); text-align: center; }
 .victory { font: 600 20px "Big Shoulders Display", sans-serif; letter-spacing: .04em; border: 1px solid var(--brass); border-radius: 8px; padding: 16px; text-align: center; }
+/* m3e36 — marks of glory + standings verdict */
+.glory { margin: .6em 0 .2em; font-size: .85em; text-align: left; }
+.glory b { display: block; margin-bottom: .3em; letter-spacing: .04em; }
+.glory-row { margin: .15em 0; opacity: .9; }
+.victory .verdict { display: block; font-size: .7em; opacity: .8; margin-top: .25em; }
+
 .victory span { display: block; font: 13px system-ui; color: var(--bone-dim); margin-top: 6px; }
 #log-panel { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--hair); }
 #log-panel h3 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--bone-dim); margin: 0 0 8px; }

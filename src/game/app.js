@@ -8,7 +8,7 @@ import { INVADER_CARDS } from '../data/invaderCards.js';
 import { LEADER_CARDS } from '../data/leaderCards.js';
 import { THEME_WARROSES } from '../themes/warroses.js';
 import { THEME_2026 } from '../themes/modern2026.js';
-import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset } from '../map-view.js';
+import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset, markSelected, spotlight, clearSpotlight } from '../map-view.js';
 import { ICON_SETS } from '../icons.js';
 import { legalActions, currentQuery } from '../engine/legal.js';
 import { createRandomAgent, botRng } from '../agents/random.js';
@@ -18,7 +18,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e35';
+export const BUILD_ID = 'm3e38';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -144,6 +144,7 @@ import { combatStrengths } from '../engine/combat.js';
 import { transportReachable, landAreasControlled } from '../engine/actionPhase.js';
 import { SETUP } from '../data/setup.js';
 import { casualtyCount, card as leaderCard } from '../engine/cards.js';
+import { scoreGlory, starLine } from './objectives.js';
 const SETUP_VICTORY_TARGET = SETUP.victoryTarget;
 
 // Owner decision (Aug 2026): Wars of the Roses is THE game; Global 2026
@@ -598,6 +599,67 @@ function centerMap(rid) {
   cameraCenterOn(svg, x, y);
 }
 
+/** Spotlight follows the DECISION, not just the finger (m3e37): while a
+    march awaits its destination, the origin's true reach (adjacency +
+    amphibious landings) stays lit — "Tap a destination on the map…" finally
+    shows WHICH taps the engine will accept. Otherwise the last focused
+    region keeps a gentle spotlight; nothing focused, nothing dimmed. */
+function syncSpotlight() {
+  const svg = $('#map');
+  if (!svg) return;
+  if (ui.mode === 'march' && ui.region && ui.awaitDest) {
+    const qs = shown()?.pendingQueries ?? [];
+    const q = qs[ui.activeQuery != null ? Math.min(ui.activeQuery, qs.length - 1) : 0];
+    if (q) { markSelected(svg, ui.region); spotlight(svg, ui.region, focusAccessible(ui.region)); return; }
+  }
+  if (ui.focus && shown()?.phase !== 'gameOver') { spotlight(svg, ui.focus, focusAccessible(ui.focus)); return; }
+  clearSpotlight(svg);
+}
+
+/** m3e37 — owner UI offender #1: ONE focus, three surfaces. Any region
+    focus (map tap, panel tap, form pick) lands on all levels at once:
+    the map selects + spotlights + (if the tap came from elsewhere) flies
+    the camera; the panel scrolls to and flashes every element that names
+    the region; the active form receives the tap exactly as before. */
+function focusRegion(rid, source = 'map') {
+  ui.focus = rid;
+  const svg = $('#map');
+  if (svg) {
+    markSelected(svg, rid);
+    spotlight(svg, rid, focusAccessible(rid));
+    if (source !== 'map') centerMap(rid);
+  }
+  if (source !== 'panel') flashPanelRegion(rid);
+  if (source === 'map') handleRegionTap(rid);
+  else renderTurnPanel();
+}
+
+/** What the focused region can REACH — ground truth where a march is live
+    (marchCandidates: adjacency + amphibious landings via own fleets),
+    plain adjacency otherwise. */
+function focusAccessible(rid) {
+  const qs = shown()?.pendingQueries ?? [];
+  const q = qs[ui.activeQuery != null ? Math.min(ui.activeQuery, qs.length - 1) : 0];
+  if (q && ui.mode === 'march' && (ui.region === rid || ui.awaitDest)) {
+    const c = marchCandidates(q.faction, rid);
+    return new Set([...c.peaceful, ...c.battle]);
+  }
+  return ADJ[rid] || new Set();
+}
+
+function flashPanelRegion(rid) {
+  const panel = $('#turn-panel');
+  if (!panel) return;
+  const hits = panel.querySelectorAll(`[data-rid="${rid}"]`);
+  hits.forEach((el, i) => {
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    if (i === 0) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+
+/** Clickable region name — every mention of a place is a focus control. */
+function rLink(rid) { return `<span class="rlink" data-rid="${rid}">${esc(rName(rid))}</span>`; }
+
 // ---------- region taps feed the active form ----------
 function handleRegionTap(rid) {
   if (ui.awaitTokenFor === undefined && ui.mode === 'planning' && ui.assignments && rid in ui.assignments) {
@@ -628,6 +690,7 @@ function handleRegionTap(rid) {
 // ---------- turn panel ----------
 function renderTurnPanel() {
   overlayState($('#map'));
+  syncSpotlight();
   const panel = $('#turn-panel');
   if (!shown()) { panel.innerHTML = ''; return; }
 
@@ -635,7 +698,7 @@ function renderTurnPanel() {
   if (shown().phase === 'gameOver') {
     const over = shown().log.find(e => e.event === 'gameOver');
     panel.innerHTML = `<div class="victory">👑 ${esc(fName(shown().winner))} rules the realm
-      <span>(${seatsControlled(shown(), shown().winner)} seats · ${over?.reason === 'seats' ? 'instant victory' : 'won on standings, round ' + shown().round})</span></div>` +
+      <span>(${seatsControlled(shown(), shown().winner)} seats · ${over?.reason === 'seats' ? 'instant victory' : 'won on standings, round ' + shown().round})</span>${over?.reason !== 'seats' && roundsVerdict(shown()) ? `<span class="verdict">${esc(roundsVerdict(shown()))}</span>` : ''}</div>${gloryPanel()}` +
       (over?.standings ? `<div class="hint">${over.standings.map((f, i) => `${i + 1}. ${fGlyph(f)} ${esc(fName(f))} (${over.seats?.[f] ?? 0})`).join(' · ')}</div>` : '');
     return;
   }
@@ -700,6 +763,49 @@ function renderTurnPanel() {
   panel.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => {
     ui = { activeQuery: +b.dataset.q }; renderTurnPanel();
   }));
+}
+
+/** Marks-of-glory scoreboard (owner request, Aug 2026): at game end, the
+    human seat's briefing objectives are graded ⭐/☆ by src/game/objectives.js
+    — prose judged by predicates, shown under the victory banner. */
+function gloryPanel() {
+  const fid = mixed.human;
+  if (!fid || shown().phase !== 'gameOver') return '';
+  const brief = theme.briefings?.[fid];
+  const marks = brief && scoreGlory(shown(), fid);
+  if (!marks || marks.length !== brief.objectives.length) return '';
+  const rows = marks.map(m =>
+    `<div class="glory-row">${m.met ? '⭐' : '☆'} ${esc(brief.objectives[m.index])}</div>`).join('');
+  return `<div class="glory"><b>MARKS OF GLORY — ${starLine(marks)}</b>${rows}</div>`;
+}
+
+/** Round-limit verdict (owner finding, Aug 2026 — the Tudor 4-4-4 game):
+    a standings win must SHOW its arithmetic. Recomputes the Rules p.25
+    comparator (seats → land areas → supply → the Crown) from the final
+    state and names the criterion that separated the winner from the tied
+    rivals — computed UI-side, because the engine log is inside the hash
+    and a new log field would stale the whole corpus. Exported for the
+    golden. Returns null when seats alone decided it. */
+export function roundsVerdict(state) {
+  const w = state.winner;
+  if (!w) return null;
+  const tied = state.factions.filter(f => f !== w &&
+    seatsControlled(state, f) === seatsControlled(state, w));
+  if (!tied.length) return null;
+  const fN = fid => theme.factions?.[fid]?.name ?? fid;
+  const crownName = theme.terms?.trackInitiative ?? 'the Crown';
+  const CRITERIA = [
+    { name: 'land areas held', of: f => landAreasControlled(state, f) },
+    { name: 'supply', of: f => state.supply[f] },
+    { name: `${crownName} (track position)`, of: f => -(state.tracks.initiative.indexOf(f) + 1) },
+  ];
+  for (const c of CRITERIA) {
+    if (tied.every(f => c.of(f) < c.of(w))) {
+      const vals = [w, ...tied].map(f => Math.abs(c.of(f)));
+      return `tied at ${seatsControlled(state, w)} seats with ${tied.map(fN).join(' and ')} — broken by ${c.name} (${vals.join(' vs ')})`;
+    }
+  }
+  return `tied at ${seatsControlled(state, w)} seats with ${tied.map(fN).join(' and ')}`;
 }
 
 /** Tie-break stage beat (owner request, Aug 2026): who won the tied battle
@@ -974,10 +1080,39 @@ const MUSTER_COSTS_UI = { infantry: 1, warship: 1, cavalry: 2, siege_engine: 2, 
     (m3e17: born from a P1 — a regex-injected local crashed the LOSSES form
     with a ReferenceError and froze the owner's Kingmaker game. Templates
     get edits by hand and helpers by name, never by regex, ever again.) */
+/** Supply PROJECTION (m3e37 — the finding both testers bled on): mirror of
+    the engine's checkSupply, run over a hypothetical unit layout (current
+    units ± the form's staged changes). The forms stop describing the law
+    after the fine and start warning BEFORE the offense. deltas:
+    [{region, add}] where add is signed unit count. */
+export function supplyProjection(fid, deltas = []) {
+  const counts = {};
+  for (const [rid, units] of Object.entries(shown().unitsByRegion)) {
+    const n = units.filter(u => u.faction === fid).length;
+    if (n) counts[rid] = n;
+  }
+  for (const d of deltas) counts[d.region] = (counts[d.region] || 0) + d.add;
+  const armies = Object.values(counts).filter(n => n >= 2).sort((a, b) => b - a);
+  const limits = SETUP.supplyLimits[shown().supply[fid] ?? 0].slice().sort((a, b) => b - a);
+  const over = armies.length > limits.length || armies.some((n, i) => n > (limits[i] ?? 0));
+  return { over, armies, limits };
+}
+
+/** The predictive warning line — empty when the plan is legal. */
+function supplyWarning(fid, deltas) {
+  const p = supplyProjection(fid, deltas);
+  if (!p.over) return '';
+  return `<div class="supply-warn">⚠ this plan fields ${p.armies.length} armies (${p.armies.join('·')}); supply ${shown().supply[fid]} allows ${p.limits.length} (${p.limits.join('·')}) — the engine will refuse it</div>`;
+}
+
 function ladderHintFor(fid) {
   return `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[fid]} · ${supplyLadder(fid)}</div>`;
 }
 function musterForm(q) {
+  // m3e37 offender #3 / the tester finding that started it: BOTH testers
+  // reasoned for minutes and then hit "Muster would break supply" — the
+  // ladder lived only in the houses panel, invisible at the moment of the
+  // decision. It now sits inside the form that can break it.
   const staged = ui.musterBuilds || [];
   const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
   const left = q.points - spent;
@@ -990,19 +1125,29 @@ function musterForm(q) {
   const hasInf = (shown().unitsByRegion[q.region] || [])
     .filter(u => u.faction === q.faction && u.type === 'infantry' && !u.routed).length
     > staged.filter(b => b.type === 'upgrade').length;
-  const btn = (label, cost, data, on = true) =>
+  // Owner (Aug 2026): a unit type whose POOL is spent (Rules p.2 component
+  // list) is not an option — it vanishes from the menu instead of inviting
+  // a doomed tap. Fielded everywhere + already-staged builds count.
+  const fielded = t => Object.values(shown().unitsByRegion)
+    .reduce((n, us) => n + us.filter(u => u.faction === q.faction && u.type === t).length, 0);
+  const stagedOf = t => staged.filter(b => (b.type === 'upgrade' ? b.to : b.type) === t).length
+    - (t === 'infantry' ? staged.filter(b => b.type === 'upgrade').length : 0);
+  const poolLeft = t => (SETUP.unitPool[t] ?? 99) - fielded(t) - stagedOf(t);
+  const btn = (label, cost, data, on = true, poolType = null) =>
+    poolType && poolLeft(poolType) <= 0 ? '' :
     `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
   const stagedRows = staged.map((b, i) =>
-    `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + esc(rName(b.to)) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
-  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) + ladderHintFor(q.faction) +
+    `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + rLink(b.to) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
+  const musterDeltas = staged.filter(b => b.type !== 'upgrade').map(b => ({ region: b.to || q.region, add: 1 }));
+  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) + ladderHintFor(q.faction) + supplyWarning(q.faction, musterDeltas) +
     battleless() +
-    btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region })) +
-    btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region })) +
-    btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region })) +
-    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('cavalry'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'cavalry' }), hasInf) +
-    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('siege_engine'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'siege_engine' }), hasInf) +
-    (port && harborOpen ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id })) : '') +
-    seas.map(sid => btn(`${esc(unitName('warship'))} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }))).join('') +
+    btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region }), true, 'infantry') +
+    btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region }), true, 'cavalry') +
+    btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region }), true, 'siege_engine') +
+    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('cavalry'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'cavalry' }), hasInf, 'cavalry') +
+    btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('siege_engine'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'siege_engine' }), hasInf, 'siege_engine') +
+    (port && harborOpen ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id }), true, 'warship') : '') +
+    seas.map(sid => btn(`${esc(unitName('warship'))} → ${esc(rName(sid))}`, 1, JSON.stringify({ type: 'warship', to: sid }), true, 'warship')).join('') +
     (stagedRows ? `<div class="hint">Staged:</div>` + stagedRows : '') +
     `<button class="opt commit" data-mcommit>1 ${staged.length ? 'muster ' + staged.length + ' build(s)' : 'muster nothing (pass)'}</button>`
       .replace('>1 ', '>') +
@@ -1158,7 +1303,10 @@ function formFor(q) {
 function leaderCardForm(q) {
   const rows = q.hand.map(id =>
     `<button class="opt card-opt" data-lcard="${id}">${cardChip(id)}</button>`).join('');
-  return `<p>${fGlyph(q.faction)} choose a ${esc(theme.terms.leaderCard)} — face-down until both sides commit.</p>
+  // Owner (Aug 2026): choosing a leader without seeing the armies was
+  // deciding blind — the same army-vs-army banner the support decision
+  // shows now stands above the hand.
+  return battleBanner() + `<p>${fGlyph(q.faction)} choose a ${esc(theme.terms.leaderCard)} — face-down until both sides commit.</p>
     <div class="card-list">${rows}</div>`;
 }
 
@@ -1352,9 +1500,22 @@ function marchForm(q) {
   const committed = {};
   for (const mv of ui.moves) for (const [t, n] of Object.entries(mv.units)) committed[t] = (committed[t] || 0) + n;
 
-  html += `<p class="hint">Marching from <b>${esc(rName(ui.region))}</b> — ${Object.entries(avail).map(([t, n]) => `${n} ${esc(unitName(t))}`).join(', ') || 'no units'}</p>`;
+  html += `<p class="hint">Marching from <b>${rLink(ui.region)}</b> — ${Object.entries(avail).map(([t, n]) => `${n} ${esc(unitName(t))}`).join(', ') || 'no units'}</p>`;
+  // Predictive supply (m3e37): a split that births an illegal 5th army — the
+  // owner's exact triple-rejection — warns HERE, not at the engine's door.
+  {
+    const moved = {};
+    for (const mv of ui.moves) {
+      const n = Object.values(mv.units).reduce((a, b) => a + b, 0);
+      if (n) { moved[mv.to] = (moved[mv.to] || 0) + n; }
+    }
+    const outbound = Object.values(moved).reduce((a, b) => a + b, 0);
+    const deltas = [{ region: ui.region, add: -outbound },
+      ...Object.entries(moved).map(([r, n]) => ({ region: r, add: n }))];
+    html += supplyWarning(q.faction, deltas);
+  }
   ui.moves.forEach((mv, mi) => {
-    html += `<div class="move-card"><b>→ ${esc(rName(mv.to))}</b>`;
+    html += `<div class="move-card"><b>→ ${rLink(mv.to)}</b>`;
     for (const t of Object.keys(avail)) {
       const n = mv.units[t] || 0;
       html += `<div class="stepper"><span>${esc(unitName(t))}</span>
@@ -1597,6 +1758,7 @@ function bindForm(panel, q) {
 
   panel.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
     ui.region = b.dataset.pick;
+    ui.focus = b.dataset.pick; centerMap(b.dataset.pick); // one tap, all three surfaces (m3e37)
     if (ui.mode === 'march') ui.awaitDest = true; // straight into destination picking
     renderTurnPanel();
   }));
@@ -1765,7 +1927,10 @@ function logLine(e) {
     case 'cleanUp': return `— Round ${e.round} ends —`;
     case 'eventPhasePending': return `(${esc(theme.terms.eventPhase)} arrives in M2 — straight to planning.)`;
     case 'actionPhaseBegan': return `— The armies move —`;
-    case 'gameOver': return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the war ends at once` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
+    case 'gameOver': {
+      const v = e.reason !== 'seats' ? roundsVerdict(shown()) : null;
+      return `👑 ${F(e.winner)} ${e.reason === 'seats' ? `seizes a ${SETUP_VICTORY_TARGET}th seat — the war ends at once` : v ? `takes the realm as the final round closes — ${v}` : 'holds the most seats as the final round closes'}!${e.standings ? ` Final standings: ${e.standings.map(f => `${fGlyph(f)} ${e.seats?.[f] ?? ''}`).join(' · ')}.` : ''}`;
+    }
     default: return null;
   }
 }
@@ -1799,9 +1964,26 @@ function renderHouses() {
     </div>`).join('');
 }
 
+let trackAttnKey = null;
 function renderTracks() {
   const el = $('#tracks-panel');
   if (!el) return;
+  // Owner (Aug 2026): when a TRACK decision is on the table for the human,
+  // the scoreboard is the context — it opens, flashes, and scrolls into
+  // view (once per decision, not per repaint).
+  const TRACK_QS = new Set(['bid', 'bidTieBreak', 'invaderBid', 'invaderTieBreak', 'incursionTrack']);
+  const humanQ = shown().pendingQueries.find(q => TRACK_QS.has(q.type) && (!mixed.human || q.faction === mixed.human));
+  const wrap = document.getElementById('score-detail');
+  if (humanQ && mixed.human) {
+    const key = `${humanQ.type}:${humanQ.faction}:${shown().actionLog.length}`;
+    el.classList.add('attn');
+    if (wrap) wrap.open = true;
+    if (key !== trackAttnKey) {
+      trackAttnKey = key;
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+      wrap?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  } else { el.classList.remove('attn'); trackAttnKey = null; }
   const rows = [
     ['initiative', theme.terms.trackInitiative, 'sovereign', theme.terms.tokenSovereign],
     ['prowess',    theme.terms.trackProwess,    'blade',     theme.terms.tokenBlade],
@@ -1825,7 +2007,7 @@ function render() {
   applyThemeVisuals();
   scanForStage();
   const svg = $('#map');
-  renderMap(svg, theme, { onSelect: handleRegionTap });
+  renderMap(svg, theme, { onSelect: rid => focusRegion(rid, 'map') });
   tintForts();
   overlayState(svg);
   renderTurnPanel();
@@ -1873,6 +2055,15 @@ function fillSeatSelect() {
 function init() {
   fillSeatSelect();
   $('#theme-select').addEventListener('change', e => { theme = THEMES[e.target.value] ?? THEME_WARROSES; fillSeatSelect(); render(); });
+  // m3e37 offender #1: any region NAME in the panel is a focus control.
+  $('#turn-panel').addEventListener('click', e => {
+    const el = e.target.closest('[data-rid]');
+    if (el) focusRegion(el.dataset.rid, 'panel');
+  });
+  $('#stage')?.addEventListener('click', e => {
+    const el = e.target.closest('[data-rid]');
+    if (el) focusRegion(el.dataset.rid, 'panel');
+  });
   $('#btn-new').addEventListener('click', () => newGame());
   $('#seed-line').addEventListener('click', () => {
     const raw = prompt('Start a new game with a specific seed (blank cancels):');

@@ -5,7 +5,7 @@
 // quarantined per the check-episode doctrine (never silently learned from).
 
 export const BOOK_PROVENANCE = {
-  "minedAt": "2026-08-04T18:28:27.118Z",
+  "minedAt": "2026-08-19T13:19:30.879Z",
   "rulesRevision": 11,
   "rounds": 3,
   "admitted": [
@@ -59,6 +59,13 @@ export const BOOK_PROVENANCE = {
       "recordedRev": 11
     },
     {
+      "file": "episode-percy-fun-r10.json",
+      "hash": "f4fd83a5",
+      "winner": "F5",
+      "rounds": 10,
+      "recordedRev": 11
+    },
+    {
       "file": "episode-percy-r6.json",
       "hash": "a1ecad60",
       "winner": "F5",
@@ -84,6 +91,13 @@ export const BOOK_PROVENANCE = {
       "hash": "ee58b4de",
       "winner": "F4",
       "rounds": 6,
+      "recordedRev": 11
+    },
+    {
+      "file": "episode-tudor-awesomesauce-r10.json",
+      "hash": "c4192b05",
+      "winner": "F3",
+      "rounds": 10,
       "recordedRev": 11
     },
     {
@@ -164,22 +178,23 @@ export const BOOK_PROVENANCE = {
 
 export const BOOKS = {
   "F3": {
-    "games": 4,
+    "games": 5,
     "rounds": {
       "1": {
         "regions": {
           "L20": {
             "support+1*": 1,
-            "march": 1,
-            "rally": 2
+            "rally": 3,
+            "march": 1
           },
           "L22": {
             "march": 1,
-            "march+1*": 1,
-            "rally*": 2
+            "rally*": 3,
+            "march+1*": 1
           },
           "S04": {
             "march-1": 3,
+            "march": 1,
             "defend+1": 1
           }
         },
@@ -199,6 +214,26 @@ export const BOOKS = {
               "S04": {
                 "type": "march",
                 "mod": -1,
+                "starred": false
+              }
+            },
+            "n": 1
+          },
+          "L20:rally L22:rally* S04:march": {
+            "orders": {
+              "L20": {
+                "type": "rally",
+                "mod": 0,
+                "starred": false
+              },
+              "L22": {
+                "type": "rally",
+                "mod": 0,
+                "starred": true
+              },
+              "S04": {
+                "type": "march",
+                "mod": 0,
                 "starred": false
               }
             },
@@ -273,20 +308,23 @@ export const BOOKS = {
           },
           "L20": {
             "support+1*": 1,
-            "rally": 2
+            "rally": 3
           },
           "L22": {
             "march-1": 1,
-            "rally*": 2
+            "rally*": 3
           },
           "S04": {
-            "raid": 1,
+            "raid": 2,
             "support": 1,
             "raid*": 1,
             "defend+1": 1
           },
           "S12": {
-            "support": 1
+            "support": 2
+          },
+          "P08": {
+            "rally": 3
           },
           "L04": {
             "march": 1
@@ -296,9 +334,6 @@ export const BOOKS = {
           },
           "S03": {
             "support": 1
-          },
-          "P08": {
-            "rally": 2
           }
         },
         "sets": {
@@ -317,6 +352,36 @@ export const BOOKS = {
               "L22": {
                 "type": "march",
                 "mod": -1,
+                "starred": false
+              },
+              "S04": {
+                "type": "raid",
+                "mod": 0,
+                "starred": false
+              },
+              "S12": {
+                "type": "support",
+                "mod": 0,
+                "starred": false
+              }
+            },
+            "n": 1
+          },
+          "L20:rally L22:rally* P08:rally S04:raid S12:support": {
+            "orders": {
+              "L20": {
+                "type": "rally",
+                "mod": 0,
+                "starred": false
+              },
+              "L22": {
+                "type": "rally",
+                "mod": 0,
+                "starred": true
+              },
+              "P08": {
+                "type": "rally",
+                "mod": 0,
                 "starred": false
               },
               "S04": {
@@ -416,6 +481,7 @@ export const BOOKS = {
           },
           "L20": {
             "march-1": 1,
+            "march": 1,
             "defend+1*": 1,
             "rally": 1
           },
@@ -424,11 +490,19 @@ export const BOOKS = {
           },
           "S04": {
             "raid": 2,
+            "march-1": 1,
             "support": 1,
             "raid*": 1
           },
           "S12": {
-            "support+1*": 1
+            "support+1*": 1,
+            "support": 1
+          },
+          "L22": {
+            "rally*": 3
+          },
+          "P08": {
+            "rally": 3
           },
           "L04": {
             "march-1": 1
@@ -441,12 +515,6 @@ export const BOOKS = {
           },
           "S03": {
             "support": 1
-          },
-          "L22": {
-            "rally*": 2
-          },
-          "P08": {
-            "rally": 2
           }
         },
         "sets": {
@@ -476,6 +544,36 @@ export const BOOKS = {
                 "type": "support",
                 "mod": 1,
                 "starred": true
+              }
+            },
+            "n": 1
+          },
+          "L20:march L22:rally* P08:rally S04:march-1 S12:support": {
+            "orders": {
+              "L20": {
+                "type": "march",
+                "mod": 0,
+                "starred": false
+              },
+              "L22": {
+                "type": "rally",
+                "mod": 0,
+                "starred": true
+              },
+              "P08": {
+                "type": "rally",
+                "mod": 0,
+                "starred": false
+              },
+              "S04": {
+                "type": "march",
+                "mod": -1,
+                "starred": false
+              },
+              "S12": {
+                "type": "support",
+                "mod": 0,
+                "starred": false
               }
             },
             "n": 1
@@ -565,21 +663,21 @@ export const BOOKS = {
     }
   },
   "F5": {
-    "games": 3,
+    "games": 4,
     "rounds": {
       "1": {
         "regions": {
           "L27": {
-            "march+1*": 2,
+            "march+1*": 3,
             "march": 1
           },
           "L28": {
-            "rally*": 2,
+            "rally*": 3,
             "march+1*": 1
           },
           "S05": {
             "march": 1,
-            "march-1": 2
+            "march-1": 3
           }
         },
         "sets": {
@@ -621,7 +719,7 @@ export const BOOKS = {
                 "starred": false
               }
             },
-            "n": 1
+            "n": 2
           },
           "L27:march L28:march+1* S05:march-1": {
             "orders": {
@@ -652,19 +750,22 @@ export const BOOKS = {
           },
           "L28": {
             "march": 1,
+            "rally": 1,
             "rally*": 2
           },
           "P07": {
             "march+1*": 1
           },
           "S05": {
-            "support+1*": 1
+            "support+1*": 1,
+            "support": 1
           },
           "S06": {
             "support": 1,
-            "march+1*": 2
+            "march+1*": 3
           },
           "L25": {
+            "rally*": 1,
             "march": 2
           }
         },
@@ -695,6 +796,31 @@ export const BOOKS = {
                 "type": "support",
                 "mod": 0,
                 "starred": false
+              }
+            },
+            "n": 1
+          },
+          "L25:rally* L28:rally S05:support S06:march+1*": {
+            "orders": {
+              "L25": {
+                "type": "rally",
+                "mod": 0,
+                "starred": true
+              },
+              "L28": {
+                "type": "rally",
+                "mod": 0,
+                "starred": false
+              },
+              "S05": {
+                "type": "support",
+                "mod": 0,
+                "starred": false
+              },
+              "S06": {
+                "type": "march",
+                "mod": 1,
+                "starred": true
               }
             },
             "n": 1
@@ -731,11 +857,11 @@ export const BOOKS = {
           },
           "L25": {
             "rally": 1,
-            "march-1": 1
+            "march-1": 2
           },
           "L28": {
             "march": 1,
-            "rally*": 2
+            "rally*": 3
           },
           "P08": {
             "support": 1
@@ -744,21 +870,22 @@ export const BOOKS = {
             "march-1": 1
           },
           "S05": {
-            "support+1*": 1,
+            "support+1*": 2,
             "support": 1
           },
           "S06": {
             "support": 2,
             "march-1": 1
           },
+          "S07": {
+            "march": 1,
+            "march+1*": 2
+          },
           "L34": {
             "march": 2
           },
           "P06": {
             "rally": 1
-          },
-          "S07": {
-            "march+1*": 2
           }
         },
         "sets": {
@@ -801,6 +928,31 @@ export const BOOKS = {
               },
               "S06": {
                 "type": "support",
+                "mod": 0,
+                "starred": false
+              }
+            },
+            "n": 1
+          },
+          "L25:march-1 L28:rally* S05:support+1* S07:march": {
+            "orders": {
+              "L25": {
+                "type": "march",
+                "mod": -1,
+                "starred": false
+              },
+              "L28": {
+                "type": "rally",
+                "mod": 0,
+                "starred": true
+              },
+              "S05": {
+                "type": "support",
+                "mod": 1,
+                "starred": true
+              },
+              "S07": {
+                "type": "march",
                 "mod": 0,
                 "starred": false
               }
