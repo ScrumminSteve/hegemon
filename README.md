@@ -8,6 +8,18 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## THE LEARNER WAKES — tune.mjs covers the full surface (m3e41b)
+
+Pre-flight for the first overnight SPSA on the new structure found the
+tuner frozen in time: KEYS = Object.keys(WEIGHTS) predated Package B —
+all four new knobs would have sat untouched all night, and theta seeded
+from the V2 vector alone. Fixed: KEYS/theta run over the merged active
+surface (V2 + M3E), EXCLUDING zero-valued keys — log-space multiplicative
+steps can never lift a zero (the perFaction lesson), so the inert book
+trio stays out until the book goes live. 2-iter smoke verified the loop:
+perturb → paired eval → guardrails → checkpoint → held-out verification
+→ .bestWeights artifact.
+
 ## THE BOTS LEARN HUNGER AND TENURE — blunders #9 and #10 (m3e41)
 
 Owner named two live blunders from table observation; both fixed as

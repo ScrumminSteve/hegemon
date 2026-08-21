@@ -27,10 +27,16 @@
 
 import { pathToFileURL } from 'node:url';
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
-import { WEIGHTS } from '../src/agents/heuristic.js';
+import { WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { evaluate } from './eval.mjs';
 
-const KEYS = Object.keys(WEIGHTS);
+// m3e41: tune the FULL active surface — V2 plus the Package-B/blunder-bank
+// additions (transport threat, amphibious opportunity, seat hunger, sea
+// tenure). Zero-valued keys are EXCLUDED: log-space multiplicative steps
+// can never lift a zero (the perFaction lesson), so the inert book trio
+// (bookBias 0 ⇒ bookDecay/bookTemp moot) stays out until the book goes live.
+const FULL = { ...WEIGHTS_M3E, ...WEIGHTS };
+const KEYS = Object.keys(FULL).filter(k => FULL[k] > 0);
 
 // ---------------------------------------------------------------------------
 // pure helpers (golden-tested)
@@ -86,7 +92,7 @@ export async function tune(path, cfg = {}) {
         aScale: 1,
       },
       iter: 0,
-      theta: toTheta(WEIGHTS),
+      theta: toTheta(FULL),
       best: null,     // { theta, stats, iter }
       baseline: null, // v1-vs-v1 guardrail anchors on the check block
       history: [],
