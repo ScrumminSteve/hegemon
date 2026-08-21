@@ -13,7 +13,7 @@ import * as stateApi from '../src/engine/state.js';
 import { beginPlanning, applyAction, stateHash } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, scorePlacement, effectiveWeights, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, scorePlacement, scoreAction, effectiveWeights, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { botRng } from '../src/agents/random.js';
 import { BOOKS, BOOK_PROVENANCE, bookPrior, bookLines } from '../src/agents/books.js';
 import { eq, ok } from './assert.js';
@@ -164,7 +164,7 @@ export const tests = [
     const sigOf = orders => JSON.stringify(Object.entries(orders).sort());
     const lineSigs = new Set(bookLines(multi, 1).map(l => sigOf(l.orders)));
     // Book ON: when a graded line leads the menu, the pick IS a book line.
-    const on = createHeuristicAgent({ weights: { bookBias: 1.5 } });
+    const on = createHeuristicAgent({ weights: { bookBias: 4 } }); // bias high enough that a line MUST lead — mechanism, not tuning
     const onMenu2 = legalActions(s, q, { guide: on.makeGuide(view, q) });
     for (let seed = 1; seed <= 10; seed++) {
       ok(lineSigs.has(sigOf(on.decide(view, q, onMenu2, botRng(seed)).orders)),
@@ -172,7 +172,11 @@ export const tests = [
     }
     // Mechanism: at a warm temperature the sampling genuinely riffs — the
     // stock bookTemp is a tuning default, not the contract.
-    const warm = createHeuristicAgent({ weights: { bookBias: 1.5, bookTemp: 1.5 } });
+    // bookTemp scales against ABSOLUTE score gaps, which grow whenever scoring
+    // strengthens (seat hunger widened them in m3e41) — the mechanism golden
+    // samples HOT (bias 4 so lines lead; temp 6 so they genuinely riff)
+    // and magnitude drift can never re-mask it.
+    const warm = createHeuristicAgent({ weights: { bookBias: 4, bookTemp: 6 } });
     const warmMenu = legalActions(s, q, { guide: warm.makeGuide(view, q) });
     const picks = new Set();
     for (let seed = 1; seed <= 60; seed++) {
@@ -288,3 +292,50 @@ export const tests = [
     eq(a.hash, b.hash, 'guided play is deterministic per seed pair');
   }},
 ];
+
+tests.push(
+  { name: 'blunder #9 (m3e41): seat hunger — the SAME march into an unguarded enemy seat scores strictly higher with the hunger on; a plain field is untouched by it', fn() {
+    const s = freshPlanning();
+    const fid = currentQuery(s).faction;
+    const view = viewFor(s, fid);
+    const { region: reg, adjacency, controllerOf } = stateApi;
+    const ADJ2 = adjacency();
+    const empty = rid => !(view.unitsByRegion[rid] || []).length;
+    const seat = Object.keys(ADJ2).find(r => reg(r)?.kind === 'land' && reg(r).muster > 0 && empty(r) && controllerOf(view, r) !== fid);
+    const plain = Object.keys(ADJ2).find(r => reg(r)?.kind === 'land' && !(reg(r).muster > 0) && empty(r) && controllerOf(view, r) !== fid);
+    ok(seat && plain, 'the board offers both');
+    const origin = Object.keys(view.unitsByRegion).find(r => (view.unitsByRegion[r] || []).some(u => u.faction === fid && u.type !== 'warship'));
+    const q = { type: 'resolveOrder', faction: fid }; // the QUERY is resolveOrder; the ACTION is resolveMarch
+    const act = to => ({ faction: fid, type: 'resolveMarch', region: origin, moves: [{ to, units: { infantry: 1 } }] });
+    const Won = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const Woff = { ...Won, mSeatHunger: 0 };
+    ok(scoreAction(view, q, act(seat), Won) > scoreAction(view, q, act(seat), Woff) + 1e-9,
+      'the hunger lifts the free castle');
+    eq(scoreAction(view, q, act(plain), Won), scoreAction(view, q, act(plain), Woff),
+      'a plain field feels nothing — the term is seat-specific');
+  }},
+  { name: 'blunder #10 (m3e41): sea tenure — sailing the LAST warship out of a sea guarding your coast is penalized; the same sortie from unguarded water is not', fn() {
+    const s = freshPlanning();
+    const fid = currentQuery(s).faction;
+    const base = viewFor(s, fid);
+    const { region: reg, adjacency, controllerOf } = stateApi;
+    const ADJ2 = adjacency();
+    const seas = Object.keys(ADJ2).filter(r => reg(r)?.kind === 'maritime' && !(base.unitsByRegion[r] || []).length);
+    const guard = seas.find(sea => [...(ADJ2[sea] || [])].some(n => reg(n)?.kind !== 'maritime' && controllerOf(base, n) === fid));
+    const open = seas.find(sea => ![...(ADJ2[sea] || [])].some(n => reg(n)?.kind !== 'maritime' && controllerOf(base, n) === fid));
+    ok(guard && open, 'the map offers guarded and open waters (both empty)');
+    const q = { type: 'resolveOrder', faction: fid }; // the QUERY is resolveOrder; the ACTION is resolveMarch
+    const Won = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const Woff = { ...Won, mSeaTenure: 0 };
+    const rigAndScore = (sea, W) => {
+      const v = structuredClone(base);
+      (v.unitsByRegion[sea] ??= []).push({ faction: fid, type: 'warship' });
+      const dest = [...(ADJ2[sea] || [])].find(n => reg(n)?.kind === 'maritime' && !(v.unitsByRegion[n] || []).length) ?? [...(ADJ2[sea] || [])][0];
+      return scoreAction(v, q, { faction: fid, type: 'resolveMarch', region: sea, moves: [{ to: dest, units: { warship: 1 } }] }, W);
+    };
+    ok(rigAndScore(guard, Won) < rigAndScore(guard, Woff) - 1e-9,
+      'leaving the guarded lane costs — the tenure term bites');
+    eq(rigAndScore(open, Won), rigAndScore(open, Woff),
+      'open water carries no tenure — the same sortie is free there');
+  }},
+);

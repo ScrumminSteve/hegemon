@@ -148,6 +148,12 @@ export const WEIGHTS = WEIGHTS_V2;
  * everything else once the next SPSA run includes them.
  */
 export const WEIGHTS_M3E = Object.freeze({
+  mSeatHunger: 2.5, // owner blunder bank #9 (m3e41): an UNGUARDED seat is the
+                    //   win condition standing open — hunger for it, and hunger
+                    //   HARDER the closer you stand to seven
+  mSeaTenure: 1.2,  // owner blunder bank #10 (m3e41): vacating the last warship
+                    //   from a sea that guards your own coasts surrenders the
+                    //   lane — station-keeping has value the scorer must see
   tOpportunity: 0.8, // transported-reach OPPORTUNITY scale: landings my own
                     //   fleets enable count in march scoring, discounted for
                     //   the crossing (m3e34 island fix, the real one)
@@ -380,7 +386,15 @@ function regionValue(view, rid, W) {
 function attackScore(view, to, myStr, fid, W) {
   const enemy = enemyStrengthAt(view, to, fid);
   const owner = controllerOf(view, to);
-  const gain = owner === fid ? 0 : regionValue(view, to, W);
+  let gain = owner === fid ? 0 : regionValue(view, to, W);
+  // Blunder bank #9 (m3e41, owner: "they leave a castle free without
+  // attacking"): an unguarded seat is the WIN CONDITION standing open, not
+  // just another valuable region — and its pull grows as the seat count
+  // climbs toward seven. Applies to empty walk-ins only; garrisoned seats
+  // still answer to the margin math below.
+  if (owner !== fid && enemy === 0 && region(to)?.kind === 'land' && regionProps(view, to).muster > 0) {
+    gain += (W.mSeatHunger ?? WEIGHTS_M3E.mSeatHunger) * (1 + seatsControlled(view, fid) / 3);
+  }
   if (enemy === 0) return gain; // a walk-in
   const margin = myStr - enemy;
   if (margin > 0) return gain * Math.min(1, margin / 2) * W.mAttackMargin;
@@ -484,6 +498,12 @@ export function scorePlacement(view, fid, rid, o, W) {
   return s;
 }
 
+/** Raw scorer probe for behavior goldens: score one candidate exactly as
+    decide() would. Test-facing; not used in play. */
+export function scoreAction(view, q, a, W) {
+  return (SCORERS[q.type] || (() => 0))(view, q, a, W);
+}
+
 const SCORERS = {
   // ----- planning -----
   submitOrders(view, q, a, W) {
@@ -555,6 +575,23 @@ const SCORERS = {
       }
       s += attackScore(view, mv.to, str, q.faction, W);
       void UV;
+    }
+    // Blunder bank #10 (m3e41, owner: "vacate a strategic sea area"): sailing
+    // the LAST warship out of a sea that borders your own held land gives up
+    // the lane — the threat model then sees enemy landings there next round,
+    // but by then the ships are gone. Penalty scales with how much of YOUR
+    // coast that sea touches.
+    if (region(a.region)?.kind === 'maritime') {
+      const shipsOut = a.moves.reduce((n, mv) => n + (mv.units.warship || 0), 0);
+      const shipsHere = (view.unitsByRegion[a.region] || [])
+        .filter(u => u.faction === q.faction && u.type === 'warship' && !u.routed).length;
+      if (shipsOut >= shipsHere) {
+        let myCoast = 0;
+        for (const n of ADJ[a.region] || []) {
+          if (region(n)?.kind !== 'maritime' && controllerOf(view, n) === q.faction) myCoast++;
+        }
+        if (myCoast) s -= (W.mSeaTenure ?? WEIGHTS_M3E.mSeaTenure) * myCoast;
+      }
     }
     // abandoning an owned seat with hostiles on the border
     const props = region(a.region)?.kind === 'maritime' ? { muster: 0 } : regionProps(view, a.region);

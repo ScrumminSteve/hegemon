@@ -101,11 +101,11 @@ export const THEME_WARROSES = {
         'The north is yours. The road south is long. At the end of it sits a throne held by a sleeping king and the she-wolf who rules through him.',
       ],
       objectives: [
-        '⚔ MARCH SOUTH — take St Albans, the twice-bloodied gateway. Every crown won this century passed through it.',
-        '👑 BE CROWNED — take London and hold it. The realm follows whoever the city cheers.',
-        '🏰 NEVER AGAIN WAKEFIELD — York must not fall while you campaign. Garrison the home your father died defending.',
+        '⚔ TRIAL BY BATTLE — from the second year to the last, win a battle every year. Garrisons of no house still count; quiet years do not. Edward does not rest, and armies that rest are armies that rust.',
+        '🌹 CUT DOWN THE RED ROSE — take Lancaster itself, in open battle. Their hearth, their name, their seat — carried at the point of a sword, clear across the realm.',
+        '👑 THE STRETCHED CROWN — win the realm holding BOTH York and London when the horn sounds. The whole war is the road between your father\'s city and your crown.',
       ],
-      closing: 'These are marks of glory, not chains — the crown falls to whoever holds seven seats, by any road. But history is watching, Edward.',
+      closing: 'These are marks of glory, not chains — but this set was forged to break you, Edward. Chase all three and you may lose everything. History is watching either way.',
     },
     F2: {
       title: 'The She-Wolf of France',
@@ -117,7 +117,7 @@ export const THEME_WARROSES = {
       objectives: [
         '🌹 THE KING MUST BE KEPT — Lancaster is the dynasty\'s heart: garrison it, and never let the home fires fall while you campaign.',
         '⚔ BREAK THE PRETENDER — carry the red rose to St Albans as you did before, and then to the city of York itself. Let them keep the paper crown.',
-        '👑 THE SON\'S INHERITANCE — this house does not yield. Take the seven seats if the field allows — and if it does not, stand highest when the final round closes. Margaret fights to the last day of the last year.',
+        '👑 THE SLEEPING KING — win the realm while NEVER once topping the Crown track. Henry reigns; you rule. Let no herald ever cry your name — only your victories.',
       ],
       closing: 'They call you the she-wolf as an insult, madam. Wear it as the wolves do.',
     },
@@ -173,7 +173,7 @@ export const THEME_WARROSES = {
       objectives: [
         '🌊 RULE THE NARROW SEAS — the Manx Sea stays yours, and no coast in the realm sleeps safe from your raids.',
         '🐻 SETTLE THE FEUD — hold Middleham against all comers, and carry the bear and ragged staff to Alnwick. Percy has held the north over your family long enough.',
-        '👑 MAKE A KING — OR BE ONE — win the Crown at bid and order the realm as its sovereign. And when they forget what they owe you, take the seven seats yourself.',
+        '👑 MAKE A KING — top the Crown track at a rebuilding of the court, with your own hands, at least once. Winning the war is not this mark; CROWNING is. The realm must hear, even for one season: Warwick decides.',
       ],
       closing: 'Kings are made by stronger men than kings, my lord. The fog at Barnet is not yet written.',
     },

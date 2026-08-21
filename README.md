@@ -8,6 +8,63 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## THE BOTS LEARN HUNGER AND TENURE — blunders #9 and #10 (m3e41)
+
+Owner named two live blunders from table observation; both fixed as
+tunable structure (new weight keys under the freeze):
+
+**#9 SEAT HUNGER (mSeatHunger 2.5):** "they leave a castle free without
+attacking." An unguarded enemy seat is the WIN CONDITION standing open,
+not just another valuable region — attackScore now adds a hunger term
+for empty-seat walk-ins that GROWS with seats already held (endgame
+urgency). Garrisoned seats still answer to the margin math.
+
+**#10 SEA TENURE (mSeaTenure 1.2):** "vacate a strategic sea area."
+Sailing the LAST warship out of a sea that borders your own held land
+now costs, scaled by how much of your coast that lane guards — the
+threat model could already see enemy landings after the ships left;
+now the scorer sees the leaving.
+
+Goldens are exact weight-delta isolation (same action, term on vs off)
+via a new test-facing scoreAction probe — board-luck-proof, and immune
+to the magnitude drift that twice squeezed the soft-selection golden
+(now pinned hot at bias 4 / temp 6). Gotcha banked: SCORERS key by
+QUERY type (resolveOrder), not action type. Paired smoke, same block:
+**30.6% vs the 27.8% m3e34 baseline, F6 2/6 (was 0/6)** — direction
+positive; the owner's next 600 adjudicates.
+
+Suite: **281**.
+
+## THE ROSE IN WINTER IS LAW — the objectives audit (m3e40)
+
+**York's marks replaced** (owner: the old trio was "a total letdown next
+to Tudor and Percy"; the replacement was played ON HONOR first, then
+banked): ⚔ TRIAL BY BATTLE (a won battle EVERY year from the second to
+the last — owner ruling: destroyed neutral garrisons count), 🌹 CUT DOWN
+THE RED ROSE (Lancaster's seat taken IN BATTLE — markers and quiet walks
+don't count), 👑 THE STRETCHED CROWN (win holding both York and London).
+The founding game — a 7-seat round-10 buzzer-beater with a triple-battle
+finale and Lancaster annihilated to zero — grades ☆⭐⭐ (one quiet year,
+r7) and is golden-locked with the neutral ruling.
+
+**Audit of the other five:** Tudor and Percy hold (owner-certified
+awesome; every mark earned in real play). Stafford holds (the survivor's
+arc — neverFell both seats, one feud a year, outrank both roses — is
+coherent and distinctive). Two marks sharpened where real games exposed
+softness: **Lancaster's** third mark was bare isWinner (the same
+no-story defect as old York) → THE SLEEPING KING: win the realm while
+NEVER topping the Crown track — Henry reigns, Margaret rules, no herald
+cries her name. **Neville's** MAKE A KING had a victory backdoor (both
+owner wins scored it without ever kingmaking) → closed: crowning at a
+court rebuild is the mark; winning is just winning. Neville's sea-raids
+mark stays the only one never earned by anyone — as it should be.
+
+Re-grading note: past episodes re-score under the new law when replayed
+(the non-objective Nevilles honestly drop to 0-of-3 — which is what
+"non-objective" meant).
+
+Suite: **279**.
+
 ## THE PANEL COMES TO YOU — first on-device pass (m3e39)
 
 Owner's first hands-on with the m3e38 UI produced four findings; all

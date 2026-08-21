@@ -335,3 +335,23 @@ tests.push(
       'the panel comes to the decision');
   }},
 );
+
+tests.push(
+  { name: 'm3e40: THE ROSE IN WINTER is York law — the founding game grades ☆⭐⭐ with the neutral-garrison ruling; the Kingmaker backdoor is closed', async fn() {
+    const { scoreGlory } = await import('../src/game/objectives.js');
+    const { readFileSync } = await import('node:fs');
+    const { createGame } = await import('../src/engine/state.js');
+    const { applyAction, beginPlanning } = await import('../src/engine/engine.js');
+    const ep = JSON.parse(readFileSync(new URL('../corpus/inbox/episode-york-new-objectives-r10.json', import.meta.url), 'utf8'));
+    let s = createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    for (const a of ep.actions) s = applyAction(s, a).state;
+    const marks = scoreGlory(s, 'F1');
+    eq(JSON.stringify(marks.map(m => m.met)), '[false,true,true]',
+      'one quiet year (r7 — r6 counts by the neutral ruling), Lancaster by the sword on a broken tie, the realm won holding York and London');
+    // The Kingmaker's mark no longer passes through mere victory:
+    const { GLORY_CHECKS } = await import('../src/game/objectives.js');
+    eq(GLORY_CHECKS.F6[2].type, 'madeAKing', 'crowning is the mark; winning is just winning');
+    eq(GLORY_CHECKS.F2[2].type, 'shadowCrown', 'the she-wolf wins without a herald');
+  }},
+);

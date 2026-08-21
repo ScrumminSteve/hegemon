@@ -163,6 +163,39 @@ const CHECKS = {
     s.winner === fid ||
     s.log.some(e => e.event === 'trackRebuilt' && e.track === 'initiative' && e.holder === fid),
 
+  // F1 Trial by Battle (owner ruling, m3e40): a won house-battle OR a
+  // destroyed neutral garrison counts as the year's blood; EVERY year from
+  // the second to the game's final round must have one.
+  battleEveryYear: (s, fid) => {
+    const bloody = new Set();
+    let open = null;
+    for (const e of s.log) {
+      if (e.event === 'combatBegan') open = e;
+      if (e.event === 'combatResolved' && open) { if (e.victor === fid) bloody.add(e.round); open = null; }
+      if (e.event === 'neutralDestroyed' && e.by === fid) bloody.add(e.round);
+    }
+    for (let r = 2; r <= s.round; r++) if (!bloody.has(r)) return false;
+    return true;
+  },
+
+  // Took a specific region BY BATTLE (markers and quiet walks don't count).
+  tookInBattle: (s, fid, c) =>
+    battles(s).some(b => b.region === c.region && b.attacker === fid && b.victor === fid),
+
+  winnerHolding: (s, fid, c) =>
+    s.winner === fid && c.regions.every(r => controllerOf(s, r) === fid),
+
+  // F2 The Sleeping King: win while NEVER topping the Crown at any rebuild.
+  shadowCrown: (s, fid) =>
+    s.winner === fid &&
+    !s.log.some(e => e.event === 'trackRebuilt' && e.track === 'initiative' && e.holder === fid),
+
+  // F6 Make a King, front door ONLY (m3e40): the owner's non-objective wins
+  // exposed the 'or win the realm' backdoor — both scored the star without
+  // ever kingmaking. Crowning is the mark; winning is just winning.
+  madeAKing: (s, fid) =>
+    s.log.some(e => e.event === 'trackRebuilt' && e.track === 'initiative' && e.holder === fid),
+
   any: (s, fid, c) => c.of.some(sub => CHECKS[sub.type](s, fid, sub)),
   all: (s, fid, c) => c.of.every(sub => CHECKS[sub.type](s, fid, sub)),
 };
@@ -174,15 +207,15 @@ const CHECKS = {
 // keyed to engine region ids; the theme keeps the poetry, this keeps the law.
 
 export const GLORY_CHECKS = {
-  F1: [
-    { type: 'everTook', regions: ['L16'] },                                   // St Albans
-    { type: 'controlAtEnd', regions: ['L19'] },                               // London held
-    { type: 'neverFell', regions: ['L01'] },                                  // York never falls
+  F1: [ // THE ROSE IN WINTER (owner-played on honor, then banked — m3e40)
+    { type: 'battleEveryYear' },                                              // trial by battle (neutral garrisons count)
+    { type: 'tookInBattle', region: 'L36' },                                  // cut down the red rose — Lancaster, by the sword
+    { type: 'winnerHolding', regions: ['L01', 'L19'] },                       // the stretched crown — win holding York AND London
   ],
   F2: [
     { type: 'neverFell', regions: ['L36'] },                                  // Lancaster kept
     { type: 'everTook', regions: ['L16', 'L01'] },                            // St Albans AND York
-    { type: 'isWinner' },                                                     // by seats or standings
+    { type: 'shadowCrown' },                                                  // the sleeping king — win while never topping the Crown
   ],
   F3: [
     { type: 'stayHomeBefore', round: 4 },                                     // the fleet before the throne (home = derived footprint)
@@ -202,7 +235,7 @@ export const GLORY_CHECKS = {
   F6: [
     { type: 'seaAndRaids', sea: 'S11', raids: 3 },                            // the Manx Sea + raids
     { type: 'all', of: [{ type: 'controlAtEnd', regions: ['L08'] }, { type: 'everTook', regions: ['L28'] }] }, // hold Middleham, carry to Alnwick
-    { type: 'wonCrownOrRealm' },                                              // make a king — or be one
+    { type: 'madeAKing' },                                                    // make a king — crowning only, no victory backdoor
   ],
 };
 
