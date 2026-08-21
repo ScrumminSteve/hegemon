@@ -1,0 +1,4 @@
+challenger tuned.json vs legacy — 600 games, 15 worker(s), 376.8s
+win rate 27.2% [23.8–30.9] (null 16.7%)
+mean rank 2.975 · worst seat 3.71 · mean rounds 9.9
+per seat: F1 40/100 r2.58  F6 30/100 r2.82  F5 25/100 r3.01  F3 22/100 r3.05  F4 29/100 r2.68  F2 17/100 r3.71

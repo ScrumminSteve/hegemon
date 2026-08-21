@@ -8,6 +8,42 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## WEIGHTS-v3 — THE FIRST MACHINE-LEARNED VECTOR (m3e42)
+
+**G3: DOUBLE PASS, and the first learned gain in project history.**
+Stock (V2 + blunder fixes) on the fresh seed-92000 block: 23.2%
+[20.0–26.7] — the hand-built structure confirmed at N=600. The night4
+SPSA vector, gated paired on the same block: **27.2% [23.8–30.9]** —
+163 wins vs 139 on identical seeds, with the lifts exactly where they
+were needed: F3 13→22, F2 9→17, worst-seat 4.02→3.71, every house ≥17.
+BAKED as WEIGHTS_V3 (frozen, full provenance in heuristic.js); the
+lineage now reads V1 → V2 → V3, each preserved. Honesty in the freeze
+comment: no key moved more than ~4% — many small coordinated nudges,
+paired +4.0pp at the pre-registered criteria, CIs overlapping; V2 is
+re-fieldable in one line.
+
+**Campaign scar tissue, banked:** the tuned arm first graded VOID —
+byte-identical to stock — because the extraction command double-wrapped
+bestWeights ({shared:{shared:…}}); eval ignored the unknown keys and
+silently played stock. Second silent config failure of the project
+(after the multiplied-zero book arm), so eval now REFUSES any
+challenger config containing no recognized weight key (proven both
+directions). Runbook fix recorded: the tuner verifies against the v1
+anchor while gates run against legacy — future nights should verify
+against the gate opponent (17.3% self-report vs 27.2% at the gate was
+this mismatch talking).
+
+**Doctrine banked from the night-watch conversation (owner):** shared
+brain to base competency first, THEN per-house specialization on pure
+P(win) — rank dropped from the objective ("no one cares how badly you
+lose"); human-method opponent profiles (perFactionSet + book + style
+weights from documented episodes) join the tuning pool as OBSTACLES,
+never objectives; marks of glory are for humans — bots stay ignorant
+of them, winning is the only bot goal, human play enters the machine
+only as material.
+
+Suite: **281**.
+
 ## THE LEARNER WAKES — tune.mjs covers the full surface (m3e41b)
 
 Pre-flight for the first overnight SPSA on the new structure found the

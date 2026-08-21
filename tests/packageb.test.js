@@ -13,7 +13,7 @@ import * as stateApi from '../src/engine/state.js';
 import { beginPlanning, applyAction, stateHash } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, scorePlacement, scoreAction, effectiveWeights, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, scorePlacement, scoreAction, effectiveWeights, WEIGHTS, WEIGHTS_V2, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { botRng } from '../src/agents/random.js';
 import { BOOKS, BOOK_PROVENANCE, bookPrior, bookLines } from '../src/agents/books.js';
 import { eq, ok } from './assert.js';
@@ -90,8 +90,15 @@ export const tests = [
     eq(legacy.makeGuide, undefined, 'the legacy bot cannot guide menus');
     const modern = createHeuristicAgent({});
     ok(typeof modern.makeGuide === 'function', 'the shipping bot guides menus');
-    eq(modern.weights.tTransport, WEIGHTS_M3E.tTransport, 'M3E defaults merge under the active vector');
-    ok(WEIGHTS.tTransport === undefined, 'the frozen V2 vector was NOT edited — new keys only');
+    // m3e42: V3 carries its own TUNED value for the M3E keys — the merge
+    // check is that the ACTIVE vector's value wins, not the M3E default.
+    eq(modern.weights.tTransport, WEIGHTS.tTransport, 'the active vector (V3) supplies the tuned M3E keys');
+    ok(Math.abs(WEIGHTS.tTransport - WEIGHTS_M3E.tTransport) < 0.05, 'and it stayed within a nudge of the hand-set default');
+    // m3e42: V3 legitimately CONTAINS the tuned M3E keys (it was tuned over
+    // the full surface); the freeze discipline now reads: V1 and V2 are
+    // untouched history, and V3 is born frozen.
+    ok(WEIGHTS_V2.tTransport === undefined, 'V2 history untouched — the M3E keys never entered it');
+    ok(Object.isFrozen(WEIGHTS), 'V3 is born frozen');
   }},
 
   { name: 'transported reach (blunder #5): an enemy army across a warship chain raises the threat a coastal defend answers — same board minus the fleet, no lift', fn() {

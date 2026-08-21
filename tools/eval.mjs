@@ -24,7 +24,7 @@ import { createGame } from '../src/engine/state.js';
 import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
-import { createHeuristicAgent, effectiveWeights, WEIGHTS_V1 } from '../src/agents/heuristic.js';
+import { createHeuristicAgent, effectiveWeights, WEIGHTS_V1, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { createRandomAgent, botRng } from '../src/agents/random.js';
 
 const MAX_ACTIONS = 6000;
@@ -150,6 +150,25 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const incumbent = arg('incumbent', 'v1');
   const challengerFile = arg('challenger', null);
   const challengerCfg = challengerFile ? JSON.parse((await import('node:fs')).readFileSync(challengerFile, 'utf8')) : null;
+  // Config-shape guard (m3e41c): TWO campaigns lost runs to malformed
+  // challenger configs silently impersonating stock (the double-wrapped
+  // tuned.json; the multiplied-zero book arm). A config containing no
+  // recognized weight key in shared/perFaction/perFactionSet is refused.
+  if (challengerCfg) {
+    const KNOWN = new Set(Object.keys({ ...WEIGHTS_M3E, ...WEIGHTS }));
+    const names = [
+      ...Object.keys(challengerCfg.shared ?? {}),
+      ...Object.values(challengerCfg.perFaction ?? {}).flatMap(o => Object.keys(o)),
+      ...Object.values(challengerCfg.perFactionSet ?? {}).flatMap(o => Object.keys(o)),
+      ...(!challengerCfg.shared && !challengerCfg.perFaction && !challengerCfg.perFactionSet ? Object.keys(challengerCfg) : []),
+    ];
+    if (!names.some(k => KNOWN.has(k))) {
+      console.error('REFUSING CHALLENGER CONFIG: no recognized weight keys found —');
+      console.error('  top-level fields: ' + Object.keys(challengerCfg).join(', '));
+      console.error('  a malformed config plays STOCK silently; expected {shared:{...weights}} or perFaction/perFactionSet');
+      process.exit(2);
+    }
+  }
   const workers = Number(arg('workers', Math.max(1, cpus().length - 1)));
   const t0 = Date.now();
   const stats = await evaluate(challengerCfg, { games, seedBase, incumbent, workers });

@@ -138,8 +138,79 @@ export const WEIGHTS_V2 = Object.freeze({
   portShips: 0.7837,
 });
 
+/**
+ * WEIGHTS-v3 — the first MACHINE-LEARNED vector (baked m3e42).
+ * Provenance: SPSA run night4 (240 iterations × 80 games, checks every 10 at
+ * 300 games, 15 workers, owner desktop, Aug 2026) over the 56-key active
+ * surface (V2 + the four Package-B/blunder-bank knobs; inert book trio
+ * excluded). Gate: seed-92000 block, N=600 paired vs legacy — V3 27.2%
+ * [23.8–30.9] over stock-V2 23.2% [20.0–26.7]; biggest lifts at the two
+ * weakest seats (F3 13→22, F2 9→17), worst-seat 4.02→3.71. Honesty note:
+ * NO key moved more than ~4% — the gain is many small coordinated nudges,
+ * and the paired +4.0pp is real at the pre-registered criteria but the CIs
+ * overlap; V2 stands one line below, re-fieldable in a breath.
+ */
+export const WEIGHTS_V3 = Object.freeze({
+  mSeatHunger: 2.578493073317259,
+  mSeaTenure: 1.2064820405771521,
+  tOpportunity: 0.818118588337029,
+  tTransport: 0.6004240047485371,
+  vInfantry: 0.9884411438033722,
+  vCavalry: 2.258682984928552,
+  vWarship: 1.504582438938163,
+  vSiege: 2.6527065394344893,
+  wSeat: 7.798508985183693,
+  wCitadelBonus: 3.1426478152286093,
+  wIcons: 0.9846712838748103,
+  wLand: 1.5999947342971812,
+  wSea: 0.794393878466686,
+  pDefend: 1.5900067201273078,
+  pSupport: 1.1069737415821377,
+  pMarch: 1.4267687617883915,
+  pRally: 1.2388878769205796,
+  pRaid: 0.9053848651337217,
+  pRallyFort: 1.4501928909062751,
+  pStarBonus: 0.40708389838219644,
+  mAttackMargin: 1.6754097240278385,
+  mOverreach: 2.214953635837378,
+  mStandDown: 0.30366538214549904,
+  mAbandonSeat: 2.937493161259367,
+  mLeaveControl: 0.8018651453011215,
+  rMusterPoint: 2.047579473020475,
+  rAuthority: 0.9983046283599268,
+  muSpend: 2.0651036419434283,
+  muCavalry: 0.49396238288965433,
+  muShip: 0.3891407323867898,
+  raidHit: 2.0018974992616503,
+  raidSupport: 0.9861826736755377,
+  raidConsolidate: 0.5975184237631117,
+  bidSpendFrac: 0.4087030046391567,
+  bidReserve: 1.9807777909110293,
+  bidOverspend: 1.5084579997205405,
+  bidInitiative: 0.9977898316234917,
+  bidProwess: 0.7775126091577103,
+  bidCommand: 0.921639824326568,
+  invSpendFrac: 0.49704866464940994,
+  invReserve: 1.0147927341658352,
+  invThreatScale: 0.9472325483258529,
+  invOverspend: 1.1597174964280825,
+  cStakeScale: 1.0245475710050411,
+  cHoard: 0.5011899177342274,
+  cSwords: 0.5809670728993779,
+  cForts: 0.5131417934636664,
+  cBlade: 1.0067195684523258,
+  cAbility: 0.9963174212711919,
+  rtSafety: 1.4251070921938522,
+  rtHome: 1.176460150075528,
+  courierPeek: 1.147195848156618,
+  courierPass: 1.016705769611665,
+  courierSwap: 0.30196056537757904,
+  peekBury: 1.003510043522364,
+  portShips: 0.7835082866863687,
+});
+
 /** The ACTIVE default vector — what shipped bots play. */
-export const WEIGHTS = WEIGHTS_V2;
+export const WEIGHTS = WEIGHTS_V3;
 
 /**
  * Package B additions (M3.e) — NEW keys only, so the V1/V2 freeze holds:
