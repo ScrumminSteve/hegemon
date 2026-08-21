@@ -80,7 +80,17 @@ export async function tune(path, cfg = {}) {
   let cp;
   try {
     cp = JSON.parse(readFileSync(path, 'utf8'));
-    console.log(`resuming ${path} at iteration ${cp.iter}`);
+    if (cp.keys && cp.keys.join() !== KEYS.join()) {
+    console.error(`REFUSING RESUME: ${path} was born under a different weight surface`);
+    console.error(`  checkpoint: ${cp.keys.length} keys · current: ${KEYS.length} keys`);
+    console.error(`  a misaligned theta turns into NaN weights and empty menus — start a fresh --run`);
+    process.exit(2);
+  }
+  if (!cp.keys) {
+    console.error(`REFUSING RESUME: ${path} predates surface-tracking (pre-m3e41b) — start a fresh --run`);
+    process.exit(2);
+  }
+  console.log(`resuming ${path} at iteration ${cp.iter}`);
   } catch {
     const runSeed = cfg.runSeed ?? Math.floor(Math.random() * 1e9);
     cp = {
@@ -92,6 +102,7 @@ export async function tune(path, cfg = {}) {
         aScale: 1,
       },
       iter: 0,
+      keys: [...KEYS], // the surface this run was born under — resume refuses a mismatch
       theta: toTheta(FULL),
       best: null,     // { theta, stats, iter }
       baseline: null, // v1-vs-v1 guardrail anchors on the check block

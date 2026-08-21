@@ -194,8 +194,16 @@ export function createHeuristicAgent(opts = {}) {
     id: jitterSeed != null ? `heuristic-v1+j${jitterSeed}` : 'heuristic-v1',
     weights: W,
     decide(view, query, menu, rng) {
+      // Fail LOUD, at the source (m3e41b): an empty menu or a NaN score once
+      // surfaced as "cannot read 'type' of undefined" three layers up in an
+      // eval worker — a misaligned tuning vector had turned weights to NaN.
+      if (!menu.length) throw new Error(`decide(${query.type}): EMPTY MENU — the engine contract forbids this`);
       const scorer = SCORERS[query.type] || (() => 0);
-      const scored = menu.map(a => ({ a, s: scorer(view, query, a, W) }));
+      const scored = menu.map(a => {
+        const s = scorer(view, query, a, W);
+        if (!Number.isFinite(s)) throw new Error(`decide(${query.type}): non-finite score ${s} — check the weight vector (NaN weights, misaligned tuner checkpoint?)`);
+        return { a, s };
+      });
       let best = [], bestScore = -Infinity;
       for (const { a, s } of scored) {
         if (s > bestScore + 1e-9) { bestScore = s; best = [a]; }
