@@ -96,8 +96,17 @@ export async function tune(path, cfg = {}) {
     if (cp.theta.length === KEYS.length) {
       console.log(`adopting untagged checkpoint (theta length ${cp.theta.length} matches the current surface) — tagging it`);
       cp.keys = [...KEYS];
+    } else if (!cp.iter) {
+      // Zero iterations completed = nothing worth protecting. This exact
+      // trap fired three times in one night (run started before the fixed
+      // tool was deployed, file created by old code, new code refuses it):
+      // archive the stillborn file and start fresh, loudly.
+      const grave = `${path}.stale-${Date.now()}`;
+      renameSync(path, grave);
+      console.log(`stale zero-iteration checkpoint (theta ${cp.theta.length} ≠ surface ${KEYS.length}) — archived to ${grave}, starting fresh`);
+      cp = null;
     } else {
-      console.error(`REFUSING RESUME: ${path} is untagged AND its theta (${cp.theta.length}) does not match the current surface (${KEYS.length}) — start a fresh --run`);
+      console.error(`REFUSING RESUME: ${path} is untagged, its theta (${cp.theta.length}) does not match the current surface (${KEYS.length}), and it holds ${cp.iter} real iterations — resolve by hand (rename it, or rerun with the tool that created it)`);
       process.exit(2);
     }
   }
