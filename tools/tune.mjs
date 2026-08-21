@@ -87,8 +87,16 @@ export async function tune(path, cfg = {}) {
     process.exit(2);
   }
   if (!cp.keys) {
-    console.error(`REFUSING RESUME: ${path} predates surface-tracking (pre-m3e41b) — start a fresh --run`);
-    process.exit(2);
+    // Untagged checkpoint (born between the surface fix and surface-tracking):
+    // theta LENGTH tells the truth — a 54-vector can only be the current
+    // surface (the pre-fix surface was 50). Adopt and tag; refuse mismatches.
+    if (cp.theta.length === KEYS.length) {
+      console.log(`adopting untagged checkpoint (theta length ${cp.theta.length} matches the current surface) — tagging it`);
+      cp.keys = [...KEYS];
+    } else {
+      console.error(`REFUSING RESUME: ${path} is untagged AND its theta (${cp.theta.length}) does not match the current surface (${KEYS.length}) — start a fresh --run`);
+      process.exit(2);
+    }
   }
   console.log(`resuming ${path} at iteration ${cp.iter}`);
   } catch {
