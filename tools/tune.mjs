@@ -36,7 +36,10 @@ import { evaluate } from './eval.mjs';
 // can never lift a zero (the perFaction lesson), so the inert book trio
 // (bookBias 0 ⇒ bookDecay/bookTemp moot) stays out until the book goes live.
 const FULL = { ...WEIGHTS_M3E, ...WEIGHTS };
-const KEYS = Object.keys(FULL).filter(k => FULL[k] > 0);
+const KEYS = Object.keys(FULL).filter(k =>
+  FULL[k] > 0 &&
+  // book trio: inert while bookBias is 0 — pure noise dimensions if tuned
+  !(FULL.bookBias === 0 && k.startsWith('book')));
 
 // ---------------------------------------------------------------------------
 // pure helpers (golden-tested)
