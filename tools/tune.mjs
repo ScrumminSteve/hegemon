@@ -117,7 +117,7 @@ export async function tune(path, cfg = {}) {
       config: {
         runSeed, iters: cfg.iters ?? 60, games: cfg.games ?? 40,
         checkEvery: cfg.checkEvery ?? 5, checkGames: cfg.checkGames ?? 120,
-        workers: cfg.workers, incumbent: 'v1', seedBase: cfg.seedBase ?? 100000,
+        workers: cfg.workers, incumbent: cfg.incumbent ?? 'v1', seedBase: cfg.seedBase ?? 100000,
         worstSeatTol: cfg.worstSeatTol ?? 0.5, winRateTol: cfg.winRateTol ?? 0.03,
         aScale: 1,
       },
@@ -134,7 +134,7 @@ export async function tune(path, cfg = {}) {
   const evalOpts = extra => ({ workers: C.workers, incumbent: C.incumbent, ...extra });
 
   if (!cp.baseline) {
-    console.log('measuring the v1 baseline on the check block…');
+    console.log(`measuring the ${C.incumbent} baseline on the check block…`);
     cp.baseline = await evaluate(null, evalOpts({ games: C.checkGames, seedBase: C.seedBase - C.checkGames }));
     cp.best = { theta: [...cp.theta], stats: cp.baseline, iter: 0 };
     saveCheckpoint(path, cp);
@@ -196,6 +196,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const path = arg('resume', null) || arg('run', null);
   if (!path) { console.error('usage: node tools/tune.mjs --run runs/x.json | --resume runs/x.json'); process.exit(1); }
   await tune(path, {
+    incumbent: arg('incumbent', 'v1'), // night5+: 'current' = the self-play ladder (tune vs the reigning champion)
     iters: Number(arg('iters', 60)), games: Number(arg('games', 40)),
     checkEvery: Number(arg('check-every', 5)), checkGames: Number(arg('check-games', 120)),
     workers: arg('workers', null) ? Number(arg('workers')) : undefined,

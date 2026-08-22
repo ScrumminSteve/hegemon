@@ -8,6 +8,28 @@ the engine, the data model, and every identifier in code use generic warfare ter
 
 ---
 
+## FIELD REPORTS FROM THE V3 TABLE (m3e43)
+
+Owner's first session against the V3 bots produced a second perfect
+Percy (⭐⭐⭐, r7 — inboxed) and two findings, both fixed:
+
+**Middleham r7 — the phantom marker offer.** The march form counted only
+non-routed units when deciding "does this march vacate the region?", but
+the ENGINE's vacated test counts routed units as occupying (they hold
+control; the marker wouldn't even be placed). A march leaving a routed
+unit behind offered a meaningless checkbox. The UI now asks the engine's
+own question. Golden locks the mirror.
+
+**Origin picking by map.** The m3e39 fix gave map taps power at the
+order-ASSIGNMENT step but not at the pick-WHICH-order-to-resolve step
+(multiple staged marches/musters/rallies) — the list still had a
+monopoly there. Map taps now pick origins at any pick-a-region step.
+
+Third report — a repeating error message — awaits the owner's screen
+capture; not reproduced in jsdom smoke.
+
+Suite: **282**.
+
 ## WEIGHTS-v3 — THE FIRST MACHINE-LEARNED VECTOR (m3e42)
 
 **G3: DOUBLE PASS, and the first learned gain in project history.**

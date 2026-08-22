@@ -355,3 +355,13 @@ tests.push(
     eq(GLORY_CHECKS.F2[2].type, 'shadowCrown', 'the she-wolf wins without a herald');
   }},
 );
+
+tests.push(
+  { name: 'm3e43: the leave-control offer mirrors the engine — a routed unit left behind means NOTHING is vacated (the Middleham r7 noise); map taps pick march origins', async fn() {
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(/_mineHere = \(shown\(\)\.unitsByRegion\[ui\.region\] \|\| \[\]\)\.filter\(u => u\.faction === q\.faction\)\.length/.test(src),
+      'the vacate count includes ROUTED units — exactly like the engine\'s vacated test');
+    ok(/pick which region" step[\s\S]{0,400}q\?\.regions\?\.includes\(rid\)/.test(src),
+      'a map tap at the pick-a-region step selects the origin');
+  }},
+);

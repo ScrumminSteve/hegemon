@@ -24,7 +24,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e42';
+export const BUILD_ID = 'm3e43';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -668,6 +668,19 @@ function rLink(rid) { return `<span class="rlink" data-rid="${rid}">${esc(rName(
 
 // ---------- region taps feed the active form ----------
 function handleRegionTap(rid) {
+  // Owner (on-device, m3e43): at any "pick which region" step (multiple
+  // marches, musters, rallies staged), tapping the region ON THE MAP picks
+  // it — the list never had a monopoly here either.
+  if (ui.mode && !ui.region) {
+    const qs = shown()?.pendingQueries ?? [];
+    const q = qs[ui.activeQuery != null ? Math.min(ui.activeQuery, qs.length - 1) : 0];
+    if (q?.regions?.includes(rid)) {
+      ui.region = rid;
+      if (ui.mode === 'march') ui.awaitDest = true;
+      renderTurnPanel();
+      return;
+    }
+  }
   // Owner (on-device, m3e39): tapping a DIFFERENT territory on the map must
   // retarget the order assignment — before, the map only worked for the
   // first pick and the list held a monopoly on switching.
@@ -1538,7 +1551,11 @@ function marchForm(q) {
   if (wouldVacate && byId[ui.region].kind === 'land' && byId[ui.region].home !== q.faction) {
     // UI item 6 (owner, Jul 2026): the marker matters only when this march
     // VACATES ground you control — every unit leaving, your flag at stake.
-    const _mineHere = (shown().unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction && !u.routed).length;
+    // m3e43 (owner, Middleham r7): the count must MIRROR the engine's own
+    // vacated test — ROUTED units still occupy and still hold control, so a
+    // march that leaves a routed unit behind vacates NOTHING and the marker
+    // offer is noise (the engine wouldn't even place it).
+    const _mineHere = (shown().unitsByRegion[ui.region] || []).filter(u => u.faction === q.faction).length;
     const _leaving = ui.moves.reduce((a, mv) => a + Object.values(mv.units).reduce((x, y) => x + y, 0), 0);
     const _showLC = _leaving >= _mineHere && controllerOf(shown(), ui.region) === q.faction &&
       shown().controlMarkers?.[ui.region] !== q.faction && region(ui.region)?.home !== q.faction; // B1: never offer what's already yours (or free)
