@@ -192,6 +192,18 @@ export const tests = [
     eq(deserialize(serialize(state)), state);
   }},
 
+  { name: "masking is a planning-phase rule (m3e48, owner): a card-moved march alive in the action phase is public in every view — Stafford's F4-3 carry is no longer a face-down blank to the table", fn() {
+    const s = createGame(6, { seed: 5150 });
+    s.ordersByRegion['L24'] = { faction: 'F4', type: 'march', mod: 0, starred: false }; // no `revealed` — exactly how F4-3 re-places it
+    s.phase = 'action';
+    const seen = viewFor(s, 'F1').ordersByRegion['L24'];
+    ok(seen.type === 'march' && !seen.hidden, 'in the action phase the carried march is visible to an opponent');
+    s.phase = 'planning';
+    const masked = viewFor(s, 'F1').ordersByRegion['L24'];
+    ok(masked.hidden === true && masked.type === undefined, 'in the planning phase the same unrevealed order is still a blank back');
+    ok(viewFor(s, 'F4').ordersByRegion['L24'].type === 'march', 'and its owner always sees it');
+  }},
+
 ];
 
 // --- M3.b: Not Enough Order Tokens (Rules p.12) ------------------------------

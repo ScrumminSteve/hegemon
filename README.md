@@ -4,6 +4,110 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## V4 TAKES THE CROWN — THE POOL-TRAINED CHAMPION (m3e47)
+
+**WEIGHTS_V4 baked** — the first vector ever raised against the
+human-method opponent pool (mixed-strength, hidden composition — the
+owner's predator-among-prey environment). Lineage: V1 → V2 → V3 → V4,
+every ancestor preserved frozen and re-fieldable in a line.
+
+Provenance (full detail in the code header): SPSA night5, runSeed
+880704096, 60 iters × 40 games vs `pool:blitz,crescendo,denial,prey,v3`,
+best at iter 15. Gates on identical N=600 blocks:
+- **G5 pool** (seed 94000): V4 **20.3%** [17.3–23.7] vs V3 17.0% — floor
+  above stock; 122 v 102 head-to-head; F2 2→10, F1 30→41, F6 19→29;
+  worst-seat 4.22→4.03.
+- **G5a anchor** (seed 95000, uniform v1): V4 **17.2%** vs V3 15.3% — the
+  pool specialist kept the old world too.
+- **Bid-key A/B**: keys-zeroed stock 15.8% ≈ 15.3% — the m3e46 auction
+  defaults were innocent; uniform-v1 is simply a harder harness than the
+  legacy construction earlier gates used (worth knowing on its own).
+
+**Headline discovery, independent of the bake:** the same champion that
+clears ~30% on uniform prey scored 17.0% against the mixed hidden table —
+the predator-among-prey theorem is a measured ~13-point tax (STRATEGY.md §9).
+
+Honesty note: every margin is thin, CIs overlap — same class of edge as
+the V3 bake, but proven in TWO worlds. The `v3` pool-profile name is kept
+for checkpoint compatibility; it now fields the shipped champion (V4).
+
+*Verify:* `npm test` → lineage golden asserts V4 active, V3 frozen; or
+`findstr WEIGHTS_V4 src\agents\heuristic.js`.
+
+Suite: **290**.
+
+---
+
+---
+
+## THE CARRIED MARCH WAS INVISIBLE (m3e48) + A THIRD PERFECT GAME
+
+**Owner report (screenshot, Stafford table):** "Order icon doesn't show as
+march when Stafford plays his repeat march card." Diagnosis went TWO
+layers deep:
+
+1. **UI:** F4-3 (Sir Henry Stafford) carries the March into the conquered
+   area MID-action-phase; the engine re-places it without the `revealed`
+   flag (set only at the planning flip), so the map drew it as a
+   face-down BACK. Fix: in the action phase every order is public by
+   definition — the badge now renders revealed.
+2. **Views (the deeper bug):** the redaction rule masked ANY unrevealed
+   enemy order in ANY phase — so the carried march reached every other
+   faction's view as a face-down blank. **Bots could not see the threat
+   standing on the conquered castle.** Fix: masking is a PLANNING-phase
+   rule (`views.js`); an order alive in any later phase flows whole into
+   every view. Planning-phase secrecy untouched (goldens hold).
+
+Both fixes are view/UI-side: **state untouched, hashes untouched, the
+corpus stands, no rules revision.**
+
+**Corpus:** `corpus/inbox/episode-stafford-3-stars-r7.json` — the owner's
+3⭐ Stafford win, hash-verified MATCH (seed 730262042, 323 actions, r7
+seven-seat conquest, 10 undos, 2 rejections). COPY (don't move) into
+`corpus/episodes` and re-mine. Third perfect-marks game in the corpus.
+
+*Verify:* `npm test` → "masking is a planning-phase rule"; on-device,
+win a Stafford attack under F4-3 and the March badge now shows its arrow
+in the conquered area.
+
+Suite: **290**.
+
+---
+
+## THE CASTLE ORDER IS THE LORD'S (m3e47)
+
+**Owner: "mustering should not railroad through an order of territories."**
+Diagnosis: the card-muster queue walked each faction's fortified sites in
+ALPHABETICAL order — an engine artifact, never a rule. The player was
+railroaded; supply and unit pools are shared across sites, so order IS
+agency.
+
+**Engine** (`eventPhase.js muster()`): answering a muster at a site still
+in the CARD QUEUE now swaps it with the asked one — the chosen castle
+resolves, the asked castle returns to the queue's head and is asked next.
+Logged as `musterSiteSwapped`. **Replay-safe:** every old episode answered
+the asked site, so old action streams replay bit-identical — NO rules
+revision, the corpus stands. **Bot-safe:** the legal menu is untouched
+(bots answer the asked site), so tonight's tuning run stays comparable.
+Rally musters (source:'rally') never swap — they are bound to their own
+castle by the ★ order.
+
+**UI** (`musterForm`): a castle chooser now sits in the muster panel —
+"Muster a different castle first:" lists every still-queued site with its
+points, like every other pick-a-region form. Switching re-targets the
+whole form (builds, seas, harbor, supply warning are site-specific);
+builds staged for one castle never leak to another; ↩ returns to the
+asked castle.
+
+*Verify:* `npm test` → "the mustering lord picks his own castle order";
+on-device, play into a Mustering card holding 2+ castles and tap a
+different castle in the panel — build there, and watch the skipped
+castle come back as the next question.
+
+Suite: **289**.
+
+---
+
 ## THE INTERVIEW BECOMES MACHINERY (m3e46)
 
 **STRATEGY.md banked** — the owner's full ten-question doctrine: opening
@@ -44,7 +148,7 @@ theorem measures: **the mixed table is a genuinely harder world.**
 surface; the retirement condition ("until structure changes") is met.
 Tonight's run is legitimate again — see the runbook below.
 
-Suite: **288**.
+Suite: **290** — the Arman episode's inbox goldens added two (banked corpus episodes self-test by path).
 
 ---
 PC (browser) first, mobile later. All intellectual property lives in **theme packs** —

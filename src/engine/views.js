@@ -13,7 +13,13 @@ export function viewFor(state, factionId) {
 
   const masked = {};
   for (const [rid, order] of Object.entries(v.ordersByRegion)) {
-    if (order.revealed || order.faction === factionId) {
+    // Masking is a PLANNING-phase rule. An order alive in any later phase is
+    // public by definition — this matters for Stafford's F4-3, which carries
+    // the March into the conquered area mid-action-phase WITHOUT the
+    // `revealed` flag (that flag is set only at the planning flip). Before
+    // this fix (m3e48, owner report), the carried march reached every other
+    // faction's view as a face-down blank — bots could not see the threat.
+    if (order.revealed || order.faction === factionId || v.phase !== 'planning') {
       masked[rid] = order;
     } else {
       masked[rid] = { faction: order.faction, hidden: true };

@@ -5,6 +5,8 @@ import { applyAction, beginPlanning } from '../src/engine/engine.js';
 import { orderableRegions } from '../src/engine/planning.js';
 import { eq, ok, throws } from './assert.js';
 import { combatStrengths } from '../src/engine/combat.js';
+import * as eventApi from '../src/engine/eventPhase.js';
+import * as stateApiM from '../src/engine/state.js';
 import { cpAllowedAt } from '../src/engine/planning.js';
 
 const dealOrder = (pool, rid) => { // m3d8: rally never at sea (Rules p.13)
@@ -363,6 +365,51 @@ export const tests = [
     ok((s.unitsByRegion['L37'] || []).some(u => u.faction === 'F6' && !u.routed),
       'the home garrison stands untouched');
     ok(!s.combat, 'combat closed');
+  }},
+
+  { name: "the mustering lord picks his own castle order (m3e47, owner): answering a still-queued site swaps it with the asked one; the asked castle returns to the head of the queue; rally musters never swap", fn() {
+    const { muster, fortifiedControlled } = eventApi;
+    const mk = () => {
+      const s = createGame(6, { seed: 909 });
+      const fid = s.factions.find(f => fortifiedControlled(s, f).length >= 2) || s.factions[0];
+      let sites = fortifiedControlled(s, fid);
+      if (sites.length < 2) {
+        // grant a second fortified site by control marker for the fixture
+        const stApi = stateApiM;
+        const spare = Object.keys(stApi.adjacency()).find(r => {
+          const rr = stApi.region(r);
+          return rr?.kind === 'land' && rr.muster > 0 && stApi.controllerOf(s, r) !== fid && !(s.unitsByRegion[r] || []).length;
+        });
+        s.controlMarkers[spare] = fid;
+        sites = fortifiedControlled(s, fid);
+      }
+      const [A, B] = sites;
+      s.eventPhase = s.eventPhase || {};
+      s.eventPhase.musterQueue = [{ faction: fid, ...B }];
+      s.pendingQueries = [{ type: 'muster', faction: fid, region: A.region, points: A.points }];
+      return { s, fid, A, B };
+    };
+    { // the swap — the muster answer advances the cycler, so the asked
+      // castle comes straight back as the NEXT question
+      const { s, fid, A, B } = mk();
+      muster(s, fid, B.region, []); // answer the QUEUED castle, not the asked one
+      eq(s.pendingQueries.length, 1, 'the cycler asked the next site');
+      eq(s.pendingQueries[0].region, A.region, 'and it is the asked castle, back from the head of the queue');
+      eq(s.eventPhase.musterQueue.length, 0, 'the queue is drained');
+      ok(s.log.some(e => e.event === 'musterSiteSwapped' && e.to === B.region), 'the swap is on the record');
+    }
+    { // the legacy path is untouched — replay safety
+      const { s, fid, A, B } = mk();
+      muster(s, fid, A.region, []); // answer the asked site, as every old episode did
+      eq(s.pendingQueries.length, 1, 'the cycler asked the next site');
+      eq(s.pendingQueries[0].region, B.region, 'exactly as the old engine would have');
+      ok(!s.log.some(e => e.event === 'musterSiteSwapped'), 'no swap event on the legacy path');
+    }
+    { // rally musters never swap
+      const { s, fid, A, B } = mk();
+      s.pendingQueries[0].source = 'rally';
+      throws(() => muster(s, fid, B.region, []), 'a rally muster is bound to its own castle');
+    }
   }},
 
 ];

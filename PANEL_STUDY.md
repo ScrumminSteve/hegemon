@@ -68,3 +68,50 @@ default on mobile).
   honesty, tap-focus, projection-mirrors-engine.
 - Phase 2 (next UI session): F4 F5 F6 — needs owner eyes on-device for the
   visual weight pass; the 2× icon request rides along there.
+
+---
+
+## SESSION 3 — ARMAN, FIRST-TIME PLAYER (m3e46 era, Aug 23 2026)
+*Episode: corpus/inbox/episode-arman-1-percy-l-r10.json — Percy, 10 rounds,
+lost a 4-seat/4-supply standings TIE to a bot (F2 Stafford, authority 6 v 0).
+111 decisions, median think 22s, ~90 min of thought. 1 undo, 10 rejections.*
+
+### F7 · SEV-1 · THE IMPOSSIBLE-TARGET LOOP
+Action 578: six consecutive attempts at the SAME illegal march (L25 → L32,
+"neither adjacent nor reachable by ship transport"), think time climbing
+44s → 52 → 64 → 83 → 114 → 131s — **eight minutes stuck on one move** —
+then a seventh attempt died on the supply cap instead. The map spotlight
+(m3e37) shows legal candidates, but nothing TEACHES why the desired target
+is out: the rejection line states the rule, not the remedy. Candidates:
+(a) rejection toast names the nearest legal stepping-stone or missing
+transport link; (b) the destination PICKER excludes unreachable regions
+outright instead of letting the map alone carry the knowledge; (c) after
+2 identical rejections, escalate: draw the reachable frontier.
+
+### F8 · Battle screen: unit icons in/on the score box (tester ask, verbatim).
+The tally should show WHAT is fighting, not just totals.
+
+### F9 · Icon legibility: bombard and unoccupied castle/stronghold read
+poorly at table distance. Overlaps phase-2 "2× icons" item — Arman
+independently confirms the m3e45 map-audit deferral is costing testers.
+
+### F10 · Active-decision emphasis: the current action window (march,
+orders, raid, muster…) should be highlighted and re-centered.
+scrollToDecision (m3e39) brings it into view ONCE; a novice loses it again.
+Candidate: persistent glow/border on the live decision card + auto-recenter
+on each new query, owner-toggleable ("quiet" mode exempts).
+
+### F11 · Onboarding is invisible to the corpus: the training/introduction
+was not recorded. Ruling requested: record the trainer segment for every
+new tester (feeds the trainer/tutorial workstream with real material).
+
+### UNDO TELEMETRY — ALREADY LIVE, RULING AVAILABLE
+The episode format has recorded undos with the undone action since the
+telemetry patch: Arman's single undo = chooseLeaderCard @ action 283.
+The "limit the button" lever needs no new plumbing when the owner rules —
+the data to justify any cap is already accumulating per episode.
+
+### NOTE FOR THE RECORD
+First HUMAN LOSS in the corpus. A novice loss, not the owner's — but a
+bot won a standings tie against a human at a live table, and mine.mjs
+correctly refused to book it (books learn only from human wins).

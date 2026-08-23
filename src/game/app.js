@@ -24,7 +24,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e46';
+export const BUILD_ID = 'm3e48';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -503,7 +503,11 @@ function overlayState(svg) {
   const stagedFor = staged ? visibleQueries()[Math.min(ui.activeQuery ?? 0, Math.max(0, visibleQueries().length - 1))]?.faction : null;
   for (const [rid, o] of Object.entries(shown().ordersByRegion)) {
     if (staged && rid in staged) continue; // the live pick supersedes any committed badge
-    drawOrderBadge(g, rid, o, o.revealed ? 'ov-order' : 'ov-order-back');
+    // Owner bug (m3e48): Stafford's F4-3 carries the March into the conquered
+    // area MID-ACTION-PHASE — the engine re-places it without the `revealed`
+    // flag (set only at the planning flip), so it drew as a face-down BACK.
+    // In the action phase every order on the board is public by definition.
+    drawOrderBadge(g, rid, o, o.revealed || shown().phase === 'action' ? 'ov-order' : 'ov-order-back');
   }
   if (staged) {
     // Owner P2: see your picks land on the map as you assign them.
@@ -1132,20 +1136,32 @@ function ladderHintFor(fid) {
   return `<div class="hint">${pic('i-supply', 'var(--bone-dim)')} supply ${shown().supply[fid]} · ${supplyLadder(fid)}</div>`;
 }
 function musterForm(q) {
+  // m3e47 (owner): "mustering should not railroad through an order of
+  // territories" — during card mustering the lord picks his own castle
+  // order, like every other pick-a-region form. The chooser lists the
+  // still-queued sites; committing a switched site swaps the queue
+  // engine-side and the asked castle comes back around.
+  if (ui.mode !== 'muster' || ui.musterFor !== q.region) {
+    ui = { activeQuery: ui.activeQuery, mode: 'muster', musterFor: q.region, musterBuilds: [], musterRegion: null };
+  }
+  const queue = !q.source || q.source === 'card' ? (shown().eventPhase?.musterQueue || []).filter(e => e.faction === q.faction) : [];
+  const swapped = queue.find(e => e.region === ui.musterRegion);
+  const rid = swapped ? swapped.region : q.region;
+  const pts = swapped ? swapped.points : q.points;
   // m3e37 offender #3 / the tester finding that started it: BOTH testers
   // reasoned for minutes and then hit "Muster would break supply" — the
   // ladder lived only in the houses panel, invisible at the moment of the
   // decision. It now sits inside the form that can break it.
   const staged = ui.musterBuilds || [];
   const spent = staged.reduce((a, b) => a + MUSTER_COSTS_UI[b.type], 0);
-  const left = q.points - spent;
-  const port = PORTS.find(pp => pp.landId === q.region);
+  const left = pts - spent;
+  const port = PORTS.find(pp => pp.landId === rid);
   // Offer only destinations the engine will accept: seas holding another
   // faction's ships are closed to mustering (Rules p.25 — owner P1, Jul 2026).
-  const seas = [...(ADJ[q.region] || [])].filter(x => region(x).kind === 'maritime'
+  const seas = [...(ADJ[rid] || [])].filter(x => region(x).kind === 'maritime'
     && !(shown().unitsByRegion[x] || []).some(u => u.faction !== q.faction));
   const harborOpen = port && !(shown().unitsByRegion[port.id] || []).some(u => u.faction !== q.faction);
-  const hasInf = (shown().unitsByRegion[q.region] || [])
+  const hasInf = (shown().unitsByRegion[rid] || [])
     .filter(u => u.faction === q.faction && u.type === 'infantry' && !u.routed).length
     > staged.filter(b => b.type === 'upgrade').length;
   // Owner (Aug 2026): a unit type whose POOL is spent (Rules p.2 component
@@ -1161,12 +1177,18 @@ function musterForm(q) {
     `<button class="opt" data-mbuild='${data}' ${cost > left || !on ? 'disabled' : ''}>${label} <span class="dim">(${cost})</span></button>`;
   const stagedRows = staged.map((b, i) =>
     `<div class="stepper-row">${b.type === 'upgrade' ? `upgrade → ${esc(unitName(b.to || 'cavalry'))}` : esc(unitName(b.type) || b.type)}${b.type !== 'upgrade' && b.to ? ' → ' + rLink(b.to) : ''} <button class="opt" data-munstage="${i}">✕</button></div>`).join('');
-  const musterDeltas = staged.filter(b => b.type !== 'upgrade').map(b => ({ region: b.to || q.region, add: 1 }));
-  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(q.region)} — ${left}/${q.points} points`) + ladderHintFor(q.faction) + supplyWarning(q.faction, musterDeltas) +
+  const others = queue.filter(e => e.region !== rid);
+  const chooser = others.length || swapped
+    ? `<div class="hint">Muster a different ${theme.terms.fort.toLowerCase()} first:</div><div class="btn-col">` +
+      (swapped ? `<button data-msite="">↩ ${esc(rName(q.region))} (${q.points} pts)</button>` : '') +
+      others.map(e => `<button data-msite="${e.region}">${esc(rName(e.region))} (${e.points} pts)</button>`).join('') + `</div>`
+    : '';
+  const musterDeltas = staged.filter(b => b.type !== 'upgrade').map(b => ({ region: b.to || rid, add: 1 }));
+  return header(q, `${q.source === 'rally' ? 'rally ' : ''}muster at ${rName(rid)} — ${left}/${pts} points`) + ladderHintFor(q.faction) + supplyWarning(q.faction, musterDeltas) +
     battleless() +
-    btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: q.region }), true, 'infantry') +
-    btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: q.region }), true, 'cavalry') +
-    btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: q.region }), true, 'siege_engine') +
+    btn(`${esc(unitName('infantry'))}`, 1, JSON.stringify({ type: 'infantry', to: rid }), true, 'infantry') +
+    btn(`${esc(unitName('cavalry'))}`, 2, JSON.stringify({ type: 'cavalry', to: rid }), true, 'cavalry') +
+    btn(`${esc(unitName('siege_engine'))}`, 2, JSON.stringify({ type: 'siege_engine', to: rid }), true, 'siege_engine') +
     btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('cavalry'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'cavalry' }), hasInf, 'cavalry') +
     btn(`upgrade ${esc(unitName('infantry'))} → ${esc(unitName('siege_engine'))}`, 1, JSON.stringify({ type: 'upgrade', to: 'siege_engine' }), hasInf, 'siege_engine') +
     (port && harborOpen ? btn(`${esc(unitName('warship'))} → harbor`, 1, JSON.stringify({ type: 'warship', to: port.id }), true, 'warship') : '') +
@@ -1174,6 +1196,7 @@ function musterForm(q) {
     (stagedRows ? `<div class="hint">Staged:</div>` + stagedRows : '') +
     `<button class="opt commit" data-mcommit>1 ${staged.length ? 'muster ' + staged.length + ' build(s)' : 'muster nothing (pass)'}</button>`
       .replace('>1 ', '>') +
+    chooser +
     `<div class="hint">Costs: ${esc(unitName('infantry'))}/${esc(unitName('warship'))} 1 · ${esc(unitName('cavalry'))}/${esc(unitName('siege_engine'))} 2 · upgrade 1. Supply and pools are enforced on commit.</div>`;
 }
 function battleless() { return ''; }
@@ -1733,6 +1756,11 @@ function bindForm(panel, q) {
     return;
   }
   if (q.type === 'muster') {
+    panel.querySelectorAll('[data-msite]').forEach(b => b.addEventListener('click', () => {
+      ui.musterRegion = b.dataset.msite || null; // '' = back to the asked castle
+      ui.musterBuilds = [];                      // builds are site-specific
+      renderTurnPanel();
+    }));
     panel.querySelectorAll('[data-mbuild]').forEach(b => b.addEventListener('click', () => {
       (ui.musterBuilds = ui.musterBuilds || []).push(JSON.parse(b.dataset.mbuild));
       renderTurnPanel();
@@ -1742,7 +1770,7 @@ function bindForm(panel, q) {
       renderTurnPanel();
     }));
     panel.querySelector('[data-mcommit]')?.addEventListener('click', () =>
-      dispatch({ type: 'muster', faction: q.faction, region: q.region, builds: ui.musterBuilds || [] }));
+      dispatch({ type: 'muster', faction: q.faction, region: ui.musterRegion || q.region, builds: ui.musterBuilds || [] }));
     return;
   }
 

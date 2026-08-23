@@ -209,8 +209,93 @@ export const WEIGHTS_V3 = Object.freeze({
   portShips: 0.7835082866863687,
 });
 
+
+/**
+ * WEIGHTS_V4 — the POOL-TRAINED vector (m3e47). First champion raised
+ * against the human-method opponent pool: SPSA night5, runSeed 880704096,
+ * 60 iters x 40 games, incumbent pool:blitz,crescendo,denial,prey,v3
+ * (mixed-strength, hidden composition — the owner's predator-among-prey
+ * theorem, STRATEGY.md section 9), best at iter 15, tuner-verified 18.3%
+ * [13.9-23.7] N=240. Gates on identical seed blocks, N=600 each:
+ *   G5  (pool, seed 94000):  V4 20.3% [17.3-23.7] vs V3 17.0% — floor
+ *       above stock, 122 v 102 wins head-to-head; F2 2->10, F1 30->41,
+ *       F6 19->29; worst-seat 4.22->4.03.
+ *   G5a (anchor v1, seed 95000): V4 17.2% [14.4-20.4] vs V3 15.3% — the
+ *       pool specialist did NOT forget the uniform world.
+ *   A/B (bid keys zeroed, same block): 15.8% ~= 15.3% — the m3e46 bid
+ *       defaults were innocent; the uniform-v1 harness is simply a harder
+ *       table than the legacy construction earlier gates used.
+ * Honesty note: every margin is thin and the CIs overlap — same class of
+ * edge as the V3 bake, now measured in TWO worlds instead of one. The
+ * headline discovery stands regardless of the bake: V3 scored 17.0% vs
+ * the mixed table where it clears ~30% on uniform prey — the mixed world
+ * taxes the champion ~13 points. V3 stands below, re-fieldable in a line.
+ */
+export const WEIGHTS_V4 = Object.freeze({
+  mSeatHunger: 2.6296058685340125,
+  mSeaTenure: 1.1916096790077977,
+  tOpportunity: 0.8309751445265895,
+  tTransport: 0.6138162834494961,
+  bidCrownUrgency: 1.1991113520978267,
+  bidWarUrgency: 1.001195106609541,
+  bidMusterUrgency: 0.804214265344048,
+  bidJitter: 0.6003959506388563,
+  vInfantry: 0.9736219555665233,
+  vCavalry: 2.2592762156507518,
+  vWarship: 1.4883889350235475,
+  vSiege: 2.66826495479208,
+  wSeat: 7.824230086920869,
+  wCitadelBonus: 3.1950337955678068,
+  wIcons: 0.9912444866881976,
+  wLand: 1.6282449744139478,
+  wSea: 0.7890009786393359,
+  pDefend: 1.6048617167065222,
+  pSupport: 1.1097524998275092,
+  pMarch: 1.4507671273251246,
+  pRally: 1.2535950514522283,
+  pRaid: 0.8922694837587207,
+  pRallyFort: 1.4783880404053424,
+  pStarBonus: 0.41505372936073137,
+  mAttackMargin: 1.6621116212872828,
+  mOverreach: 2.229514620365599,
+  mStandDown: 0.3037220835697957,
+  mAbandonSeat: 2.9120413122902615,
+  mLeaveControl: 0.8069036298200273,
+  rMusterPoint: 2.0304317813211545,
+  rAuthority: 1.00636404053751,
+  muSpend: 2.082005238427527,
+  muCavalry: 0.49494114438019227,
+  muShip: 0.38842963149194465,
+  raidHit: 2.0034001144099776,
+  raidSupport: 0.9786698557809325,
+  raidConsolidate: 0.6037230407162676,
+  bidSpendFrac: 0.4120869218187288,
+  bidReserve: 1.9765745372184589,
+  bidOverspend: 1.514639284110614,
+  bidInitiative: 1.0012108207324524,
+  bidProwess: 0.7845792883147079,
+  bidCommand: 0.933456954708247,
+  invSpendFrac: 0.4925042031355225,
+  invReserve: 1.004667548069758,
+  invThreatScale: 0.9411634897589176,
+  invOverspend: 1.170281364426086,
+  cStakeScale: 1.0329861304859669,
+  cHoard: 0.5083284076384269,
+  cSwords: 0.5772961213615562,
+  cForts: 0.5123212033995066,
+  cBlade: 1.0061469164940307,
+  cAbility: 0.977240809923698,
+  rtSafety: 1.4347061818055455,
+  rtHome: 1.1818991884262484,
+  courierPeek: 1.1774050262888438,
+  courierPass: 1.009200869524929,
+  courierSwap: 0.30744506134977023,
+  peekBury: 1.0146383690205625,
+  portShips: 0.7789884714121231,
+});
+
 /** The ACTIVE default vector — what shipped bots play. */
-export const WEIGHTS = WEIGHTS_V3;
+export const WEIGHTS = WEIGHTS_V4;
 
 /**
  * Package B additions (M3.e) — NEW keys only, so the V1/V2 freeze holds:

@@ -234,7 +234,29 @@ export function inPlay(state, fid, type) {
  * An empty array passes. Costs: infantry/warship 1, cavalry/siege 2, upgrade 1.
  */
 export function muster(state, fid, rid, builds = []) {
-  const qi = state.pendingQueries.findIndex(q => q.type === 'muster' && q.faction === fid && q.region === rid);
+  let qi = state.pendingQueries.findIndex(q => q.type === 'muster' && q.faction === fid && q.region === rid);
+  // m3e47 (owner): "mustering should not railroad through an order of
+  // territories." The alphabetical castle walk was an ENGINE ARTIFACT, not
+  // a rule — the mustering lord resolves his own castles in any order.
+  // Answering a site still in the CARD QUEUE swaps it with the asked one
+  // (the asked site returns to the queue's head and will be asked again).
+  // Old episodes always answered the asked site, so replay is bit-identical
+  // and the corpus stands; the bot menu is untouched (bots take the asked
+  // site), so eval comparability holds mid-campaign.
+  if (qi === -1 && state.eventPhase?.musterQueue) {
+    const mq = state.eventPhase.musterQueue;
+    const askedIdx = state.pendingQueries.findIndex(q => q.type === 'muster' && q.faction === fid && !q.source);
+    const queuedIdx = mq.findIndex(e => e.faction === fid && e.region === rid);
+    if (askedIdx !== -1 && queuedIdx !== -1) {
+      const asked = state.pendingQueries[askedIdx];
+      const chosen = mq.splice(queuedIdx, 1)[0];
+      mq.unshift({ faction: asked.faction, region: asked.region, points: asked.points });
+      asked.region = chosen.region;
+      asked.points = chosen.points;
+      state.log.push({ round: state.round, event: 'musterSiteSwapped', faction: fid, to: chosen.region });
+      qi = askedIdx;
+    }
+  }
   if (qi === -1) throw new Error(`${fid} has no pending muster at ${rid}`);
   const q = state.pendingQueries[qi];
 

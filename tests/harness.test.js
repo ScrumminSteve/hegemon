@@ -73,9 +73,13 @@ tests.push(
     eq(WEIGHTS_V1.vCavalry, 2.2, 'V1 untouched by the bake');
     // m3e42: the lineage grows — V3 (night4, machine-learned) is active;
     // V2 stands preserved exactly as V1 does. The anchor chain: V1 → V2 → V3.
-    const { WEIGHTS_V3 } = await import('../src/agents/heuristic.js');
-    ok(WEIGHTS === WEIGHTS_V3, 'the active default is v3');
-    ok(Math.abs(WEIGHTS_V3.wSeat - 7.7985) < 1e-3, 'v3 carries the gated night4 vector');
+    // m3e47: V4 (night5, POOL-trained) takes the crown; V3 preserved frozen.
+    const { WEIGHTS_V3, WEIGHTS_V4 } = await import('../src/agents/heuristic.js');
+    ok(WEIGHTS === WEIGHTS_V4, 'the active default is v4 — the pool-trained champion');
+    ok(Object.isFrozen(WEIGHTS_V3) && Math.abs(WEIGHTS_V3.wSeat - 7.7985) < 1e-3, 'v3 preserved, byte-frozen, re-fieldable in a line');
+    ok(Math.abs(WEIGHTS_V4.wSeat - 7.8242) < 1e-3, 'v4 carries the gated night5 vector');
+    ok(WEIGHTS_V4.bidCrownUrgency > 0 && WEIGHTS_V4.bidJitter > 0, 'v4 tunes the m3e46 auction keys — first vector whose surface includes them');
+    ok(WEIGHTS_V4.vCavalry > WEIGHTS_V4.vInfantry, 'casualty ordering holds under v4');
     ok(Object.isFrozen(WEIGHTS_V2) && Math.abs(WEIGHTS_V2.wSeat - 7.7052) < 1e-3, 'v2 preserved, byte-frozen');
     ok(Math.abs(WEIGHTS_V2.wSeat - 7.7052) < 1e-3, 'v2 carries the verified night1 vector');
     ok(Object.keys(WEIGHTS_V2).length === Object.keys(WEIGHTS_V1).length, 'same key set — the tuning surface is stable');
