@@ -9,3 +9,4 @@ corpus/episodes --rounds 3
 - episode-york-new-objectives-r10.json (F1 win, Rose in Winter founding game, marks 2/3 with neutral ruling)
 - episode-new-lancaster-r6.json (F2 win, first Sleeping King, marks 3/3)
 - episode-percy-3-stars-r7.json (F5 win, second perfect Percy)
+- episode-neville-3-stars-r9.json (F6 win, FIRST sea-raids mark ever earned + front-door crown ×2)

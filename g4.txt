@@ -1,0 +1,4 @@
+challenger tuned5.json vs current — 600 games, 15 worker(s), 460.7s
+win rate 18.3% [15.4–21.6] (null 16.7%)
+mean rank 3.523 · worst seat 4.31 · mean rounds 9.96
+per seat: F2 8/100 r4.31  F5 20/100 r3.11  F4 22/100 r3.4  F3 7/100 r4.15  F6 17/100 r3.58  F1 36/100 r2.59

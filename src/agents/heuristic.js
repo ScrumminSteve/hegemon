@@ -244,6 +244,20 @@ export const WEIGHTS_M3E = Object.freeze({
   bookBias: 0,      // opening-book pull; 0 = book inert (m3e31 default)
   bookDecay: 0.5,   // per-round decay past round 1 (owner: later rounds riff)
   bookTemp: 0.4,    // softmax temp over graded lines when sampling fires
+  // BLUNDER #11 (m3e46, owner interview Q6 — the auction tell). Owner:
+  // "the bots' sweet spot is 2 coins... it's helped me predict their bids"
+  // — his 8/6/4 exact-top wardenships were ARITHMETIC against a formula
+  // that was phase-blind and predictable to the coin. Two repairs, four
+  // keys, all zeroable back to the legacy auction:
+  bidCrownUrgency: 1.2,  // initiative (Sovereign, tie arbiter): per seat held
+                         //   beyond four — one-from-seven, top of the King
+  bidWarUrgency: 1.0,    // prowess (Blade, combat ties): scales with own
+                         //   strength standing in enemy contact — the rounds
+                         //   where counted ties get decided
+  bidMusterUrgency: 0.8, // command (Courier, star allowance): scales with the
+                         //   size of the host there is to command
+  bidJitter: 0.6,        // deterministic ±1-coin hash per round/track/faction
+                         //   — exact-top sniping stops being free
 });
 
 
@@ -704,7 +718,38 @@ const SCORERS = {
     const order = view.tracks?.[q.track] || [];
     const idx = Math.max(0, order.indexOf(q.faction));
     const gainFactor = order.length > 1 ? idx / (order.length - 1) : 1; // low on the track = more to win
-    const target = Math.min(q.max, Math.round(q.max * W.bidSpendFrac * trackW * (0.4 + 0.6 * gainFactor)));
+    // Blunder #11 (m3e46, owner interview): tracks are priced by what THIS
+    // round is FOR, not by their printed value — and the legacy target was
+    // predictable to the coin. Phase urgency shifts the target; a
+    // deterministic jitter (same state = same bid, replay-exact) breaks
+    // exact-top sniping. All keys zeroable to the legacy auction.
+    let urgency = 0;
+    if (q.track === 'initiative') {
+      // one-from-seven: the Sovereign arbitrates every tie that ends games
+      urgency = (W.bidCrownUrgency ?? 0) * Math.max(0, seatsControlled(view, q.faction) - 4);
+    } else if (q.track === 'prowess') {
+      // war footing: own strength standing in enemy contact — counted ties
+      let contact = 0;
+      for (const rid of Object.keys(view.unitsByRegion || {})) {
+        const mine = myStrengthAt(view, rid, q.faction);
+        if (mine > 0 && pressureOn(view, rid, q.faction) > 0) contact += Math.min(mine, 6);
+      }
+      urgency = (W.bidWarUrgency ?? 0) * Math.min(1.5, contact / 8);
+    } else if (q.track === 'command') {
+      // star allowance scales with the host there is to command
+      let host = 0;
+      for (const rid of Object.keys(view.unitsByRegion || {})) host += myStrengthAt(view, rid, q.faction);
+      urgency = (W.bidMusterUrgency ?? 0) * Math.min(1.5, host / 12);
+    }
+    let hash = 0;
+    const hkey = `${view.round ?? 1}:${q.track}:${q.faction}`;
+    for (let i = 0; i < hkey.length; i++) hash = (hash * 31 + hkey.charCodeAt(i)) >>> 0;
+    // avalanche mix — the raw 31-hash is residue-degenerate mod 3 (31 ≡ 1)
+    hash = Math.imul(hash ^ (hash >>> 16), 2654435761) >>> 0;
+    hash = Math.imul(hash ^ (hash >>> 13), 1597334677) >>> 0;
+    const jitter = (W.bidJitter ?? 0) * ((hash % 3) - 1); // ∈ {-J, 0, +J}
+    const target = Math.max(0, Math.min(q.max,
+      Math.round(q.max * W.bidSpendFrac * trackW * (0.4 + 0.6 * gainFactor) + urgency + jitter)));
     let s = -Math.abs(a.amount - target);
     const reserveBreach = a.amount - Math.max(0, q.max - W.bidReserve);
     if (reserveBreach > 0) s -= reserveBreach * W.bidOverspend;

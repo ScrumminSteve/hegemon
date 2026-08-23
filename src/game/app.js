@@ -24,7 +24,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e43';
+export const BUILD_ID = 'm3e46';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -2005,18 +2005,41 @@ function scrollToDecision() {
   $('#turn-panel')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); // optional-call: jsdom lacks it
 }
 
+/** Marks-of-glory reference (owner, m3e44): the briefing is a CAMPAIGN
+    document, not a splash screen — referencable all war long from its own
+    collapsible. Text only during play (most marks grade against the FINAL
+    state, so a live checklist would mislead); the stars arrive at the end. */
+function renderBriefingRef() {
+  const el = $('#briefing-panel');
+  const wrap = document.getElementById('briefing-detail');
+  if (!el || !wrap) return;
+  const brief = mixed.human && theme.briefings?.[mixed.human];
+  if (!brief) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  el.innerHTML = `<div class="brief-ref">` +
+    brief.objectives.map(o => `<p>${esc(o)}</p>`).join('') +
+    `<p class="dim">Marks are graded when the war ends — the stars appear with the victory banner.</p></div>`;
+}
+
 let trackAttnKey = null;
 function renderTracks() {
+  renderBriefingRef();
   const el = $('#tracks-panel');
   if (!el) return;
   // Owner (Aug 2026): when a TRACK decision is on the table for the human,
   // the scoreboard is the context — it opens, flashes, and scrolls into
   // view (once per decision, not per repaint).
   const TRACK_QS = new Set(['bid', 'bidTieBreak', 'invaderBid', 'invaderTieBreak', 'incursionTrack']);
-  const humanQ = shown().pendingQueries.find(q => TRACK_QS.has(q.type) && (!mixed.human || q.faction === mixed.human));
+  const st = shown();
+  if (!st) return;
+  const humanQ = (st.pendingQueries ?? []).find(q => TRACK_QS.has(q.type) && (!mixed.human || q.faction === mixed.human));
   const wrap = document.getElementById('score-detail');
   if (humanQ && mixed.human) {
-    const key = `${humanQ.type}:${humanQ.faction}:${shown().actionLog.length}`;
+    // m3e45 (owner's Safari capture): the REDACTED VIEW deletes actionLog by
+    // design — reading actionLog off the view threw on every human bid in mixed
+    // mode. The key uses view-safe fields (round + log length survive
+    // redaction); same once-per-decision behavior.
+    const key = `${humanQ.type}:${humanQ.faction}:${st.round}:${st.log?.length ?? 0}`;
     el.classList.add('attn');
     if (wrap) wrap.open = true;
     if (key !== trackAttnKey) {

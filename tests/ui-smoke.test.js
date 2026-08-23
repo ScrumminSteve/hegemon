@@ -365,3 +365,28 @@ tests.push(
       'a map tap at the pick-a-region step selects the origin');
   }},
 );
+
+tests.push(
+  { name: 'm3e44: the marks of glory are referencable ALL campaign — a collapsible briefing panel exists and fills for the human seat', async fn() {
+    const doc = dom.window.document;
+    ok(doc.querySelector('details#briefing-detail #briefing-panel'), 'the briefing reference collapsible exists');
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(/renderBriefingRef/.test(src) && /graded when the war ends/.test(src),
+      'text during play, stars at the end — a live checklist would mislead on final-state marks');
+  }},
+);
+
+tests.push(
+  { name: 'm3e45: the scoreboard-attention key survives REDACTION — a mixed-mode human bid must not throw (the owner\'s Safari capture: views delete actionLog by design)', async fn() {
+    const { viewFor } = await import('../src/engine/views.js');
+    const { createGame } = await import('../src/engine/state.js');
+    const { beginPlanning } = await import('../src/engine/engine.js');
+    const s = createGame(6, { seed: 999 });
+    beginPlanning(s);
+    const v = viewFor(s, 'F1');
+    ok(v.actionLog === undefined, 'the redacted view strips actionLog — the trap is real');
+    ok(Array.isArray(v.log) && typeof v.round === 'number', 'round and log survive redaction — the new key\'s fields exist');
+    const src = readFileSync(new URL('../src/game/app.js', import.meta.url), 'utf8');
+    ok(!/shown\(\)\.actionLog/.test(src), 'no code path reads actionLog off shown() — it may be a redacted view');
+  }},
+);

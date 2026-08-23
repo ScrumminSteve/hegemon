@@ -1,12 +1,152 @@
 # HEGEMON
 
 A data-driven digital adaptation of a classic area-control / hidden-orders war game.
+
+---
+
+## THE INTERVIEW BECOMES MACHINERY (m3e46)
+
+**STRATEGY.md banked** — the owner's full ten-question doctrine: opening
+discipline, anchor-by-connectivity, the counted fight, the style-switcher
+finding (blitz is the temperament, crescendo the costume), elastic control,
+the auction tell, per-house methods, the predator-among-prey theorem, and
+the evaluator gap ("I don't" — no opponent has ever required sizing up).
+Six derived candidate scorer terms listed at the bottom of the doc.
+
+**BLUNDER #11 — THE AUCTION TELL** (interview Q6). Owner: "the bots' sweet
+spot is 2 coins... it's helped me predict their bids" — his exact-top
+8/6/4 wardenships were arithmetic against a phase-blind formula. Four new
+weight keys (all zeroable to the legacy auction, all on the tuner surface):
+`bidCrownUrgency` (initiative, per seat beyond four — one-from-seven pays
+for the Sovereign), `bidWarUrgency` (prowess scales with own strength in
+enemy contact — the counted-tie track), `bidMusterUrgency` (command scales
+with the host to command), `bidJitter` (deterministic ±1-coin avalanche
+hash per round/track/faction — exact-top sniping stops being free; replay
+determinism preserved).
+*Verify:* `npm test` → three "blunder #11" goldens; in a live game watch a
+5-seat bot's initiative bids jump.
+
+**HUMAN-METHOD OPPONENT POOL v1** (`src/agents/profiles.js`). Personas as
+multiplicative overlays on the shipped champion (they inherit every future
+bake): `blitz` (rush-and-kill), `crescendo` (the patience costume),
+`denial` (sea lanes + raids), plus `v3` (unmodified champion) and `prey`
+(the G1 legacy construction — the predator-among-prey environment REQUIRES
+weak animals). Seeded hidden-composition seating; profiles are OBSTACLES,
+never objectives (doctrine holds — no bot sees a mark).
+`eval.mjs` and `tune.mjs` both take `--incumbent pool:blitz,crescendo,denial,prey,v3`.
+*Verify:* `npm test` → "opponent pool" golden; then
+`node tools/eval.mjs --games 12 --workers 4 --incumbent pool:blitz,crescendo,denial,prey,v3`.
+First smoke reading (N=12, fog): shipped champion 16.7% vs the mixed
+table — the same bot that clears ~30% on uniform prey. The owner's
+theorem measures: **the mixed table is a genuinely harder world.**
+
+**Structure changed → weight nights UN-RETIRED.** The four bid keys are new
+surface; the retirement condition ("until structure changes") is met.
+Tonight's run is legitimate again — see the runbook below.
+
+Suite: **288**.
+
+---
 PC (browser) first, mobile later. All intellectual property lives in **theme packs** —
 the engine, the data model, and every identifier in code use generic warfare terminology.
 
 > Codename "HEGEMON" is a working title. Rename freely; nothing in code depends on it.
 
 ---
+
+## THE SAFARI GHOST CAUGHT + THE MAP AUDITED (m3e45)
+
+**The repeating error, fixed:** owner's capture showed "undefined is
+not an object (evaluating 'shown().actionLog.length')" — the redacted
+VIEW deletes actionLog by design (views.js:64), and the m3e38
+scoreboard-attention key read it off shown() — which returns the view
+in mixed mode. Every human TRACK decision threw; table mode and the
+jsdom smoke never enter that path, so the suite was blind. Key rebuilt
+on view-safe fields (round + log length); golden asserts the trap
+(actionLog stripped, log/round surviving) and greps the codebase for
+any shown().actionLog read.
+
+**MAP_AUDIT.md delivered** (owner: "go ahead with the audit"): all 38
+land regions rank-compared, canvas vs real Britain, both axes. Verdict:
+~70% faithful; four true wrong-side errors — Alnwick [F5 HOME, the
+anchor error], The Cornish Coast [free to fix by rename], Lancaster
+[F2 HOME], Carisbrooke [F3 HOME, recommended accepted as island
+license] — plus a canvas-compression class (York pinned at Berwick's
+latitude). Repair tiers sized: A = name-only (Cornish Coast), free any
+build; B = Percy/Lancaster home realignment, rules-revision event,
+STALES THE FULL CORPUS — bundle with any future setup change to pay
+once; C = canvas stretch, art project. Decision remains deferred.
+
+Suite: **284**.
+
+## BANKED: ORDER-CHIP OWNERSHIP AMBIGUITY (owner photo, m3e44 era)
+
+Port-adjacent order chips float unanchored — at the Isle of Man the
+march-arrow and control-flag chips sit in open water between the PORT
+and the MANX SEA with no visual tether to their territory; a third chip
+near Ludlow reads equally ambiguous. Owner: "confusing which order
+belongs to what territory." Strengthens the long-banked badge-collision
+item (UI queue #4) with a specific worst case: chips need a leader line,
+containment ring, or anchored placement INSIDE their region'''s hex —
+VISUAL-JUDGMENT work; needs owner eyes on-device, phase-2 slate,
+priority raised. ALSO BANKED, then CORRECTED same session (owner
+caught it on the map): the feud is NOT geographic on the current board —
+Percy's Alnwick sits in the far SOUTHEAST while Neville holds the
+west-northwest; they are nowhere near adjacent, and the "northern
+powers collide" framing was wrong. Bots still contest Middleham for
+win-value only (doctrine holds); feud PRESSURE for solo humans still
+arrives via human-method profiles.
+
+## BANKED: THE MAP–HISTORY MISALIGNMENT (owner, deferred decision)
+
+The canvas reads as Britain and MOST names agree (York, Berwick,
+Bamburgh, Newcastle correctly north) — but Alnwick is pinned in the far
+south with Percy's home seat beside it, opposite its real Northumberland
+location, and the briefings inherited the error ("Percy has held the
+north"). Owner ruling: the STORY does not bend — Percy is a legitimate
+northern house and must read as one; the MAP updates at some point,
+without losing any current adjacency. Decision space, costed for later:
+(1) NAME-ONLY re-pinning — audit every region name against real
+geography and move misplaced names to matching region ids; zero
+mechanical change, but Percy's SEAT then carries a non-Percy name unless
+the seat moves too. (2) SEAT REALIGNMENT — move Percy's setup to the
+northeastern cluster (real Alnwick country) + re-pin names; historically
+right, but a SETUP change bumps the rules revision and stales the
+ENTIRE verified corpus (20+ wins) — the heaviest cost in the project.
+(3) CANVAS rework — repaint/rotate presentation over the unchanged
+graph; likely visual nonsense on a Britain-shaped landmass. Next
+concrete step when taken up: a full automated name-vs-real-geography
+audit of all 37 land regions to size option 1 before choosing.
+Decision explicitly DEFERRED by owner — "we can figure this out later."
+
+## THE BRIEFING BECOMES A CAMPAIGN DOCUMENT (m3e44)
+
+Owner: marks must be referencable DURING the campaign, not just at the
+banners. A "Marks of glory" collapsible now sits above the scoreboard
+all war long, showing the human seat'''s briefing objectives. Text only
+during play — most marks grade against the FINAL state, so a live
+checklist would mislead; the stars still arrive with the victory
+banner. Suite: 283.
+
+## G4: THE SELF-PLAY WELL RUNS DRY — no bake, champion stays V3 (m3e43)
+
+Night5 climbed the ladder: SPSA vs the reigning V3 table (--incumbent
+current, verification against the same opponent per the night4 runbook
+fix). Gate at seed-93000, N=600: **18.3% [15.4–21.6] vs null 16.7% —
+CI floor BELOW the bar; verification 16.3%: parity.** And the seat line
+tells the sharper story: F2 8/100, F3 7/100 — the candidate re-abandoned
+exactly the two houses V3's bake lifted, buying F1 36/100 with them.
+NO BAKE per the pre-registered criteria.
+
+Read as information: night4 harvested the weight-space gains; night5
+proves the well is dry against the current structure. Full-surface
+weight nights are RETIRED until the structure changes. Next strength
+lives in: Package C (position evaluator, per-round credit), human-method
+opponent profiles in the tuning pool, and eventually lookahead.
+
+Suite: **284** (correction: the m3e43 chapter printed 282 from a stale
+run; the deterministic count with all m3e43 goldens loaded is 284 —
+verified twice, all named, zero failures).
 
 ## FIELD REPORTS FROM THE V3 TABLE (m3e43)
 

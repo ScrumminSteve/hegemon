@@ -346,3 +346,110 @@ tests.push(
       'open water carries no tenure — the same sortie is free there');
   }},
 );
+
+// --- m3e46: blunder #11 (the auction tell) + the opponent pool ---------------
+
+import { PROFILES, profileAgentOpts, poolAssignment, overlayWeights, championWeights } from '../src/agents/profiles.js';
+
+tests.push(
+  { name: 'blunder #11 (m3e46): crown urgency — the initiative bid is untouched below five seats, and rises with the keys on once a faction stands one-from-seven', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    const view = viewFor(s, fid);
+    const q = { type: 'bid', track: 'initiative', faction: fid, max: 8 };
+    const Won = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const Woff = { ...Won, bidCrownUrgency: 0, bidWarUrgency: 0, bidMusterUrgency: 0, bidJitter: 0 };
+    const bestBid = (v, W) => {
+      let best = null;
+      for (let amt = 0; amt <= q.max; amt++) {
+        const sc = scoreAction(v, q, { faction: fid, type: 'bid', amount: amt }, W);
+        if (best === null || sc > best.sc) best = { amt, sc };
+      }
+      return best.amt;
+    };
+    // below five seats the crown urgency sleeps (jitter isolated off on both)
+    const WonNoJit = { ...Won, bidJitter: 0, bidWarUrgency: 0, bidMusterUrgency: 0 };
+    eq(bestBid(view, WonNoJit), bestBid(view, Woff), 'at setup seat counts the crown term is silent');
+    // grant the faction six seats by control marker and the urgency wakes
+    const rich = structuredClone(view);
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    const ADJ3 = adjF();
+    rich.controlMarkers = { ...rich.controlMarkers };
+    let granted = stateApi.seatsControlled(rich, fid);
+    for (const rid of Object.keys(ADJ3)) {
+      if (granted >= 6) break;
+      const r = reg(rid);
+      if (r?.kind === 'land' && r.muster > 0 && !(rich.unitsByRegion[rid] || []).length && controllerOf(rich, rid) !== fid) {
+        rich.controlMarkers[rid] = fid; granted++;
+      }
+    }
+    ok(granted >= 6, `six seats granted for the fixture (${granted})`);
+    ok(bestBid(rich, WonNoJit) > bestBid(rich, Woff),
+      'one-from-seven, the bot now pays up for the Sovereign — the owner\'s own rule');
+  }},
+
+  { name: 'blunder #11 (m3e46): war urgency — enemy contact raises the prowess bid; without contact (or with the key zeroed) the legacy auction is exact', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    const view = viewFor(s, fid);
+    const q = { type: 'bid', track: 'prowess', faction: fid, max: 8 };
+    const base = { ...WEIGHTS_M3E, ...WEIGHTS, bidJitter: 0, bidCrownUrgency: 0, bidMusterUrgency: 0 };
+    const Woff = { ...base, bidWarUrgency: 0 };
+    const score = (v, W, amt) => scoreAction(v, q, { faction: fid, type: 'bid', amount: amt }, W);
+    // manufacture contact: stand an enemy next to my strongest region
+    const mineRid = Object.keys(view.unitsByRegion).find(r => (view.unitsByRegion[r] || []).some(u => u.faction === fid && u.type !== 'warship'));
+    const { adjacency: adjF, region: reg } = stateApi;
+    const nbr = [...(adjF()[mineRid] || [])].find(n => reg(n)?.kind === 'land');
+    ok(mineRid && nbr, 'the board offers a border');
+    const war = structuredClone(view);
+    war.unitsByRegion = { ...war.unitsByRegion, [nbr]: [ ...(war.unitsByRegion[nbr] || []), { faction: s.factions[1], type: 'infantry' } ] };
+    const bestBid = (v, W) => {
+      let best = null;
+      for (let amt = 0; amt <= q.max; amt++) { const sc = score(v, W, amt); if (best === null || sc > best.sc) best = { amt, sc }; }
+      return best.amt;
+    };
+    ok(bestBid(war, base) >= bestBid(war, Woff), 'contact never LOWERS the prowess bid');
+    ok(bestBid(war, { ...base, bidWarUrgency: 8 }) > bestBid(war, Woff),
+      'and with real urgency the counted-tie track commands a premium');
+  }},
+
+  { name: 'blunder #11 (m3e46): the jitter is deterministic per state and varies across rounds; all four keys zeroed restores a round-blind auction', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    const view = viewFor(s, fid);
+    const q = { type: 'bid', track: 'command', faction: fid, max: 8 };
+    const act = amt => ({ faction: fid, type: 'bid', amount: amt });
+    const J = { ...WEIGHTS_M3E, ...WEIGHTS, bidJitter: 1, bidCrownUrgency: 0, bidWarUrgency: 0, bidMusterUrgency: 0 };
+    const Z = { ...J, bidJitter: 0 };
+    // determinism: the same state twice scores identically
+    eq(scoreAction(view, q, act(3), J), scoreAction(view, q, act(3), J), 'same state, same bid — replay holds');
+    // variance: across rounds 1..9 the jittered target moves at least once
+    const targetAt = (round, W) => {
+      const v = structuredClone(view); v.round = round;
+      let best = null;
+      for (let amt = 0; amt <= q.max; amt++) { const sc = scoreAction(v, q, act(amt), W); if (best === null || sc > best.sc) best = { amt, sc }; }
+      return best.amt;
+    };
+    const jittered = new Set(); const flat = new Set();
+    for (let r = 1; r <= 9; r++) { jittered.add(targetAt(r, J)); flat.add(targetAt(r, Z)); }
+    ok(jittered.size > 1, 'the jittered auction is no longer predictable to the coin across rounds');
+    eq(flat.size, 1, 'keys zeroed, the auction is round-blind — the legacy tell, preserved for the G1 incumbent');
+  }},
+
+  { name: 'opponent pool (m3e46): profiles resolve — overlays multiply the champion, prey is the documented G1 legacy, and seeded assignment is deterministic, covering, and hidden', fn() {
+    const champ = championWeights();
+    const blitz = overlayWeights(champ, PROFILES.blitz.overlay);
+    ok(Math.abs(blitz.mAttackMargin - champ.mAttackMargin * 1.4) < 1e-12, 'blitz multiplies the attack margin');
+    ok(Math.abs(blitz.mOverreach - champ.mOverreach * 0.7) < 1e-12, 'and relaxes overreach');
+    eq(blitz.wSeat, champ.wSeat, 'untouched keys pass through');
+    const prey = profileAgentOpts('prey');
+    eq(prey.guided, false, 'prey is unguided');
+    eq(prey.weights.tTransport, 0, 'prey is adjacency-blind (the G1 construction)');
+    const roster = ['blitz', 'crescendo', 'denial', 'prey', 'v3'];
+    const a1 = poolAssignment(roster, 555, 5), a2 = poolAssignment(roster, 555, 5);
+    eq(JSON.stringify(a1), JSON.stringify(a2), 'same seed, same table');
+    eq([...new Set(a1)].sort().join(','), [...roster].sort().join(','), 'a 5-roster on 5 seats seats everyone once');
+    const different = [1, 2, 3, 4, 5, 6, 7, 8].some(k => JSON.stringify(poolAssignment(roster, k, 5)) !== JSON.stringify(a1));
+    ok(different, 'composition is hidden — seatings vary by seed');
+  }},
+);

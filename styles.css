@@ -102,7 +102,7 @@ dd { margin: 0; }
 .ladder-inline { margin: 4px 0 8px; }
 #tracks-panel.attn { outline: 1px solid var(--brass); outline-offset: 3px; border-radius: 6px; }
 #game-options { margin-top: 8px; }
-#game-options summary, #score-detail summary { cursor: pointer; font: 600 12px system-ui; letter-spacing: .06em; text-transform: uppercase; color: var(--bone-dim, #b8ad9d); padding: 4px 0; }
+#game-options summary, #score-detail summary, #briefing-detail summary { cursor: pointer; font: 600 12px system-ui; letter-spacing: .06em; text-transform: uppercase; color: var(--bone-dim, #b8ad9d); padding: 4px 0; }
 .supply-warn { margin: 6px 0; padding: 6px 8px; border: 1px solid #B5484D; border-radius: 6px; color: #F0B9BC; background: rgba(181,72,77,.12); font-size: 12.5px; }
 .land-hex { fill: var(--slate); stroke: rgba(217,210,192,.45); stroke-width: 1.6; }
 .sea-outer { fill: var(--sea); stroke: rgba(120,170,210,.5); stroke-width: 1.2; stroke-dasharray: 3 4; }
@@ -442,3 +442,6 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 .export-overlay { position: fixed; inset: 0; background: rgba(10,8,14,.82); z-index: 60; display: flex; align-items: center; justify-content: center; }
 .export-box { background: var(--panel, #1c1520); border: 1px solid var(--hair); border-radius: 10px; padding: 14px; width: min(560px, 92vw); }
 .export-text { width: 100%; height: 34vh; margin: 8px 0; font-family: monospace; font-size: 11px; background: rgba(0,0,0,.3); color: inherit; border: 1px solid var(--hair); }
+
+.brief-ref p { margin: .35em 0; font-size: 12.5px; line-height: 1.45; }
+.brief-ref .dim { opacity: .6; font-style: italic; }

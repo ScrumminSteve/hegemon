@@ -26,6 +26,7 @@ import { viewFor } from '../src/engine/views.js';
 import { legalActions, currentQuery } from '../src/engine/legal.js';
 import { createHeuristicAgent, effectiveWeights, WEIGHTS_V1, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { createRandomAgent, botRng } from '../src/agents/random.js';
+import { poolAgents } from '../src/agents/profiles.js';
 
 const MAX_ACTIONS = 6000;
 
@@ -46,8 +47,17 @@ export function playEvalGame({ seed, challengerSeat, challengerCfg = null, incum
   beginPlanning(s);
   const hero = s.factions[challengerSeat];
   const agents = {};
+  // 'pool:a,b,c' (m3e46) — the predator-among-prey environment from the
+  // owner interview: opponent seats drawn from named profiles, composition
+  // hidden (seeded per game). See src/agents/profiles.js.
+  let poolSeats = null;
+  if (typeof incumbent === 'string' && incumbent.startsWith('pool:')) {
+    const roster = incumbent.slice(5).split(',').map(x => x.trim()).filter(Boolean);
+    poolSeats = poolAgents(roster, seed, s.factions.length - 1);
+  }
   for (const fid of s.factions) {
     if (fid === hero) agents[fid] = createHeuristicAgent({ weights: effectiveWeights(challengerCfg, fid) });
+    else if (poolSeats) agents[fid] = poolSeats.pop().agent;
     // 'v1' is the FROZEN anchor (WEIGHTS_V1) — never the active default,
     // which moved to v2 in m3d7. 'current' fields whatever ships today.
     else agents[fid] = incumbent === 'random' ? createRandomAgent()
@@ -173,7 +183,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const t0 = Date.now();
   const stats = await evaluate(challengerCfg, { games, seedBase, incumbent, workers });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  console.log(`challenger ${challengerFile || 'current (v2)'} vs ${incumbent} — ${games} games, ${workers} worker(s), ${secs}s`);
+  console.log(`challenger ${challengerFile || 'current (shipped default)'} vs ${incumbent} — ${games} games, ${workers} worker(s), ${secs}s`);
   console.log(`win rate ${(stats.winRate * 100).toFixed(1)}% [${(stats.ci.lo * 100).toFixed(1)}–${(stats.ci.hi * 100).toFixed(1)}] (null 16.7%)`);
   console.log(`mean rank ${stats.meanRank} · worst seat ${stats.worstSeatMeanRank} · mean rounds ${stats.meanRounds}`);
   console.log('per seat:', Object.entries(stats.seatStats).map(([f, s]) => `${f} ${s.wins}/${s.games} r${s.meanRank}`).join('  '));
