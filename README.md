@@ -4,6 +4,34 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## G7: THE PUNCH STAYS CAGED — AND GETS A TUTOR (m3e50)
+
+**G7 verdict (seed 97000, N=600): NO BAKE.** Punch (mLeaderPunch 4) 20.5%
+[17.5–23.9] vs stock 18.5% — 123 v 111 head-to-head, better mean rank,
+five of six seats up, but the CI floor (17.5) sits below the stock rate.
+Pre-registered outcome 2: **the term isn't wrong; the hand-set 4 is
+unproven.** The punch stays zeroed in shipped defaults.
+
+**tune.mjs --start** (m3e50): a challenger-style config merged over the
+active vector BEFORE the surface is derived — how a gated-but-zeroed key
+enters the search without touching shipped behavior. Log-space steps can
+never lift a zero (the perFaction lesson), so the seed must arrive
+positive. Surface-lock provenance records the start file; night5-era
+checkpoints refuse resume against the 61-key surface, as designed.
+
+V4 pool ledger, three blocks: 20.3 / 15.2 / 18.5 — true rate ≈ 18,
+"thin and block-sensitive" confirmed. F3 posted 14/100 on G7 stock, its
+best pool showing.
+
+*Verify:* `npm test` → "tune --start overlay" golden. Night7:
+`node tools/tune.mjs --run runs/night7-punch.json --start runs/punch.json --workers 15 --incumbent pool:blitz,crescendo,denial,prey,v3`
+
+Suite: **296**.
+
+---
+
+---
+
 ## EVAL_V1 — THE FLEET LIGHTS UP (m3e49)
 
 **Reach** joins the glance: unheld seat-regions a faction could enter next

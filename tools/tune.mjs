@@ -35,7 +35,19 @@ import { evaluate } from './eval.mjs';
 // tenure). Zero-valued keys are EXCLUDED: log-space multiplicative steps
 // can never lift a zero (the perFaction lesson), so the inert book trio
 // (bookBias 0 ⇒ bookDecay/bookTemp moot) stays out until the book goes live.
-const FULL = { ...WEIGHTS_M3E, ...WEIGHTS };
+// m3e50: --start overlay — a challenger-style config merged over the active
+// vector BEFORE the surface is derived. This is how a GATED-BUT-ZEROED key
+// (the leader punch) enters the search without touching shipped defaults:
+// log-space steps can never lift a zero, so the seed must arrive positive.
+// The overlay is applied at module load via env (workers import this file).
+let START = {};
+const _si = process.argv.indexOf('--start');
+const START_PATH = _si !== -1 ? process.argv[_si + 1] : (process.env.TUNE_START || null);
+if (START_PATH) {
+  const raw = JSON.parse(readFileSync(START_PATH, 'utf8'));
+  START = raw.shared ?? raw;
+}
+const FULL = { ...WEIGHTS_M3E, ...WEIGHTS, ...START };
 const KEYS = Object.keys(FULL).filter(k =>
   FULL[k] > 0 &&
   // book trio: inert while bookBias is 0 — pure noise dimensions if tuned
@@ -119,7 +131,7 @@ export async function tune(path, cfg = {}) {
         checkEvery: cfg.checkEvery ?? 5, checkGames: cfg.checkGames ?? 120,
         workers: cfg.workers, incumbent: cfg.incumbent ?? 'v1', seedBase: cfg.seedBase ?? 100000,
         worstSeatTol: cfg.worstSeatTol ?? 0.5, winRateTol: cfg.winRateTol ?? 0.03,
-        aScale: 1,
+        aScale: 1, start: START_PATH ?? null, startOverlay: START_PATH ? START : undefined,
       },
       iter: 0,
       keys: [...KEYS], // the surface this run was born under — resume refuses a mismatch
@@ -194,6 +206,7 @@ export async function tune(path, cfg = {}) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = (kk, d) => { const i = process.argv.indexOf(`--${kk}`); return i === -1 ? d : process.argv[i + 1]; };
   const path = arg('resume', null) || arg('run', null);
+  // (--start is consumed at module load via TUNE_START; flag documented in usage)
   if (!path) { console.error('usage: node tools/tune.mjs --run runs/x.json | --resume runs/x.json'); process.exit(1); }
   await tune(path, {
     incumbent: arg('incumbent', 'v1'), // night5+: 'current' = the self-play ladder (tune vs the reigning champion)

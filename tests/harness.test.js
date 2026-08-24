@@ -87,3 +87,20 @@ tests.push(
     ok(WEIGHTS_V2.muSpend > 0 && WEIGHTS_V2.invThreatScale > 0, 'behavioral scorer signs hold under v2');
   }},
 );
+
+tests.push(
+  { name: 'tune --start overlay (m3e50): a gated-but-zeroed key enters the surface only when seeded positive; without a seed the surface is unchanged', async fn() {
+    // the surface module derives KEYS at load from FULL + START; we test the
+    // derivation logic directly (module-level KEYS is load-time state).
+    const { WEIGHTS, WEIGHTS_M3E } = await import('../src/agents/heuristic.js');
+    const derive = (start) => {
+      const FULL = { ...WEIGHTS_M3E, ...WEIGHTS, ...start };
+      return Object.keys(FULL).filter(k => FULL[k] > 0 && !(FULL.bookBias === 0 && k.startsWith('book')));
+    };
+    const bare = derive({});
+    const seeded = derive({ mLeaderPunch: 4 });
+    ok(!bare.includes('mLeaderPunch'), 'zeroed punch stays off the bare surface — shipped behavior untouched');
+    ok(seeded.includes('mLeaderPunch'), 'seeded positive, the punch joins the search');
+    eq(seeded.length, bare.length + 1, 'and it is the only addition');
+  }},
+);
