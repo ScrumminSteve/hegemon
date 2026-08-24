@@ -4,6 +4,82 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## EVAL_V1 — THE FLEET LIGHTS UP (m3e49)
+
+**Reach** joins the glance: unheld seat-regions a faction could enter next
+round with the stronger force, by adjacency AND by warship transport over
+connected friendly sea chains (the bots' own landing rule, mirrored).
+Spec came straight from the full-corpus harvest: Tudor went **0-for-4**
+against the V0 bar because a seat-heavy material glance cannot see an
+island house's parked strike force.
+
+Results, inbox re-harvest: bar **6/9 → 8/9 (89%)**. The pre-registered
+conversion — Tudor awesomesauce, rank 5-6 at mid under V0 — now ranks
+**1 by round 5** and holds. The one surviving miss is the stealth
+Lancaster (rank 4 at mid, crossover one round later): the owner's
+silhouette doctrine still beats the glance by a nose, on the record.
+
+`EVAL_V0` stands frozen (evaluator lineage discipline, same as the bot
+vectors); `EVAL_V1` is the default for positionScore / rankFactions /
+tableLeader, so the credit miner and the (still-zeroed) leader punch see
+reach with no further wiring.
+
+*Verify:* `npm test` → two "EVAL_V1" goldens (reach feature isolation +
+the pre-registered Tudor conversion); then re-run
+`node tools/credit.mjs corpus/episodes` and compare bars.
+
+Suite: **295**.
+
+---
+
+---
+
+## PACKAGE C · SESSION ONE — THE GLANCE (m3e48)
+
+The structural leap opens. Three deliverables, one gated term:
+
+**1. The position evaluator** (`src/agents/evaluate.js`) — `positionScore`
+/ `rankFactions` / `tableLeader`: the mid-game glance the owner never
+needed and the bots never had (interview Q10: "Simple answer is I don't").
+Nine interpretable features under hand-set `EVAL_V0` weights: seats,
+citadels, land, army, cash, INCOME (the snowball that beat the V4 auction),
+supply, tracks, threat-to-seats. Every number auditable; depends only on
+state+map (heuristic imports it, never the reverse).
+
+**2. The credit miner** (`tools/credit.mjs`) — replays a corpus directory,
+scores all six factions at every round boundary, reports the eventual
+winner's evaluator rank by round, the crossover round, and the top-2-by-
+mid-game bar. LOSSES are now signal. First harvest, 9 inbox episodes:
+- **PRE-REGISTERED PASS:** the evaluator flags F2 (the owner) as table
+  leader by round 3 of the five-round Lancaster blitz (r1:3 r2:2 r3:1,
+  never surrendered).
+- **Bar: winner top-2 by mid-game 6/9 (67%)** — majority holds.
+- **The three misses are a finding, not a flaw:** new-lancaster (rank 5
+  mid), percy-3-stars (rank 3-4 mid), tudor-awesomesauce (rank 5-6 mid)
+  are precisely the owner's STEALTH wins — sleeping-king and stay-home
+  games where material lags until the strike. The glance sees material;
+  the owner's silhouette-management doctrine (STRATEGY.md §5) defeats a
+  material glance BY DESIGN. Hidden strength (cards, posture) is the
+  evaluator's known blind spot, logged as EVAL_V1's target.
+- Arman's loss: winning bot ranked 2 the ENTIRE game — the glance saw it.
+
+**3. The leader punch** (`mLeaderPunch`, heuristic.js) — interview: "I'll
+see who's the strongest and potentially attack them. But if I'm winning,
+I'm not transfixed." Evaluator-gated aggression: bonus for attacks on the
+table leader's holdings, silent when the bot IS the leader, flowing only
+through the winning-margin branch (never sweetens a losing fight).
+**SHIPS AT ZERO** — off the tuner surface, zero behavior change, awaits
+its own N=600 pool gate.
+
+*Verify:* `npm test` → three "package C" goldens (monotone, pre-registered
+Lancaster r3, punch isolation); then `node tools/credit.mjs corpus/inbox`.
+
+Suite: **293**.
+
+---
+
+---
+
 ## V4 TAKES THE CROWN — THE POOL-TRAINED CHAMPION (m3e47)
 
 **WEIGHTS_V4 baked** — the first vector ever raised against the

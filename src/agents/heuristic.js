@@ -20,6 +20,15 @@ import { regionProps, region, controllerOf, seatsControlled, adjacency } from '.
 import { unitStrength } from '../engine/actionPhase.js';
 import { card } from '../engine/cards.js';
 import { botRng } from './random.js';
+import { tableLeader } from './evaluate.js';
+
+// Package C: one evaluator glance per view, cached — decisions are many,
+// the table's leader changes only between them.
+const LEADER_CACHE = new WeakMap();
+function cachedLeader(view) {
+  if (!LEADER_CACHE.has(view)) LEADER_CACHE.set(view, tableLeader(view));
+  return LEADER_CACHE.get(view);
+}
 import { bookPrior, bookLines, BOOKS } from './books.js';
 import { combatStrengths } from '../engine/combat.js';
 
@@ -343,6 +352,10 @@ export const WEIGHTS_M3E = Object.freeze({
                          //   size of the host there is to command
   bidJitter: 0.6,        // deterministic ±1-coin hash per round/track/faction
                          //   — exact-top sniping stops being free
+  // PACKAGE C (m3e48): the leader punch — evaluator-gated aggression at the
+  // table's strongest. SHIPS AT ZERO: zero-valued keys stay off the tuner
+  // surface and change no shipped behavior; flips on only via its own gate.
+  mLeaderPunch: 0,
 });
 
 
@@ -574,6 +587,16 @@ function attackScore(view, to, myStr, fid, W) {
     gain += (W.mSeatHunger ?? WEIGHTS_M3E.mSeatHunger) * (1 + seatsControlled(view, fid) / 3);
   }
   if (enemy === 0) return gain; // a walk-in
+  // PACKAGE C gate (m3e48) — the LEADER PUNCH, owner interview: "I'll see
+  // who's the strongest bot and potentially attack them. But if I'm
+  // winning, I'm not transfixed on that." Impossible before the evaluator:
+  // bots had no concept of who was winning when they picked fights. Ships
+  // at ZERO (off the tuner surface, no behavior change) until its own
+  // N=600 pool gate passes.
+  if (W.mLeaderPunch) {
+    const lead = cachedLeader(view);
+    if (lead && lead !== fid && owner === lead) gain += W.mLeaderPunch;
+  }
   const margin = myStr - enemy;
   if (margin > 0) return gain * Math.min(1, margin / 2) * W.mAttackMargin;
   return -(1 - margin) * W.mOverreach;

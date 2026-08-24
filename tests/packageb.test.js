@@ -453,3 +453,112 @@ tests.push(
     ok(different, 'composition is hidden — seatings vary by seed');
   }},
 );
+
+// --- m3e48: PACKAGE C session one — the evaluator, the miner's bars, the punch ---
+
+import { positionScore, rankFactions, tableLeader, positionFeatures } from '../src/agents/evaluate.js';
+import { readFileSync } from 'node:fs';
+
+tests.push(
+  { name: 'package C (m3e48): monotone sanity — granting a faction one more empty seat never lowers its position score, and raises it', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    const before = positionScore(s, fid);
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    const free = Object.keys(adjF()).find(r => reg(r)?.kind === 'land' && reg(r).muster > 0
+      && !(s.unitsByRegion[r] || []).length && controllerOf(s, r) !== fid);
+    ok(free, 'the board offers a free seat');
+    const richer = structuredClone(s);
+    richer.controlMarkers = { ...richer.controlMarkers, [free]: fid };
+    ok(positionScore(richer, fid) > before + 1e-9, 'an extra seat strictly raises the glance');
+  }},
+
+  { name: 'package C (m3e48): PRE-REGISTERED — the evaluator flags the owner (F2) as table leader by round 3 of the five-round Lancaster blitz', fn() {
+    const ep = JSON.parse(readFileSync('corpus/inbox/episode-lancaster-lots-of-territories-r5.json', 'utf8'));
+    let s = stateApi.createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    let flagged = null;
+    for (const a of ep.actions) {
+      const r = applyAction(s, a); s = r.state ?? s;
+      if (s.round === 3 && flagged === null) flagged = tableLeader(s);
+      if (s.round > 3) break;
+    }
+    eq(flagged, 'F2', 'an evaluator that cannot see THAT coming is not worth shipping');
+  }},
+
+  { name: 'package C (m3e48): the leader punch — with the key on, the SAME attack scores higher against the table leader\'s holding; at zero (shipped default) nothing anywhere changes', fn() {
+    const s = freshPlanning();
+    const fid = currentQuery(s).faction;
+    const view = viewFor(s, fid);
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    const ADJ2 = adjF();
+    // rig a clear non-self leader: hand another faction three extra seats
+    const other = s.factions.find(f => f !== fid);
+    const rig = structuredClone(view);
+    rig.controlMarkers = { ...rig.controlMarkers };
+    let granted = 0;
+    for (const rid of Object.keys(ADJ2)) {
+      if (granted >= 3) break;
+      const r = reg(rid);
+      if (r?.kind === 'land' && r.muster > 0 && !(rig.unitsByRegion[rid] || []).length && controllerOf(rig, rid) == null) {
+        rig.controlMarkers[rid] = other; granted++;
+      }
+    }
+    ok(granted >= 3 && tableLeader(rig) === other, 'the rigged table has a clear leader who is not us');
+    // a garrisoned holding of the leader, adjacent to our strength
+    const origin = Object.keys(rig.unitsByRegion).find(r => (rig.unitsByRegion[r] || []).some(u => u.faction === fid && u.type !== 'warship'));
+    const target = [...(ADJ2[origin] || [])].find(n => reg(n)?.kind === 'land');
+    ok(origin && target, 'the board offers a border');
+    rig.unitsByRegion = { ...rig.unitsByRegion, [target]: [{ faction: other, type: 'infantry' }] };
+    const q = { type: 'resolveOrder', faction: fid };
+    const act = { faction: fid, type: 'resolveMarch', region: origin, moves: [{ to: target, units: { infantry: 3 } }] };
+    const Won = { ...WEIGHTS_M3E, ...WEIGHTS, mLeaderPunch: 4 };
+    const Woff = { ...WEIGHTS_M3E, ...WEIGHTS };
+    ok(scoreAction(rig, q, act, Won) > scoreAction(rig, q, act, Woff) + 1e-9,
+      'the punch lands on the leader with the key on');
+    eq(Woff.mLeaderPunch, 0, 'and the shipped default is ZERO — built, gated, inert');
+  }},
+);
+
+// --- m3e49: EVAL_V1 — reach lights up the island house ---
+
+import { EVAL_V0, EVAL_V1 } from '../src/agents/evaluate.js';
+
+tests.push(
+  { name: 'EVAL_V1 (m3e49): reach — an army standing by an unheld seat counts conquest potential, and the glance rises with it; V0 stands frozen without the feature', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    const ADJ4 = adjF();
+    // find an unheld seat adjacent to nothing of ours, then stage an army by it
+    const seat = Object.keys(ADJ4).find(rid => {
+      const r = reg(rid);
+      return r?.kind === 'land' && r.muster > 0 && controllerOf(s, rid) == null
+        && !(s.unitsByRegion[rid] || []).length
+        && [...(ADJ4[rid] || [])].some(n => reg(n)?.kind === 'land' && !(s.unitsByRegion[n] || []).length && controllerOf(s, n) == null);
+    });
+    ok(seat, 'the board offers a takeable seat');
+    const camp = [...(ADJ4[seat] || [])].find(n => reg(n)?.kind === 'land' && !(s.unitsByRegion[n] || []).length && controllerOf(s, n) == null);
+    const staged = structuredClone(s);
+    staged.unitsByRegion = { ...staged.unitsByRegion, [camp]: [{ faction: fid, type: 'infantry' }, { faction: fid, type: 'infantry' }] };
+    const f0 = positionFeatures(s, fid), f1 = positionFeatures(staged, fid);
+    ok(f1.reach > f0.reach, 'the staged army sees the seat it could take');
+    ok(positionScore(staged, fid, EVAL_V1) - positionScore(s, fid, EVAL_V1)
+       > positionScore(staged, fid, EVAL_V0) - positionScore(s, fid, EVAL_V0) - 1e-9,
+      'under V1 the staging is worth strictly more than V0 credits — reach is the difference');
+    eq(EVAL_V0.eReach, undefined, 'V0 frozen without the feature — evaluator lineage discipline');
+  }},
+
+  { name: 'EVAL_V1 (m3e49): PRE-REGISTERED CONVERSION — Tudor awesomesauce, invisible to V0 (rank 5-6 at mid-game), ranks top-2 by mid under reach', fn() {
+    const ep = JSON.parse(readFileSync('corpus/inbox/episode-tudor-awesomesauce-r10.json', 'utf8'));
+    let s = stateApi.createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    let midRank = null;
+    for (const a of ep.actions) {
+      const r = applyAction(s, a); s = r.state ?? s;
+      if (s.round === 5 && midRank === null) midRank = rankFactions(s).findIndex(x => x.fid === 'F3') + 1;
+      if (s.round > 5) break;
+    }
+    ok(midRank !== null && midRank <= 2, `the fleet lights up before it sails (mid-game rank ${midRank})`);
+  }},
+);
