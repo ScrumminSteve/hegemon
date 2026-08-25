@@ -425,3 +425,10 @@ tests.push(
     ok(/unheld|open/i.test(body.textContent.toLowerCase()), 'the open-gate ring is in the legend');
   }},
 );
+
+tests.push(
+  { name: 'the Shadow Crown is REACHABLE (m3e55b): the bot-policy selector offers it — a policy that ships without a door is a phantom feature (the m3a2 lesson, relearned)', fn() {
+    const opts = [...document.querySelectorAll('#spectate-policy option')].map(o => o.value);
+    ok(opts.includes('shadow'), `policy options: ${opts.join(', ')}`);
+  }},
+);
