@@ -86,6 +86,10 @@ function mineEpisode(file) {
   if (!winner) return { reason: 'no winner (unfinished or bug-report episode)' };
   const controller = ep.meta?.seatControllers?.[winner];
   if (controller !== 'human') return { reason: `winner ${winner} controlled by ${controller ?? 'unknown'} — not a human win` };
+  // F2 house takeover (m3e53): a possessed game may carry BOT-played opening
+  // rounds under a 'human' final controller — the book learns openings, so
+  // takeover episodes are excluded from yield (verification still applies).
+  if (ep.meta?.takeovers?.length) return { reason: `takeover game (${ep.meta.takeovers.length} possession${ep.meta.takeovers.length > 1 ? 's' : ''}) — openings must be purely human` };
 
   // Stepwise replay: reconstruct the round each action lands in, harvest the
   // human winner's planning submissions as we go, verify the final hash.

@@ -24,7 +24,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e51';
+export const BUILD_ID = 'm3e54';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -47,6 +47,25 @@ const spectate = { on: false, timer: null, agents: null, policy: null, rng: null
 // the exception, per the banked information-access contract.
 // ---------------------------------------------------------------------------
 const mixed = { human: null, policy: 'heuristic', agents: null, key: null, rng: null, timer: null };
+// F2 (owner design, banked m3e9, shipped m3e53): HOUSE TAKEOVER — while
+// spectating or playing, seize control of any house mid-game (rescue a
+// dying bot house; hand your own to a bot). Every possession is recorded:
+// the corpus must know which rounds were human hands (mine.mjs excludes
+// takeover games from book yield — openings must be purely human).
+export const _mixedForTests = () => mixed;
+export const takeovers = [];
+export function takeControl(fid) {
+  if (!game || game.phase === 'gameOver' || fid === mixed.human) return;
+  takeovers.push({ atAction: game.actionLog.length, round: game.round, from: mixed.human, to: fid });
+  const was = mixed.human;
+  mixed.human = fid;
+  mixed.agents = null; mixed.key = null; // the old seat needs a bot chair
+  _viewCache = null;
+  if (spectate.on) { spectate.on = false; clearTimeout(spectate.timer); spectate.timer = null; }
+  decisionKey = null; // the panel comes to the new house's decision
+  flash(`⚑ You now command ${fName(fid)}${was ? ` — ${fName(was)} passes to a bot` : ''}.`);
+  render();
+}
 const isBotSeat = fid => !!mixed.human && fid !== mixed.human;
 
 let _viewCache = null;
@@ -274,9 +293,32 @@ function dispatch(action) {
     render();
   } catch (e) {
     telemetry.rejections.push({ atAction: game.actionLog.length, type: action.type, faction: action.faction, error: e.message, thinkMs });
-    flash(e.message);
+    // F7 · SEV-1 (Arman, PANEL_STUDY session 3): a first-time player attempted
+    // the SAME illegal march six times, eight minutes stuck, because the
+    // rejection stated the rule but never the REMEDY. The engine still just
+    // says no; the UI now says what WOULD be legal — and after a repeat,
+    // says plainly that the plan (not the click) is the problem.
+    let msg = e.message;
+    try {
+      if (/march/i.test(action.type) && action.region) {
+        const { peaceful, battle } = marchCandidates(action.faction, action.region);
+        const legal = [...peaceful, ...battle];
+        const tried = (action.moves || []).map(m => m.to);
+        const bad = tried.find(t => !legal.includes(t));
+        if (bad) {
+          msg += legal.length
+            ? ` — ${rName(bad)} cannot be reached from ${rName(action.region)} this round. Your true reach (lit on the map): ${legal.slice(0, 4).map(rName).join(', ')}${legal.length > 4 ? '…' : ''}.`
+            : ` — this army has no legal destination at all this round; choose a different order or region.`;
+        }
+      }
+      const rejKey = `${action.type}:${action.region ?? ''}:${JSON.stringify((action.moves || []).map(m => m.to))}`;
+      _lastReject = rejKey === _lastReject.key ? { key: rejKey, count: _lastReject.count + 1 } : { key: rejKey, count: 1 };
+      if (_lastReject.count >= 2) msg += ` (attempt ${_lastReject.count}: the plan itself is illegal — no amount of re-clicking will change the answer)`;
+    } catch { /* guidance must never mask the original error */ }
+    flash(msg);
   }
 }
+let _lastReject = { key: null, count: 0 };
 
 
 function restoreFromText(text) {
@@ -498,6 +540,16 @@ function overlayState(svg) {
     // Item 4: the unit row rides higher so the bigger silhouettes never
     // touch the (also bigger) fort marks or the order badge lane.
     units.forEach((u, i) => g.appendChild(unitGlyph(u, x0 + i * step, y - (isPort ? 26 : 46))));
+  }
+  // F9 (Arman, PANEL_STUDY session 3): an UNOCCUPIED seat announces itself —
+  // dashed ring on the fort mark of any castle/citadel nobody holds. A free
+  // castle is the most actionable fact on the board (blunder #9 taught the
+  // bots seat hunger; the ring teaches the humans). Dynamic layer, so it
+  // appears and vanishes as gates open and close.
+  for (const r of Object.values(byId)) {
+    if (r.kind !== 'land' || !r.muster) continue;
+    if (controllerOf(shown(), r.id)) continue;
+    g.appendChild(el('circle', { cx: r.x + 31, cy: r.y - 47, r: 22, class: 'open-seat-ring' }));
   }
   const staged = (ui.mode === 'planning' && ui.assignments) ? ui.assignments : null;
   const stagedFor = staged ? visibleQueries()[Math.min(ui.activeQuery ?? 0, Math.max(0, visibleQueries().length - 1))]?.faction : null;
@@ -778,7 +830,9 @@ function renderTurnPanel() {
     if (wantsStage && stageState.minimized && !stageState.batch) {
       html += `<button class="stage-reopen" data-stage-open>⤢ Return to stage</button>`;
     }
-    html += formFor(active);
+    // F10 (Arman): scrollToDecision brings the decision into view once; the
+    // glow keeps saying "THIS is the ask" after a novice's eyes wander.
+    html += `<div class="decision-live">${formFor(active)}</div>`;
     panel.innerHTML = html;
     panel.querySelector('[data-stage-open]')?.addEventListener('click', () => {
       stageState.minimized = false; renderTurnPanel();
@@ -829,7 +883,7 @@ export function roundsVerdict(state) {
   for (const c of CRITERIA) {
     if (tied.every(f => c.of(f) < c.of(w))) {
       const vals = [w, ...tied].map(f => Math.abs(c.of(f)));
-      return `tied at ${seatsControlled(state, w)} seats with ${tied.map(fN).join(' and ')} — broken by ${c.name} (${vals.join(' vs ')})`;
+      return `tied at ${seatsControlled(state, w)} seats with ${tied.map(fN).join(' and ')} — broken by ${c.name} (${vals.join(' vs ')}) · tiebreakers per FAQ v2.0 errata: land areas → supply → ${crownName}`;
     }
   }
   return `tied at ${seatsControlled(state, w)} seats with ${tied.map(fN).join(' and ')}`;
@@ -1614,10 +1668,15 @@ function rallyForm(q) {
 function battleBanner() {
   const c = shown().combat;
   const s = combatStrengths(shown());
+  // F8 (Arman, PANEL_STUDY session 3): the tally shows WHAT is fighting,
+  // not just totals — unit silhouettes per side, routed ones faded.
+  const bbUnits = fid => (shown().unitsByRegion[c.region] || [])
+    .filter(u => u.faction === fid)
+    .map(u => `<svg class="bb-unit${u.routed ? ' routed' : ''}" viewBox="0 0 30 30" style="color:${fColor(fid)}"><use href="#i-unit-${u.type}" width="30" height="30"></use></svg>`).join('');
   return `<div class="battle">
-    <div class="battle-side" style="border-color:${fColor(c.attacker)}">${fGlyph(c.attacker)} ${esc(fName(c.attacker))}<b>${s.attacker}</b></div>
+    <div class="battle-side" style="border-color:${fColor(c.attacker)}">${fGlyph(c.attacker)} ${esc(fName(c.attacker))}<b>${s.attacker}</b><span class="bb-units">${bbUnits(c.attacker)}</span></div>
     <div class="battle-vs">⚔ ${esc(rName(c.region))}</div>
-    <div class="battle-side" style="border-color:${fColor(c.defender)}">${fGlyph(c.defender)} ${esc(fName(c.defender))}<b>${s.defender}</b></div>
+    <div class="battle-side" style="border-color:${fColor(c.defender)}">${fGlyph(c.defender)} ${esc(fName(c.defender))}<b>${s.defender}</b><span class="bb-units">${bbUnits(c.defender)}</span></div>
   </div>` + battleCards(c) +
     `<div class="hint">⚔ Battle for <b>${esc(rName(c.region))}</b> — ${fGlyph(c.attacker)} marching from ${esc(rName(c.origin))}.` +
     (c.supports.length ? `<br>Backing: ${c.supports.map(sp =>
@@ -2006,6 +2065,27 @@ function renderLog() {
 }
 
 // ---------- top-level render ----------
+// F9b (Arman, session 3 — the dropped half, recovered by owner audit m3e54):
+// "icons are hard to UNDERSTAND: bombard, unoccupied castle/stronghold."
+// The ring fixed the second; the LEGEND fixes understanding wholesale —
+// every map glyph named in the theme's own words, one collapsible.
+function renderLegend() {
+  const el = $('#legend-body');
+  if (!el || el.childElementCount) return; // static content, drawn once per theme
+  const row = (icon, name, note) => `<div class="legend-row">${pic(icon)}<b>${esc(name)}</b><span>${esc(note)}</span></div>`;
+  el.innerHTML =
+    row('i-unit-infantry', theme.terms?.uInfantry ?? 'Levy', 'foot soldiers — strength 1') +
+    row('i-unit-cavalry', theme.terms?.uCavalry ?? 'Knights', 'horse — strength 2') +
+    row('i-unit-warship', theme.terms?.uWarship ?? 'Carrack', 'fleet — fights and ferries at sea') +
+    row('i-unit-siege_engine', theme.terms?.uSiege ?? 'Bombard', 'siege engine — strength counts only when ATTACKING a castle or citadel') +
+    row('i-fort-castle', 'Castle', 'a seat — musters 1, counts toward the 7 that win the war') +
+    row('i-fort-citadel', 'Citadel', 'a great seat — musters 2, counts the same toward 7') +
+    `<div class="legend-row"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,215,120,0.9)" stroke-width="2" stroke-dasharray="4 3"/></svg><b>Open gates</b><span>an UNHELD seat — nobody owns it, walk in and it is yours</span></div>` +
+    row('i-port', 'Port', 'harbor — where fleets are built and sheltered') +
+    row('i-supply', 'Supply', 'icons on the land feed your supply track — armies starve past it') +
+    row('i-coin', theme.terms?.authority ?? 'Livery', 'income — spent on musters, bids, and control markers');
+}
+
 function renderHouses() {
   const el = $('#houses-panel');
   if (!el) return;
@@ -2016,7 +2096,12 @@ function renderHouses() {
       <span title="seats (win at 7)">${pic('i-fort-castle')}${seatsControlled(shown(), f)}</span>
       <span title="supply">${pic('i-supply', 'var(--bone-dim)')}${shown().supply[f]}</span>
       <span title="${esc(theme.terms.authority)}">${pic('i-coin')}${shown().authority[f]}</span>
+      ${f === mixed.human
+        ? '<span class="house-mine" title="your house">⚑ yours</span>'
+        : `<button class="house-take" data-take="${f}" title="take control of ${esc(fName(f))} — its current hand, its fate">⚑ take</button>`}
     </div>`).join('');
+  el.querySelectorAll('[data-take]').forEach(b =>
+    b.addEventListener('click', () => takeControl(b.dataset.take)));
 }
 
 // Owner (on-device, m3e39): when a decision arrives for the HUMAN, the
@@ -2104,6 +2189,7 @@ function render() {
   overlayState(svg);
   renderTurnPanel();
   renderHouses();
+  renderLegend();
   renderTracks();
   renderLog();
   renderInspector();
@@ -2225,6 +2311,7 @@ function init() {
       seatControllers: Object.fromEntries(game.factions.map(f =>
         [f, mixed.human ? (f === mixed.human ? 'human' : mixedAgents()[f].id) : 'human'])), // M3.c: bots self-declare
     });
+    if (takeovers.length) ep.meta.takeovers = takeovers.slice(); // F2: possession history — the corpus must know
     ep.telemetry = telemetry; // Tier-2 sidecar: latency/undo/rejection observations
     exportWithFallback(JSON.stringify(ep, null, 1),
       `episode-${(title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-r${game.round}.json`,

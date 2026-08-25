@@ -4,6 +4,96 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## THE OWNER'S AUDIT — TWO DROPPED ITEMS RECOVERED (m3e54)
+
+Owner called a Swiss-cheese check on the m3e51-53 arc and was RIGHT:
+Arman's F9 was "icons hard to see/understand: BOMBARD, unoccupied
+castle/stronghold" — m3e52 shipped the second half (open-gate rings) and
+silently dropped the first, along with the legend idea floated to fix
+"understand" wholesale. Both recovered:
+
+**F9b — the map legend**: new collapsible above Game options — every map
+glyph named in the theme's own words: all four units (the bombard finally
+explained: "strength counts only when ATTACKING a castle or citadel"),
+castle vs citadel, the open-gate ring, port, supply, livery.
+
+**F9c — the bombard silhouette thickened**: strokes 2.2 → 3.0, bigger
+stone — the thinnest unit mark on the map now reads at table distance.
+
+Process note banked: build slates are audited against the FULL feedback
+list at close, not memory — every tester item gets shipped/deferred/
+dropped status IN WRITING before the zip.
+
+*Verify:* `findstr legend-body game.html`; `npm test` → "F9b legend"
+smoke golden. On device: open "Map legend" above Game options.
+
+Suite: **299**.
+
+---
+
+---
+
+## F2 SHIPS — HOUSE TAKEOVER, THE HUMAN POSSESSION (m3e53)
+
+The owner's oldest banked design (F2, m3e9 G3 walk: "while spectating or
+playing, allow me to switch to any house — lose it or try to save it")
+finally ships, four months and forty builds later, on the night the
+Shadow Crown was conceived. Fitting: the human gets possession first.
+
+**⚑ take** on every non-human row of the scoreboard's houses panel —
+one tap seizes that house mid-game (its current hand, its fate); your old
+house passes to a bot; from spectate it drops you INTO the table.
+The panel comes to your new house's next decision.
+
+**Corpus honesty travels with it:** every possession is recorded in the
+episode (`meta.takeovers`: action index, round, from, to), and
+**mine.mjs excludes takeover games from book yield** — openings must be
+purely human hands. Verification and credit-mining still apply in full.
+
+*Verify:* `findstr house-take styles.css`; `npm test` → "F2 house
+takeover" smoke golden (seize → flag moves → possession on the record).
+On device: open Scoreboard → houses list → ⚑ take on any rival.
+
+Suite: **298**.
+
+---
+
+---
+
+## THE ARMAN BUILD — SESSION-3 FIXES SHIP (m3e52, UI turn)
+
+**F7 · SEV-1 · the impossible-target loop, closed.** Rejections on marches
+now name the REMEDY, not just the rule: which regions this army can truly
+reach (mirroring the lit map), or that it has no legal destination at all.
+A repeat of the same illegal plan escalates plainly: "attempt N — the plan
+itself is illegal, no amount of re-clicking will change the answer."
+Guidance is wrapped so it can never mask the engine's original error.
+
+**F8 — the battle tally shows WHAT is fighting**: unit silhouettes per
+side on the battle banner, routed ones faded, tinted by house.
+
+**F9 — open gates announce themselves**: any castle/citadel nobody holds
+gets a dashed golden ring on its fort mark, live on the dynamic layer so
+it appears and vanishes as gates open and close.
+
+**F10 — the live decision keeps saying so**: the active decision card
+carries a breathing glow and accent bar after scrollToDecision's one-shot
+entrance (reduced-motion honored).
+
+**Verdict source line**: standings-tie chronicles now cite their law —
+"tiebreakers per FAQ v2.0 errata: land areas → supply → Crown" (the
+Aug 24 tiebreaker scare, banked so no one re-litigates page 16).
+
+*Verify:* `findstr open-seat-ring styles.css` prints the ring style;
+`npm test` → "F9 (m3e52)" smoke golden. On device: reject the same march
+twice and read the second message.
+
+Suite: **297**.
+
+---
+
+---
+
 ## V5 — THE PUNCH SHIPS LIVE (m3e51)
 
 **WEIGHTS_V5 baked**: the first evaluator-armed champion. Night7 tuned the

@@ -390,3 +390,38 @@ tests.push(
     ok(!/shown\(\)\.actionLog/.test(src), 'no code path reads actionLog off shown() — it may be a redacted view');
   }},
 );
+
+// --- m3e52: Arman session-3 fixes, smoke-level assertions ---
+tests.push(
+  { name: 'F9 (m3e52): open-seat rings render for unheld castles at setup — and the css class exists', async fn() {
+    const rings = document.querySelectorAll('.open-seat-ring');
+    ok(rings.length > 0, 'at setup, the board has open gates and they announce themselves');
+    const css = (await import('node:fs')).readFileSync('styles.css', 'utf8');
+    ok(css.includes('.open-seat-ring'), 'the ring is styled');
+    ok(css.includes('.decision-live'), 'F10: the live-decision glow is styled');
+    ok(css.includes('.bb-unit'), 'F8: battle-tally unit silhouettes are styled');
+  }},
+);
+
+tests.push(
+  { name: 'F2 house takeover (m3e53): every non-human house row offers ⚑ take; seizing one moves the human flag, records the possession, and the old seat gets a bot', async fn() {
+    const { takeControl, takeovers, _mixedForTests } = await import('../src/game/app.js');
+    const rows = document.querySelectorAll('.house-take');
+    ok(rows.length >= 5, `takeover buttons render (${rows.length})`);
+    const before = _mixedForTests().human;
+    const target = [...rows].map(b => b.dataset.take).find(f => f !== before);
+    takeControl(target);
+    eq(_mixedForTests().human, target, 'the flag moved');
+    ok(takeovers.length === 1 && takeovers[0].to === target, 'the possession is on the record');
+    ok(document.querySelector('.house-mine'), 'the seized house wears ⚑ yours');
+  }},
+);
+
+tests.push(
+  { name: 'F9b legend (m3e54): the map legend renders — every unit and mark named, the bombard explained, the open-gate ring included', fn() {
+    const body = document.querySelector('#legend-body');
+    ok(body && body.childElementCount >= 8, `legend rows populated (${body?.childElementCount ?? 0})`);
+    ok(/bombard|siege/i.test(body.textContent), 'the bombard is named and explained');
+    ok(/unheld|open/i.test(body.textContent.toLowerCase()), 'the open-gate ring is in the legend');
+  }},
+);

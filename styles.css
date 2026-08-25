@@ -445,3 +445,30 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 
 .brief-ref p { margin: .35em 0; font-size: 12.5px; line-height: 1.45; }
 .brief-ref .dim { opacity: .6; font-style: italic; }
+
+
+/* --- m3e52: Arman session-3 fixes --- */
+/* F8: unit silhouettes on the battle tally */
+.bb-units { display: inline-flex; gap: 2px; margin-left: 8px; vertical-align: middle; }
+.bb-unit { width: 22px; height: 22px; }
+.bb-unit.routed { opacity: 0.4; }
+/* F9: an unoccupied seat announces itself */
+.ic-fort-open { filter: brightness(1.35) drop-shadow(0 0 4px rgba(255, 215, 120, 0.9)); }
+.open-seat-ring { fill: none; stroke: rgba(255, 215, 120, 0.85); stroke-width: 2.5; stroke-dasharray: 5 4; pointer-events: none; }
+/* F10: the live decision keeps saying so */
+.decision-live { border-left: 3px solid var(--accent, #c9a227); padding-left: 10px; border-radius: 4px; animation: decision-breathe 2.4s ease-in-out infinite; }
+@keyframes decision-breathe {
+  0%, 100% { box-shadow: 0 0 0 rgba(201, 162, 39, 0); }
+  50% { box-shadow: 0 0 14px rgba(201, 162, 39, 0.35); }
+}
+@media (prefers-reduced-motion: reduce) { .decision-live { animation: none; } }
+/* F2 (m3e53): house takeover */
+.house-take { margin-left: auto; font-size: 11px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--bone-dim, #888); background: transparent; color: inherit; cursor: pointer; opacity: 0.75; }
+.house-take:hover { opacity: 1; border-color: var(--accent, #c9a227); }
+.house-mine { margin-left: auto; font-size: 11px; opacity: 0.85; color: var(--accent, #c9a227); }
+
+/* F9b (m3e54): the map legend */
+.legend-body { display: grid; gap: 5px; padding: 6px 2px; }
+.legend-row { display: grid; grid-template-columns: 22px auto 1fr; gap: 8px; align-items: center; font-size: 12.5px; }
+.legend-row svg { width: 18px; height: 18px; }
+.legend-row span { opacity: 0.8; }
