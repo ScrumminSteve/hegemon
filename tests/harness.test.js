@@ -74,12 +74,15 @@ tests.push(
     // m3e42: the lineage grows — V3 (night4, machine-learned) is active;
     // V2 stands preserved exactly as V1 does. The anchor chain: V1 → V2 → V3.
     // m3e47: V4 (night5, POOL-trained) takes the crown; V3 preserved frozen.
-    const { WEIGHTS_V3, WEIGHTS_V4 } = await import('../src/agents/heuristic.js');
-    ok(WEIGHTS === WEIGHTS_V4, 'the active default is v4 — the pool-trained champion');
+    const { WEIGHTS_V3, WEIGHTS_V4, WEIGHTS_V5 } = await import('../src/agents/heuristic.js');
+    // m3e51: V5 (night7, EVALUATOR-ARMED) takes the crown; V4 preserved frozen.
+    ok(WEIGHTS === WEIGHTS_V5, 'the active default is v5 — the evaluator-armed champion');
     ok(Object.isFrozen(WEIGHTS_V3) && Math.abs(WEIGHTS_V3.wSeat - 7.7985) < 1e-3, 'v3 preserved, byte-frozen, re-fieldable in a line');
-    ok(Math.abs(WEIGHTS_V4.wSeat - 7.8242) < 1e-3, 'v4 carries the gated night5 vector');
-    ok(WEIGHTS_V4.bidCrownUrgency > 0 && WEIGHTS_V4.bidJitter > 0, 'v4 tunes the m3e46 auction keys — first vector whose surface includes them');
-    ok(WEIGHTS_V4.vCavalry > WEIGHTS_V4.vInfantry, 'casualty ordering holds under v4');
+    ok(Object.isFrozen(WEIGHTS_V4) && Math.abs(WEIGHTS_V4.wSeat - 7.8242) < 1e-3, 'v4 preserved, byte-frozen, re-fieldable in a line');
+    eq(WEIGHTS_V4.mLeaderPunch, undefined, 'v4 predates the punch — its surface never had the key');
+    ok(Math.abs(WEIGHTS_V5.wSeat - 7.9735) < 1e-3, 'v5 carries the gated night7 vector');
+    ok(WEIGHTS_V5.mLeaderPunch > 4 && WEIGHTS_V5.mLeaderPunch < 4.2, 'THE PUNCH SHIPS LIVE — first evaluator-powered behavior in a shipped default');
+    ok(WEIGHTS_V5.vCavalry > WEIGHTS_V5.vInfantry, 'casualty ordering holds under v5');
     ok(Object.isFrozen(WEIGHTS_V2) && Math.abs(WEIGHTS_V2.wSeat - 7.7052) < 1e-3, 'v2 preserved, byte-frozen');
     ok(Math.abs(WEIGHTS_V2.wSeat - 7.7052) < 1e-3, 'v2 carries the verified night1 vector');
     ok(Object.keys(WEIGHTS_V2).length === Object.keys(WEIGHTS_V1).length, 'same key set — the tuning surface is stable');
@@ -98,9 +101,11 @@ tests.push(
       return Object.keys(FULL).filter(k => FULL[k] > 0 && !(FULL.bookBias === 0 && k.startsWith('book')));
     };
     const bare = derive({});
-    const seeded = derive({ mLeaderPunch: 4 });
-    ok(!bare.includes('mLeaderPunch'), 'zeroed punch stays off the bare surface — shipped behavior untouched');
-    ok(seeded.includes('mLeaderPunch'), 'seeded positive, the punch joins the search');
+    // the punch graduated to the live surface at the V5 bake (m3e51); the
+    // overlay mechanism is tested with a key that does not exist yet.
+    ok(bare.includes('mLeaderPunch'), 'the punch sits on the bare surface now — it shipped');
+    const seeded = derive({ mHypotheticalNextTerm: 2 });
+    ok(seeded.includes('mHypotheticalNextTerm'), 'seeded positive, a gated key joins the search');
     eq(seeded.length, bare.length + 1, 'and it is the only addition');
   }},
 );

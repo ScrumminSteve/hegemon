@@ -36,7 +36,7 @@ export function overlayWeights(base, overlay) {
 
 export const PROFILES = Object.freeze({
   // The shipped champion, unmodified — the pool's honest yardstick.
-  v3: { desc: 'the shipped champion, unmodified (V4 since m3e47; name kept for checkpoint compat)', overlay: null },
+  v3: { desc: 'the shipped champion, unmodified (name kept for checkpoint compat across bakes)', overlay: null },
 
   // The prey. The predator-among-prey environment REQUIRES weak animals:
   // the G1 legacy construction (frozen V1 weights, adjacency-only threat,

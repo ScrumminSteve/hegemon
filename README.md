@@ -4,6 +4,44 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## V5 — THE PUNCH SHIPS LIVE (m3e51)
+
+**WEIGHTS_V5 baked**: the first evaluator-armed champion. Night7 tuned the
+61-key surface (the punch seeded at 4.0 via `--start`, landed 4.082 — the
+tuner kept it at full strength), best at iter 35, verified 21.7%
+[16.9–27.3]. **G8 (seed 98000, N=600): V5 16.8% [14.1–20.0] vs V4 13.5%
+— floor above stock, 101 v 81 paired wins.** G7's lesson banked: the
+hand-set punch alone missed the floor by 1.0; the term needed the sixty
+quiet re-balances around it. Lineage V1→V2→V3→V4→V5, every ancestor
+frozen and re-fieldable.
+
+**Production bots now glance at the table before picking fights** —
+mLeaderPunch is live in the shipped default, powered by evaluate.js. Owner
+doctrine, mechanized: "attack the strongest, unless I'm winning."
+
+Honesty ledger: the pool world swings hard block-to-block (V4 read 20.3 /
+15.2 / 18.5 / 13.5 — aggregate ≈ null, as a table of near-equals plus one
+prey must). V5's claim is strictly relative: it beats V4 on common seeds.
+
+Two goldens updated to the post-bake truth (the punch's "ships at zero"
+premise was overturned BY a passed gate — the correct way for a golden to
+die); lineage golden extended: V5 active, V4 frozen without the punch key.
+
+**PENDING OWNER RULINGS (from the design session, not yet re-cut into the
+board):** (1) the NEMESIS model — one strong hidden opponent over five
+equals; (2) its possessed form, THE SHADOW CROWN — the strong brain
+migrates mid-game to the best-positioned bot house via tableLeader().
+Recommendation on the table: rule in both; fixed Nemesis = Shadow Crown
+with hopping disabled.
+
+*Verify:* `findstr WEIGHTS_V5 src\agents\heuristic.js` · `npm test` (296)
+
+Suite: **296**.
+
+---
+
+---
+
 ## G7: THE PUNCH STAYS CAGED — AND GETS A TUTOR (m3e50)
 
 **G7 verdict (seed 97000, N=600): NO BAKE.** Punch (mLeaderPunch 4) 20.5%

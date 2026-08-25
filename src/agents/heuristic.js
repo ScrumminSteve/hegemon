@@ -303,8 +303,93 @@ export const WEIGHTS_V4 = Object.freeze({
   portShips: 0.7789884714121231,
 });
 
+
+/**
+ * WEIGHTS_V5 — the EVALUATOR-ARMED vector (m3e51). First champion whose
+ * surface includes the leader punch (mLeaderPunch, Package C): SPSA night7,
+ * runSeed 28252097, 60 iters x 40 games, --start runs/punch.json (punch
+ * seeded 4.0, landed 4.082 — the tuner kept it at full strength), incumbent
+ * pool:blitz,crescendo,denial,prey,v3, best at iter 35, tuner-verified
+ * 21.7% [16.9-27.3] N=240. Lineage: V1 -> V2 -> V3 -> V4 -> V5.
+ * Gates, seed 98000, N=600 each, identical blocks:
+ *   G8: V5 16.8% [14.1-20.0] vs V4 13.5% — floor above stock, 101 v 81
+ *       paired wins (+20, the same class as every bake in the lineage).
+ *   G7 context (hand-set punch 4, no tuition): 20.5 vs 18.5, floor missed
+ *       by 1.0 — the term needed the sixty quiet re-balances around it.
+ * Honesty note: the pool world swings hard block-to-block (V4 read 20.3 /
+ * 15.2 / 18.5 / 13.5 across four blocks — aggregate ~= null, as a table of
+ * near-equals plus one prey must). V5's claim is strictly RELATIVE: it
+ * beats V4 head-to-head on common seeds. V4 stands below, re-fieldable.
+ * With this bake the PUNCH SHIPS LIVE: production bots now glance at the
+ * table (evaluate.js) before picking fights — the first evaluator-powered
+ * behavior, per owner doctrine: "attack the strongest, unless I'm winning."
+ */
+export const WEIGHTS_V5 = Object.freeze({
+  mSeatHunger: 2.6127450880921277,
+  mSeaTenure: 1.1835095077793296,
+  tOpportunity: 0.831644202282274,
+  tTransport: 0.6271710783130954,
+  bidCrownUrgency: 1.185472182482115,
+  bidWarUrgency: 1.011651343187722,
+  bidMusterUrgency: 0.7972146863614418,
+  bidJitter: 0.6023004644345392,
+  mLeaderPunch: 4.082285615914251,
+  vInfantry: 0.9765750755228191,
+  vCavalry: 2.2352657192685235,
+  vWarship: 1.4923915695070311,
+  vSiege: 2.624657862645955,
+  wSeat: 7.973459156632093,
+  wCitadelBonus: 3.2195479734140853,
+  wIcons: 0.9840197591162121,
+  wLand: 1.678525783934811,
+  wSea: 0.785497910769622,
+  pDefend: 1.5611704300024,
+  pSupport: 1.1271282784694507,
+  pMarch: 1.464738207676763,
+  pRally: 1.2536221576261921,
+  pRaid: 0.8762697877747885,
+  pRallyFort: 1.4622812334931639,
+  pStarBonus: 0.4123727360983526,
+  mAttackMargin: 1.6701784176428973,
+  mOverreach: 2.2380580688834497,
+  mStandDown: 0.3050885835989645,
+  mAbandonSeat: 2.93338238457374,
+  mLeaveControl: 0.7891325280399855,
+  rMusterPoint: 1.9739995201343778,
+  rAuthority: 0.9754200445982467,
+  muSpend: 2.0879452847692517,
+  muCavalry: 0.4936286787712912,
+  muShip: 0.3785812475803657,
+  raidHit: 1.9975139463253266,
+  raidSupport: 0.9703299827034282,
+  raidConsolidate: 0.5908023709465579,
+  bidSpendFrac: 0.4063277940064291,
+  bidReserve: 1.99725984373898,
+  bidOverspend: 1.4826358709913707,
+  bidInitiative: 1.0049000853793209,
+  bidProwess: 0.8057230471553303,
+  bidCommand: 0.9431378391399637,
+  invSpendFrac: 0.48690369844322673,
+  invReserve: 0.9994538384489533,
+  invThreatScale: 0.9174845105150441,
+  invOverspend: 1.172952241746156,
+  cStakeScale: 1.0397382558218338,
+  cHoard: 0.5027737755094109,
+  cSwords: 0.5743057198567281,
+  cForts: 0.5144432403630755,
+  cBlade: 0.9938575144274181,
+  cAbility: 0.9639739692061132,
+  rtSafety: 1.4427376543888057,
+  rtHome: 1.168932209970031,
+  courierPeek: 1.1874381482663157,
+  courierPass: 1.0160177677240363,
+  courierSwap: 0.30432689570623284,
+  peekBury: 1.0389127553505626,
+  portShips: 0.7809107663086907,
+});
+
 /** The ACTIVE default vector — what shipped bots play. */
-export const WEIGHTS = WEIGHTS_V4;
+export const WEIGHTS = WEIGHTS_V5;
 
 /**
  * Package B additions (M3.e) — NEW keys only, so the V1/V2 freeze holds:

@@ -115,3 +115,35 @@ the data to justify any cap is already accumulating per episode.
 First HUMAN LOSS in the corpus. A novice loss, not the owner's — but a
 bot won a standings tie against a human at a live table, and mine.mjs
 correctly refused to book it (books learn only from human wins).
+
+---
+
+## SESSION 4 — OWNER, NEVILLE RAID GAME (m3e50 era, Aug 24 2026)
+*Episode: corpus/inbox/episode-neville-raid-r7.json — F6 Neville human WIN
+r7, ⭐⭐⭐, 23 raid events — the corpus's first sea-and-raids campaign.*
+
+### E1 · ENGINE · PORT SHIPS SURVIVE CONQUEST (owner screenshot, Alnwick)
+Traced in-episode: r5 action #292, F5 (Percy) took L28 Alnwick from F3
+(Tudor) by battle — F3's warship in P06 remained, leaving an enemy ship
+in Percy's port (the owner's screenshot). The vacate-path purge exists
+(actionPhase.js ~324, FAQ v2.0) but NO purge runs on ownership change by
+CONQUEST / retreat-loss / reversion; trace also shows a vacate at #285
+that failed to purge — the guard needs to move from "the marcher's origin
+housekeeping" to "any L28-owner change." RULING NEEDED before fix:
+rev bump 11→12; episodes whose replays gain portShipsLost events go
+stale — including this raid game itself.
+
+### F12 · King's tiebreaker view: house strength inline (seats; possibly
+supply + coin) next to each name — judge relative strength at a glance
+when breaking ties.
+### F13 · Status icons prefixed everywhere names are listed (crown/king,
+sword/marshal, small-council top) — not just the tiebreaker view.
+### F14 · Nanne Beauchamp at house level should surface the battle
+scoreboard.
+### F15 · Supply-shortfall destruction railroads by name order — let the
+player pick WHICH territory loses the unit. (Same railroad family as F7.)
+### F16 · Reaver card: keep the flipped card visible while assigning
+loser penalty / winner benefit.
+### F17 · Raid order options: never list invalid choices (no march order
+when march unavailable; no defend without a raid star). (F7 family:
+the menu should know the law.)

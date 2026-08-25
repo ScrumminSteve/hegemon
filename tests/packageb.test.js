@@ -513,10 +513,12 @@ tests.push(
     const q = { type: 'resolveOrder', faction: fid };
     const act = { faction: fid, type: 'resolveMarch', region: origin, moves: [{ to: target, units: { infantry: 3 } }] };
     const Won = { ...WEIGHTS_M3E, ...WEIGHTS, mLeaderPunch: 4 };
-    const Woff = { ...WEIGHTS_M3E, ...WEIGHTS };
+    const Woff = { ...WEIGHTS_M3E, ...WEIGHTS, mLeaderPunch: 0 };
     ok(scoreAction(rig, q, act, Won) > scoreAction(rig, q, act, Woff) + 1e-9,
       'the punch lands on the leader with the key on');
-    eq(Woff.mLeaderPunch, 0, 'and the shipped default is ZERO — built, gated, inert');
+    // m3e48 shipped this at zero, built-but-caged; night7 passed G8 and the
+    // cage opened — the punch is LIVE in the default as of the V5 bake.
+    ok(WEIGHTS.mLeaderPunch > 0, 'the punch ships live (V5, m3e51) — first evaluator-powered behavior in a default');
   }},
 );
 

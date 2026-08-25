@@ -61,6 +61,7 @@ Releasing a taken seat is deliberate, three tools:
 
 ## 10. The evaluator gap
 - Asked how he sizes up the table mid-game: **"I don't."** No opponent has ever been threatening enough to require it.
+- **ADDENDUM (Aug 24, the Neville raid game):** the first documented exception. Owner: "This may [be] one of the only times I actually glanced and saw Lancaster at 5 and diverted to attack him." Verified in-episode: r5, action #313, Lancaster reaches 5 seats; owner diverts, Lancaster finishes with 2; Neville wins r7. The glance fired for the first time in project history — the bots' improvement finally forced the skill into existence, and the owner's response was **the leader punch, performed by hand** (see-leader → divert → strike). The bot term awaiting its gate is a copy of a move its author had never needed until this week.
 - Consequences:
   1. The sharpest indictment of current bot strength on record.
   2. Package C cannot be seeded from articulated human judgment — the judgment doesn't exist. It must come from data: honest losses, per-round credit mining, self-play.
