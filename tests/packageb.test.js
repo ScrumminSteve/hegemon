@@ -162,14 +162,17 @@ export const tests = [
     eq(stockAgent.makeGuide(view, q).candidateSets().length, 0, 'no injection while inert');
   }},
 
-  { name: 'graded soft selection (owner decision): with multiple book lines on the table the bot does NOT always take the top choice — distinct lines are played across seeds; picks are always book lines', fn() {
+  { name: 'graded soft selection (owner decision): with multiple book lines on the table the bot does NOT always take the top choice — distinct lines are played across seeds; picks are always book lines', async fn() {
     const s = freshPlanning();
     const multi = Object.keys(BOOKS).find(f => bookLines(f, 1).length > 1);
     ok(multi, 'some faction carries multiple graded round-1 lines');
     const q = { type: 'submitOrders', faction: multi };
     const view = viewFor(s, multi);
     const sigOf = orders => JSON.stringify(Object.entries(orders).sort());
-    const lineSigs = new Set(bookLines(multi, 1).map(l => sigOf(l.orders)));
+    // m3e55: the doctrine layer (owner-authored lines) merges over the mined
+    // book — a doctrine pick IS a book pick now.
+    const { doctrineLines } = await import('../src/agents/doctrine.js');
+    const lineSigs = new Set([...bookLines(multi, 1), ...doctrineLines(multi, 1)].map(l => sigOf(l.orders)));
     // Book ON: when a graded line leads the menu, the pick IS a book line.
     const on = createHeuristicAgent({ weights: { bookBias: 4 } }); // bias high enough that a line MUST lead — mechanism, not tuning
     const onMenu2 = legalActions(s, q, { guide: on.makeGuide(view, q) });
@@ -562,5 +565,57 @@ tests.push(
       if (s.round > 5) break;
     }
     ok(midRank !== null && midRank <= 2, `the fleet lights up before it sails (mid-game rank ${midRank})`);
+  }},
+);
+
+// --- m3e55: the Shadow Crown + B12 exorcism ---
+
+import { createShadowCrown } from '../src/agents/shadowcrown.js';
+
+tests.push(
+  { name: 'THE SHADOW CROWN (m3e55): possession is born on the strongest seat, honors the cooldown, hops when fortunes shift, and flees a human takeover instantly', fn() {
+    const s = freshPlanning();
+    const crown = createShadowCrown({ seed: 7, cooldown: 2 });
+    const seats = [...s.factions];
+    const birth = crown.consult(s, seats);
+    eq(birth.hopped, false, 'birth is not a hop — no omen on the first breath');
+    eq(birth.host, rankFactions(s)[0].fid, 'the demon is born on the strongest seat');
+    ok(crown.agentFor(birth.host) === crown._crown, 'the host runs the crown brain');
+    ok(crown.agentFor(seats.find(f => f !== birth.host), 1) !== crown._crown, 'the others wear personas');
+    // rig a new strongest seat, same round: cooldown holds
+    const other = seats.find(f => f !== birth.host);
+    const rich = structuredClone(s);
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    rich.controlMarkers = { ...rich.controlMarkers };
+    let granted = 0;
+    for (const rid of Object.keys(adjF())) {
+      if (granted >= 5) break;
+      const r = reg(rid);
+      if (r?.kind === 'land' && r.muster > 0 && !(rich.unitsByRegion[rid] || []).length && controllerOf(rich, rid) == null) {
+        rich.controlMarkers[rid] = other; granted++;
+      }
+    }
+    eq(rankFactions(rich)[0].fid, other, 'the rigged table has a new strongest seat');
+    eq(crown.consult(rich, seats).hopped, false, 'same round: the cooldown holds — blows must mean something');
+    const later = structuredClone(rich); later.round = 3;
+    const hop = crown.consult(later, seats);
+    ok(hop.hopped && hop.host === other, 'cooldown elapsed: the shadow passes to the new power');
+    // human seizes the host: the demon flees without waiting
+    const flee = crown.consult(later, seats.filter(f => f !== other));
+    ok(flee.hopped && flee.host !== other, 'takeover of the host: the demon flees instantly');
+  }},
+
+  { name: 'B12 hardening (rev 12): the chooser branch now guards against a destroyed or siege-only attacking force — and the fix disturbs no banked history (the loss episode replays end to end)', fn() {
+    // The guard: the code path that could ask the table to route ghosts now
+    // repels instead. (The owner's Bristol sighting did NOT trip this branch
+    // on replay — the on-device repro hunt continues in PANEL_STUDY B12 —
+    // but the hole itself was real and is now closed.)
+    const combat = readFileSync('src/engine/combat.js', 'utf8');
+    ok(combat.includes('attackerRetreatable.length === 0'), 'the guard exists in the chooser branch');
+    const ep = JSON.parse(readFileSync('corpus/inbox/episode-percy-stafford-loss-but-terrible-close-t-r10.json', 'utf8'));
+    let s = stateApi.createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    for (const a of ep.actions) { const r = applyAction(s, a); s = r.state ?? s; }
+    eq(s.phase, 'gameOver', 'the banked loss replays clean under the hardened engine');
   }},
 );

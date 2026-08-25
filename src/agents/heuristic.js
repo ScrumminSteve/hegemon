@@ -30,6 +30,17 @@ function cachedLeader(view) {
   return LEADER_CACHE.get(view);
 }
 import { bookPrior, bookLines, BOOKS } from './books.js';
+import { doctrineLines, doctrinePrior } from './doctrine.js';
+
+// m3e55: DOCTRINE layer — hand-authored lines (owner rulings) merge over the
+// mined book. books.js is GENERATED and clobbered on re-mine, so the merge
+// lives here, never there. Inert while bookBias is 0, like the book itself.
+const allBookLines = (fid, round) => {
+  const d = doctrineLines(fid, round);
+  return d.length ? [...d, ...bookLines(fid, round)].sort((a, b) => (b.n ?? 0) - (a.n ?? 0)) : bookLines(fid, round);
+};
+const allBookPrior = (fid, round, rid, tok) =>
+  Math.max(bookPrior(fid, round, rid, tok) || 0, doctrinePrior(fid, round, rid, tok) || 0);
 import { combatStrengths } from '../engine/combat.js';
 
 const ADJ = adjacency();
@@ -483,7 +494,7 @@ export function createHeuristicAgent(opts = {}) {
       // stays varied without ever preferring a line the scorer ranks worse
       // than the best off-book plan. Everywhere else: argmax, as ever.
       if (query.type === 'submitOrders') {
-        const lines = bookLines(query.faction, view.round ?? 1);
+        const lines = allBookLines(query.faction, view.round ?? 1);
         if (lines.length > 1) {
           const sigOf = orders => Object.entries(orders)
             .map(([rid, o]) => `${rid}:${o.type}|${o.mod}|${o.starred}`).sort().join(' ');
@@ -518,7 +529,7 @@ export function createHeuristicAgent(opts = {}) {
       // breadth from the K-capped menu — m3e31 smoke finding), and only
       // while the book is live: an inert book must not narrow menus either.
       candidateSets: () => (W.bookBias ?? 0) > 0
-        ? bookLines(query.faction, view.round ?? 1).slice(0, 2).map(l => l.orders)
+        ? allBookLines(query.faction, view.round ?? 1).slice(0, 2).map(l => l.orders)
         : [],
     });
   }
@@ -707,7 +718,7 @@ const tokenKey = o => `${o.type}${o.mod > 0 ? '+1' : o.mod < 0 ? '-1' : ''}${o.s
     round past the first (owner decision, Package B: "further rounds have less
     certainty to stick with books or riff"). Zero wherever the book is silent. */
 function bookBonus(fid, round, rid, o, W) {
-  const prior = bookPrior(fid, round, rid, tokenKey(o));
+  const prior = allBookPrior(fid, round, rid, tokenKey(o));
   if (!prior) return 0;
   return prior * (W.bookBias ?? WEIGHTS_M3E.bookBias) *
     Math.pow(W.bookDecay ?? WEIGHTS_M3E.bookDecay, Math.max(0, round - 1));

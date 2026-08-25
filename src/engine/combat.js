@@ -595,6 +595,18 @@ function concludeCombat(state) {
     // retreat — origin, or any area not controlled by another player, incl.
     // ship-transport-connected land (FAQ v2.0).
     if (c.retreatChooser && c.retreatChooser === c.defender) {
+      // B12 (owner bug report, Aug 25 2026 — Bristol): casualties are spliced
+      // out of attackingUnits as they die, so the force here can be EMPTY or
+      // siege-only (siege engines cannot retreat, Rules p.21). Directing the
+      // retreat of a nonexistent force was the bug: destroy what remains,
+      // repel, and never ask the table to route ghosts. [RULES_REVISION 12]
+      const attackerRetreatable = c.attackingUnits.filter(u => u.type !== 'siege_engine');
+      if (attackerRetreatable.length === 0) {
+        for (const u of c.attackingUnits) state.log.push({ round: state.round, event: 'siegeDestroyedRetreating', faction: c.attacker });
+        state.log.push({ round: state.round, event: 'attackerRepelled', region: c.region });
+        endCombat(state);
+        return;
+      }
       const attackerNaval = c.attackingUnits.every(u => u.type === 'warship');
       const attackerArriving = c.attackingUnits.filter(u => u.type !== 'siege_engine' && !u.routed).length;
       const opts = new Set(legalRetreats(state, c.attacker, c.region, null, attackerNaval, Math.max(1, attackerArriving)));

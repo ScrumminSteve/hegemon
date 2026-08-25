@@ -27,6 +27,7 @@ import { legalActions, currentQuery } from '../src/engine/legal.js';
 import { createHeuristicAgent, effectiveWeights, WEIGHTS_V1, WEIGHTS, WEIGHTS_M3E } from '../src/agents/heuristic.js';
 import { createRandomAgent, botRng } from '../src/agents/random.js';
 import { poolAgents } from '../src/agents/profiles.js';
+import { createShadowCrown } from '../src/agents/shadowcrown.js';
 
 const MAX_ACTIONS = 6000;
 
@@ -55,9 +56,25 @@ export function playEvalGame({ seed, challengerSeat, challengerCfg = null, incum
     const roster = incumbent.slice(5).split(',').map(x => x.trim()).filter(Boolean);
     poolSeats = poolAgents(roster, seed, s.factions.length - 1);
   }
+  // 'shadow' or 'shadow:cast,...' (m3e55) — the POSSESSED table: one crown
+  // brain migrating across the strongest opponent seat, personas on the
+  // rest. This measures the challenger against the Shadow Crown entity —
+  // the harness the possessor rulings require.
+  let shadowCtl = null;
+  if (typeof incumbent === 'string' && incumbent.startsWith('shadow')) {
+    const cast = incumbent.includes(':') ? incumbent.split(':')[1].split(',').map(x => x.trim()).filter(Boolean) : undefined;
+    shadowCtl = createShadowCrown({ seed, cooldown: 2, ...(cast ? { cast } : {}) });
+  }
   for (const fid of s.factions) {
     if (fid === hero) agents[fid] = createHeuristicAgent({ weights: effectiveWeights(challengerCfg, fid) });
     else if (poolSeats) agents[fid] = poolSeats.pop().agent;
+    else if (shadowCtl) {
+      const idx = s.factions.indexOf(fid);
+      agents[fid] = { decide(view, q, menu, rng) {
+        shadowCtl.consult(s, s.factions.filter(f => f !== hero));
+        return shadowCtl.agentFor(fid, idx).decide(view, q, menu, rng);
+      } };
+    }
     // 'v1' is the FROZEN anchor (WEIGHTS_V1) — never the active default,
     // which moved to v2 in m3d7. 'current' fields whatever ships today.
     else agents[fid] = incumbent === 'random' ? createRandomAgent()

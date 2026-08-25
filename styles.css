@@ -472,3 +472,6 @@ body[data-texture] .side { background: linear-gradient(var(--ink-2), var(--ink-2
 .legend-row { display: grid; grid-template-columns: 22px auto 1fr; gap: 8px; align-items: center; font-size: 12.5px; }
 .legend-row svg { width: 18px; height: 18px; }
 .legend-row span { opacity: 0.8; }
+/* F16 (m3e55): highlighting a territory brightens its units too */
+.spot-hl .unit-ic { filter: brightness(1.5) drop-shadow(0 0 3px rgba(255,255,255,0.5)); }
+.spot-adj .unit-ic { filter: brightness(1.25); }

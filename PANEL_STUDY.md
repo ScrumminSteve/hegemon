@@ -147,3 +147,128 @@ loser penalty / winner benefit.
 ### F17 · Raid order options: never list invalid choices (no march order
 when march unavailable; no defend without a raid star). (F7 family:
 the menu should know the law.)
+
+---
+
+## SESSION 4 — THE OWNER'S ANNOTATED PASS (m3e54 era, Aug 25 2026)
+*Source: annotated Percy playthrough, rounds 0-4 (pre-pivot block). The
+first Playob-2 delivery: reasoning per round, UI findings inline.*
+
+### F12 · Influence-track ownership legibility
+Marshal track scoreboard doesn't show which house's shield corresponds to
+unit contribution/supply status. Wants own house's +1 reflected on the
+track, possibly color-coded for supply/no-supply.
+
+### F13 · Round-overview card language
+Remove "deck one/two/three" in favor of numbered card slots. Each card
+leads with its TITLE ("The Harvest") then a tight description in the
+King's Piece style — current text repetitive. Echo the border-threat
+growth graphic on the overview, color-coded before/after (e.g. 2-of-12
+growing to 6).
+
+### F14 · Seat Inspector: threats need composition
+Card details/special abilities visible from the Seat Inspector; attacker
+UNIT COMPOSITION (not just count) when inspecting a threat.
+
+### F15 · Seat Inspector: card-line ambiguity
+When multiple cards share a line, hard to tell which order/shield belongs
+to which card. Want CLICKABLE leader cards with artwork + full ability
+text (leader cards priority; round/opening cards lower).
+
+### F16 · Territory highlight should brighten its units
+Highlighting a territory should also brighten the unit icons WITHIN it —
+currently hard to distinguish units near harbors.
+
+### F17 · Planning-round opener info inconsistent
+"Harvest Contested" showed open bids but not other expected info.
+Better than before, not yet consistent — another revisit pass.
+
+### F18 · Restricted-order indicator per round
+No visual sign that March +1 was disabled this round. Want a clear icon
+on the round board showing which order types are restricted.
+
+### DESIGN NOTES (owner, banked)
+- Objectives currently push a single path per pull; wants multiple
+  objective paths — feeds the diplomacy/story-mode upgrade.
+- Home-base-defense objectives rejected on principle: holding your home
+  is table stakes for every house, never a scored mark.
+- Mid-game the owner DEPRIORITIZED objectives entirely ("just play to
+  win") — marks are garnish even for their author.
+
+### STRATEGY GOLD (STRATEGY.md addenda)
+- Minimum-card discipline, on film: won battles with a "1" and a "3"
+  while holding better — spend the least card that wins the COUNTED
+  fight ("confirmed Tudor's max was 3"; "Tudor's only remaining card was
+  a 0, won with Lord Poynings").
+- The double decapitation: spotted TWO undefended home bases, struck both
+  in the same round, eliminated Tudor outright at r4.
+- "Banked castle": an unclaimed castle nobody can reach quickly is
+  already yours — no urgency to physically take it.
+
+### OWNER RULING — THE TUDOR OPENER (banked, implementation pending)
+"Tudor, round one, ninety percent of the time, should TAKE LONDON. It
+gives the stronger starting position — more than any other house, it's
+the go-to opener." Direct medicine for F3, the lineage's worst seat
+(5-7/100 across every pool block). Implementation candidates: a Tudor
+book line (book machinery exists, ships inert) or a perFaction opening
+bias; either way it gates like everything else.
+
+---
+
+## SESSION 4b — THE STAFFORD PIVOT ANNOTATIONS (rounds 5-10, Aug 25 2026)
+*Source: hegemon_stafford_pivot_rounds_5-10.txt — the first owner loss,
+fully annotated. Companion to Session 4 (rounds 0-4).*
+
+### BUGS (investigate before fixing — next build turn opens here)
+- **B12 · Retreat prompt for a destroyed unit** (r6 Bristol, re-confirmed
+  r7): bombard fully destroyed in battle, game still issued a retreat
+  order for the nonexistent unit. Owner logged intent to check battle
+  logs; engine-side investigation required.
+- **B13 · Card-cancel notification arrives late** — appears behind/after
+  the NEXT card-selection prompt; owner confused about what happened.
+  Part of a broader battle-screen revision pass (tracked).
+- **B14 · Battle-log illegibility**: a retreat resolved alongside a
+  sword-type card without the expected kill — may be rules-correct but
+  unreadable; log review owed.
+- **Q3 · Supply swing question**: Percy and York jumped 0→6 supply in one
+  event window (Parliament/Reaver resolution?); owner wants the supply
+  history explained. Verify mechanics + surface the cause in the log.
+
+### UI (F19-F22)
+- **F19** · Proper post-battle results view: tiebreaker shown but no
+  retreat/aftermath summary.
+- **F20** · Floating status windows flash distractingly while bots decide
+  during round planning.
+- **F21** · Reaver/bid-type cards resolve SILENTLY — want an explicit
+  reveal/result screen with click-through, same treatment as battles.
+- **F22** · House-icon hover tooltip works but appears with noticeable
+  delay — latency polish.
+- **F18 re-confirmed** (March+1 forbidden again, still invisible) —
+  priority raised.
+
+### DESIGN RULINGS (banked)
+- **Configurable game length** (15/20 rounds): set at game creation only,
+  never mid-game; non-default-length episodes EXCLUDED from trainer and
+  corpus data.
+- **The closing-weakness thesis, now thrice-documented in one game**:
+  bot-Percy had a clinchable win open for 3+ rounds (Exeter + Salisbury
+  open, one coin away) and never closed; York/Percy stretched an
+  elimination they could finish; and the fatal own-goal — Percy VACATED
+  Caersws chasing a 5th seat with no token left behind, home-reversion
+  flipped it (Tudor "resurrected"), 5→4, game lost. mAbandonSeat and
+  mLeaveControl exist and were tuned; they are insufficient. CLOSING is
+  a planning skill, not a weight.
+- **Card-waste feedback**: bot-Percy burned a high card in an unwinnable
+  capital exchange — card-counting absence, again.
+
+### STRATEGY ADDENDA (owner, from the loss)
+- Token preservation: held the last token past two marginal bids to keep
+  it for a territory play (lost it later without the benefit — logged
+  honestly).
+- Deliberate card-baiting: checked the capital FIRST to force Percy to
+  burn a "2" in an unwinnable exchange; left a defender at Midlands to
+  force York to pay in cards rather than take it free.
+- The spoiler doctrine: "Stafford is Vengeance" — once out of contention,
+  play to deny the feud enemy and shape which rival wins.
+- Personal misplay, self-logged: holding the double-sword for the Duke of
+  Exeter would have killed two units instead of one.

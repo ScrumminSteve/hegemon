@@ -18,13 +18,14 @@ import { renderMap, portAnchor, cameraCenterOn, cameraZoomBy, cameraReset, markS
 import { ICON_SETS } from '../icons.js';
 import { legalActions, currentQuery } from '../engine/legal.js';
 import { createRandomAgent, botRng } from '../agents/random.js';
+import { createShadowCrown } from '../agents/shadowcrown.js';
 import { createHeuristicAgent } from '../agents/heuristic.js';
 import { viewFor } from '../engine/views.js';
 
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e54';
+export const BUILD_ID = 'm3e55';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -86,6 +87,29 @@ function mixedAgents() {
   if (mixed.agents && mixed.key === key) return mixed.agents;
   mixed.key = key;
   const jitterBase = (seed * 131) | 0;
+  // THE SHADOW CROWN (m3e55, owner ruling): one crown brain inhabits the
+  // strongest bot seat and MIGRATES as fortunes shift (2-round cooldown);
+  // the other seats wear pool personas. The host is never named — on a hop
+  // the chronicle shows only an omen, and telemetry records it for the
+  // observant reviewer (never the live player). Human takeover of the host
+  // makes the demon flee instantly.
+  if (mixed.policy === 'shadow') {
+    mixed.shadow ||= createShadowCrown({ seed, cooldown: 2 });
+    const botSeats = () => game.factions.filter(f => f !== mixed.human);
+    mixed.agents = Object.fromEntries(game.factions.map((fid, i) =>
+      [fid, isBotSeat(fid) || !mixed.human ? {
+        decide(view, q, menu, rng) {
+          const { hopped } = mixed.shadow.consult(game, botSeats());
+          if (hopped) {
+            (telemetry.omens ||= []).push({ round: game.round, atAction: game.actionLog.length });
+            flash('\u{1F56F} An ill wind turns \u2014 the crown\u2019s shadow stirs.');
+          }
+          return mixed.shadow.agentFor(fid, i).decide(view, q, menu, rng);
+        },
+      } : null]));
+    return mixed.agents;
+  }
+  mixed.shadow = null;
   mixed.agents = Object.fromEntries(game.factions.map((fid, i) =>
     [fid, isBotSeat(fid)
       ? (mixed.policy === 'heuristic'
@@ -333,7 +357,7 @@ function restoreFromText(text) {
       .find(([, c]) => c === 'human')?.[0] || null;
     mixed.human = human;
     mixed.policy = 'heuristic';
-    mixed.agents = null; mixed.key = null; mixed.rng = null;
+    mixed.agents = null; mixed.key = null; mixed.rng = null; mixed.shadow = null;
     clearTimeout(mixed.timer); mixed.timer = null;
     _viewCache = null;
     history = [serialize(game)];

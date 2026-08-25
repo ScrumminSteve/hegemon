@@ -4,6 +4,64 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## THE SHADOW CROWN RISES (m3e55) — BOTH RULINGS IN
+
+**OWNER RULINGS, Aug 25 2026: the NEMESIS model and THE SHADOW CROWN are
+both ruled IN.** The Round Table is retired as the design objective; the
+project's spine is now one strong intelligence, hidden, possessed of
+whichever house stands nearest the throne.
+
+**1. The Shadow Crown ships, playable today**: Game options → Bot policy →
+"the Shadow Crown." One crown brain (the shipped champion) inhabits the
+evaluator's strongest bot seat; the other seats wear pool personas
+(blitz/crescendo/denial/prey). Possession re-evaluates each round, hops
+only after a 2-round cooldown (blows must mean something), FLEES instantly
+if a human seizes its host, and never names itself — on a hop the player
+sees only an omen: "🕯 An ill wind turns — the crown's shadow stirs."
+Omens are recorded in telemetry (reviewers, not players). Fixed Nemesis =
+cooldown Infinity, free. NOT rubber-banding: intelligence follows earned
+strength; the demon makes the strongest house smart, never a weak house
+strong. src/agents/shadowcrown.js; golden covers birth/cooldown/hop/flee.
+
+**2. The harness exists before the fear does**: eval.mjs takes
+`--incumbent shadow` (or `shadow:cast,...`). First N=12 smoke: the
+challenger scored HIGH vs the shadow table — one-strong-plus-prey helps a
+strong hero too; the Crown's true examiner is the human. Calibration of
+cast strength is the open dial.
+
+**3. THE LONDON GAMBIT (owner ruling, verbatim in doctrine.js)**: "Tudor,
+round one, ~90%: take London." Shipped as the first DOCTRINE BOOK — a
+hand-authored layer merging over the mined book (books.js is generated;
+doctrine.js is the one hand-written place). Inert at bookBias 0 as
+shipped; runs/tudor-book.json wakes it for F3 only. Gate = G10:
+two legs, seed 100000, challenger runs/tudor-book.json — if F3's line
+moves, it bakes.
+
+**4. B12 (retreat-for-destroyed-unit)**: the unguarded chooser branch is
+HARDENED (empty or siege-only attacking force → repelled, never asked to
+route ghosts) — RULES_REVISION 11→12. Honesty: the owner's Bristol
+sighting did not trip this branch on replay; the hole was real and is
+closed, the on-device repro hunt for the sighting continues (suspect: the
+retreat UI listing already-dead units). The banked loss episode replays
+end-to-end under rev 12 (golden).
+
+**5. F16**: highlighting a territory now brightens the unit silhouettes
+inside it (harbor legibility).
+
+**Dispositions (audit rule)**: SHIPPED — Shadow Crown, doctrine layer,
+B12 hardening, F16. DEFERRED with status — B13 (cancel-notice timing:
+part of the battle-screen revision pass), B14 (log legibility: same pass),
+Q3 (supply-swing surfacing: add a supply-recount log line, next engine
+turn), F18 (restricted-order badge), F19 (post-battle summary), F20
+(planning flicker), F21 (Reaver reveal screen), F12-F15/F17 (session-4
+backlog). Nothing dropped.
+
+Suite: **301**.
+
+---
+
+---
+
 ## THE OWNER'S AUDIT — TWO DROPPED ITEMS RECOVERED (m3e54)
 
 Owner called a Swiss-cheese check on the m3e51-53 arc and was RIGHT:
