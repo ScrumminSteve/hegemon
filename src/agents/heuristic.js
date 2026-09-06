@@ -31,6 +31,16 @@ function cachedLeader(view) {
 }
 import { bookPrior, bookLines, BOOKS } from './books.js';
 import { doctrineLines, doctrinePrior } from './doctrine.js';
+import { findWinNow, winMarchAction } from './winscan.js';
+
+// m3e56: one win-scan per view — the mate question is asked once, cheaply.
+const WINSCAN_CACHE = new WeakMap();
+function winPlan(view, fid) {
+  let m = WINSCAN_CACHE.get(view);
+  if (!m) { m = new Map(); WINSCAN_CACHE.set(view, m); }
+  if (!m.has(fid)) m.set(fid, findWinNow(view, fid));
+  return m.get(fid);
+}
 
 // m3e55: DOCTRINE layer — hand-authored lines (owner rulings) merge over the
 // mined book. books.js is GENERATED and clobbered on re-mine, so the merge
@@ -476,6 +486,21 @@ export function createHeuristicAgent(opts = {}) {
       // Fail LOUD, at the source (m3e41b): an empty menu or a NaN score once
       // surfaced as "cannot read 'type' of undefined" three layers up in an
       // eval worker — a misaligned tuning vector had turned weights to NaN.
+      // THE WIN-SCAN (m3e56): above all scoring — if a guaranteed seven
+      // exists and this query resolves a march at one of the plan's origins,
+      // the mate is PLAYED. Not scored, not sampled, not tunable.
+      if (query.type === 'resolveOrder') {
+        const plan = winPlan(view, query.faction);
+        if (plan) {
+          for (const o of plan.origins) {
+            const ord = view.ordersByRegion?.[o.region];
+            if (ord && ord.faction === query.faction && /march/i.test(ord.type || '')) {
+              const act = winMarchAction(plan, o.region, query.faction);
+              if (act && menu.some(a => a.type === 'resolveMarch' && a.region === o.region)) return act;
+            }
+          }
+        }
+      }
       if (!menu.length) throw new Error(`decide(${query.type}): EMPTY MENU — the engine contract forbids this`);
       const scorer = SCORERS[query.type] || (() => 0);
       const scored = menu.map(a => {

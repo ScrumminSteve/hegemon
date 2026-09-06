@@ -432,3 +432,16 @@ tests.push(
     ok(opts.includes('shadow'), `policy options: ${opts.join(', ')}`);
   }},
 );
+
+tests.push(
+  { name: 'B15+B16 (m3e57): spectate never labels bots human, and the shadow policy seats the CROWN, not coin-flip bots — no policy value may ever fall through to random silently', async fn() {
+    const app = readFileSync('src/game/app.js', 'utf8');
+    ok(app.includes("policy === 'shadow'") && app.includes('spectate.shadow = createShadowCrown'),
+      'the spectate table has a shadow chair');
+    ok(app.includes("throw new Error(`unknown bot policy"), 'unknown policies fail LOUD — the fallthrough class is extinct');
+    ok(!app.includes("mixed.human ? (f === mixed.human ? 'human' : mixedAgents()[f].id) : 'human'"),
+      'the all-seats-human spectate labeling is gone');
+    const mine = readFileSync('tools/mine.mjs', 'utf8');
+    ok(mine.includes('pre-B15 spectate export'), 'and the miner refuses the poisoned pre-fix episodes');
+  }},
+);

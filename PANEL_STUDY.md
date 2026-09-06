@@ -272,3 +272,31 @@ fully annotated. Companion to Session 4 (rounds 0-4).*
   play to deny the feud enemy and shape which rival wins.
 - Personal misplay, self-logged: holding the double-sword for the Duke of
   Exeter would have killed two units instead of one.
+
+---
+
+## SESSION 5 — FIRST CONTACT WITH THE SHADOW CROWN (m3e55b, Aug 25 2026)
+*Witness: the owner, Lancaster, r6 instant win (episode-shadow-lancaster-r6).*
+
+### Concealment verdict: TOTAL — possibly too total
+Owner noticed NEITHER omen and could not infer the host from behavior.
+The 4.2s flash is easily missed during bot churn. Design note for the
+detection layer: omens should be discoverable AFTER the fact — a
+persistent UI-side chronicle line (never in the hashed engine log), so an
+observant player can review "when did the wind turn" between rounds.
+Detection-by-behavior currently impossible; that is acceptable for v1
+(the crown brain isn't yet distinctive) and will matter more once the
+closer brain makes the possessed house play differently.
+
+### F23 · Pending-control limbo reads as LOSS (the 25-undo mystery)
+Marching out of a captured home territory (Thornbury → Bristol): the
+retain-control token does not appear until march/battle resolution, and
+in the interim controllerOf falls through to HOME REVERSION — the map
+truthfully showed the territory back in Stafford's colors. Owner read it
+as a bug/loss and burned ~25 undos probing it. It resolved correctly
+after the battle, but "correct later" is not "legible now."
+Fix candidates: (a) optimistic interim marker ("⏳ your banner, pending")
+on the vacated region until the leaveControl decision resolves; (b) a
+distinct "contested/pending" tint instead of the full enemy reversion;
+(c) surface the leaveControl offer at march declaration, not resolution.
+Family: the m3e43 Middleham phantom leave-control fix.

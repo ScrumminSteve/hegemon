@@ -86,6 +86,13 @@ function mineEpisode(file) {
   if (!winner) return { reason: 'no winner (unfinished or bug-report episode)' };
   const controller = ep.meta?.seatControllers?.[winner];
   if (controller !== 'human') return { reason: `winner ${winner} controlled by ${controller ?? 'unknown'} — not a human win` };
+  // B15 backstop (Aug 26): pre-fix spectate exports mislabeled EVERY seat
+  // 'human'. A table of six 'human' seats is a spectate artifact, never a
+  // hot-seat family game with no bots — refuse it for book yield.
+  const ctrls = Object.values(ep.meta?.seatControllers ?? {});
+  if (ctrls.length >= 6 && ctrls.every(c => c === 'human')) {
+    return { reason: 'all six seats labeled human — pre-B15 spectate export, refused for book yield' };
+  }
   // F2 house takeover (m3e53): a possessed game may carry BOT-played opening
   // rounds under a 'human' final controller — the book learns openings, so
   // takeover episodes are excluded from yield (verification still applies).

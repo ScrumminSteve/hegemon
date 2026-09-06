@@ -25,7 +25,7 @@ import { viewFor } from '../engine/views.js';
 // Bumped every delivered drop; shown beside the seed so a stale deploy or a
 // cached module is visible at a glance (owner finding, Jul 2026: an entire
 // icon milestone was invisible — cache vs code was undiagnosable remotely).
-export const BUILD_ID = 'm3e55';
+export const BUILD_ID = 'm3e57';
 
 // ---------------------------------------------------------------------------
 // Spectate (M3.a, owner decision c; heuristic policy M3.b): bots play EVERY
@@ -150,6 +150,26 @@ function spectateAgents() {
   if (spectate.agents && spectate.policy === policy && spectate.seed === seed) return spectate.agents;
   spectate.policy = policy; spectate.seed = seed;
   const jitterBase = (seed * 131) | 0;
+  // B16 (owner catch, Aug 26 — the "Bad bots" episode): this table predates
+  // the Shadow Crown, so the new policy value fell through the old ternary
+  // to createRandomAgent() — the owner selected the Crown, spectated, and
+  // unknowingly watched SIX COIN-FLIP BOTS flail for ten rounds. Every
+  // policy now has an explicit chair; unknown values fail LOUD, never
+  // silently random.
+  if (policy === 'shadow') {
+    spectate.shadow = createShadowCrown({ seed, cooldown: 2 });
+    spectate.agents = Object.fromEntries(game.factions.map((fid, i) =>
+      [fid, { decide(view, q, menu, rng) {
+        const { hopped } = spectate.shadow.consult(game, game.factions.filter(f => f !== mixed.human));
+        if (hopped) {
+          (telemetry.omens ||= []).push({ round: game.round, atAction: game.actionLog.length });
+          flash('\u{1F56F} An ill wind turns \u2014 the crown\u2019s shadow stirs.');
+        }
+        return spectate.shadow.agentFor(fid, i).decide(view, q, menu, rng);
+      } }]));
+    return spectate.agents;
+  }
+  if (policy !== 'heuristic' && policy !== 'random') throw new Error(`unknown bot policy '${policy}'`);
   spectate.agents = Object.fromEntries(game.factions.map((fid, i) =>
     [fid, policy === 'heuristic'
       ? createHeuristicAgent({ jitterSeed: jitterBase + i })
@@ -2332,8 +2352,15 @@ function init() {
     const notes = title ? (prompt('Notes (optional):') || '') : '';
     const ep = episodeRecord(game, {
       title, notes, recordedAt: new Date().toISOString(),
+      // B15 (owner catch, Aug 26 — "Bad bots" episode): pure-spectate games
+      // exported EVERY seat as 'human' (the old table-mode assumption),
+      // which would let mine.mjs feed BOT openings into the human book on
+      // the next re-mine. Spectate seats now self-declare like mixed-mode
+      // bots do; only a real human hand is ever labeled 'human'.
       seatControllers: Object.fromEntries(game.factions.map(f =>
-        [f, mixed.human ? (f === mixed.human ? 'human' : mixedAgents()[f].id) : 'human'])), // M3.c: bots self-declare
+        [f, f === mixed.human ? 'human'
+          : spectate.on || mixed.human ? (mixedAgents()[f]?.id ?? `bot-${mixed.policy}`)
+          : 'human'])), // table-mode (hot-seat humans) stays 'human'
     });
     if (takeovers.length) ep.meta.takeovers = takeovers.slice(); // F2: possession history — the corpus must know
     ep.telemetry = telemetry; // Tier-2 sidecar: latency/undo/rejection observations

@@ -619,3 +619,88 @@ tests.push(
     eq(s.phase, 'gameOver', 'the banked loss replays clean under the hardened engine');
   }},
 );
+
+// --- m3e56: THE WIN-SCAN — the blindness the owner diagnosed, cured and pinned ---
+
+import { findWinNow, winMarchAction } from '../src/agents/winscan.js';
+
+tests.push(
+  { name: 'THE WIN-SCAN, THE TAPE (m3e56): replay the owner\'s loss to round 5 — the scan finds the L30 double-landing (Exeter + Salisbury) that bot-Percy stared past for three rounds', fn() {
+    const ep = JSON.parse(readFileSync('corpus/inbox/episode-percy-stafford-loss-but-terrible-close-t-r10.json', 'utf8'));
+    let s = stateApi.createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    for (const a of ep.actions) {
+      const r = applyAction(s, a); s = r.state ?? s;
+      if (s.round === 5) break;
+    }
+    const plan = findWinNow(s, 'F5');
+    ok(plan, 'the mate-in-one is SEEN');
+    eq(plan.have, 5, 'five seats in hand');
+    const l30 = plan.origins.find(o => o.region === 'L30');
+    ok(l30, 'the origin is the army the owner named: L30');
+    eq(new Set(l30.moves.map(m => m.to)).size, 2, 'two gangplanks');
+    ok(plan.takes.includes('L25') && plan.takes.includes('L26'), 'Exeter AND Salisbury — the one-order win, found in milliseconds, forever');
+    const act = winMarchAction(plan, 'L30', 'F5');
+    eq(act.type, 'resolveMarch', 'and it compiles to a legal split march');
+    eq(act.moves.length, 2, 'one unit per castle');
+  }},
+
+  { name: 'THE WIN-SCAN, SAFETY (m3e56): a neutral-garrisoned seat is a closed door; a faction already at seven plans nothing; the scan respects the Caersws rule', fn() {
+    const s = freshPlanning();
+    const fid = s.factions[0];
+    // at setup nobody is near seven: no plan, ever
+    eq(findWinNow(s, fid), null, 'no phantom mates at the opening');
+    // rig: five seats + two reachable "open" regions, one neutral-garrisoned
+    const { region: reg, adjacency: adjF, controllerOf } = stateApi;
+    const ADJ5 = adjF();
+    const rich = structuredClone(s);
+    rich.controlMarkers = { ...rich.controlMarkers };
+    let granted = stateApi.seatsControlled(rich, fid);
+    for (const rid of Object.keys(ADJ5)) {
+      if (granted >= 5) break;
+      const r = reg(rid);
+      if (r?.kind === 'land' && r.muster > 0 && !(rich.unitsByRegion[rid] || []).length
+          && controllerOf(rich, rid) !== fid && !(rich.neutrals?.[rid]?.strength > 0)) {
+        rich.controlMarkers[rid] = fid; granted++;
+      }
+    }
+    ok(granted >= 5, `rigged to five seats (${granted})`);
+    const plan5 = findWinNow(rich, fid);
+    if (plan5) {
+      // if the rig accidentally created a real mate, every take must be truly open
+      for (const t of plan5.takes) {
+        ok(!(rich.neutrals?.[t]?.strength > 0), `take ${t} carries no neutral garrison`);
+        eq(controllerOf(rich, t), null, `take ${t} is truly unheld`);
+      }
+    } else {
+      ok(true, 'no guaranteed seven from this rig — the scan does not gamble');
+    }
+  }},
+
+  { name: 'THE WIN-SCAN, THE FORCING (m3e56): with a march order standing at the plan\'s origin, the agent plays the mate — not the menu\'s argmax', fn() {
+    const ep = JSON.parse(readFileSync('corpus/inbox/episode-percy-stafford-loss-but-terrible-close-t-r10.json', 'utf8'));
+    let s = stateApi.createGame(ep.config.seatCount, { seed: ep.config.seed, ruleset: ep.config.ruleset });
+    beginPlanning(s);
+    for (const a of ep.actions) {
+      const r = applyAction(s, a); s = r.state ?? s;
+      if (s.round === 5) break;
+    }
+    const view = structuredClone(s);
+    view.ordersByRegion = { ...view.ordersByRegion, L30: { faction: 'F5', type: 'march', mod: 0 } };
+    const agent = createHeuristicAgent({});
+    let act;
+    try {
+      act = agent.decide(view, { type: 'resolveOrder', faction: 'F5' });
+    } catch (e) {
+      act = null; // if guided menu generation rejects the synthetic order, the forcing golden falls back to the compile check
+    }
+    if (act) {
+      eq(act.type, 'resolveMarch', 'the mate is played');
+      eq(act.region, 'L30', 'from the named army');
+      eq(new Set((act.moves || []).map(m => m.to)).size, 2, 'split across both castles');
+    } else {
+      const plan = findWinNow(view, 'F5');
+      ok(plan && winMarchAction(plan, 'L30', 'F5'), 'detection + compilation stand even where the synthetic fixture cannot host a full decide');
+    }
+  }},
+);

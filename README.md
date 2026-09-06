@@ -4,6 +4,89 @@ A data-driven digital adaptation of a classic area-control / hidden-orders war g
 
 ---
 
+## THE BAD BOTS WERE NOBODY'S BOTS (m3e57 — two owner catches)
+
+The owner spectated a Shadow Crown table, watched three houses sit on ONE
+seat for ten rounds beside open castles, and raised the alarm. Forensics:
+
+**B16 — the fallthrough.** spectateAgents() predates the Crown; the new
+policy value fell through its old ternary to createRandomAgent(). The
+owner selected the Shadow Crown and unknowingly watched SIX COIN-FLIP
+BOTS flail. Fixed: the spectate table now seats the real Crown (personas,
+hops, omens, all of it), and unknown policy values FAIL LOUD — the
+silent-fallthrough class is extinct. Container proof on the same seed:
+real heuristic and real shadow tables both expand normally (winner at
+4-5 seats); the tape's horror was random agents, not V5.
+
+**B15 — the poisoned labels.** Pure-spectate exports stamped EVERY seat
+'human' (old table-mode assumption) — one re-mine away from feeding BOT
+openings into the human book. Fixed: spectate bots self-declare; only a
+real hand is 'human'. mine.mjs additionally REFUSES any pre-fix episode
+claiming six human seats. Do NOT copy episode-bad-bots into
+corpus/episodes; it stays in inbox as B16's evidence.
+
+**Design bar banked (owner):** "by the end of round 1 every house should
+have at least 2 castles." Honest note: even REAL bots only reach that by
+round 2 today — the round-1 expansion bar is now a named target of the
+expansion work (WS-2), not yet met.
+
+*Verify:* `npm test` → "B15+B16" smoke golden; on device, spectate the
+Shadow Crown and watch houses actually expand.
+
+Suite: **306**.
+
+---
+
+---
+
+## THE WIN-SCAN — MATE-IN-ONE IS PLAYED (m3e56)
+
+Owner diagnosis, verified on the tape to the region: at round 5 of the
+banked loss, bot-Percy held FIVE seats while its two-unit army at L30 had
+chained transported reach over BOTH open castles (Exeter L25 + Salisbury
+L26) — a one-order win it stared past for three rounds. "This is
+fundamental blindness." Three layers: placement scores locally, resolution
+menus never enumerate split-marches, and nothing anywhere asks whether a
+winning combination exists.
+
+**src/agents/winscan.js** now asks, deterministically, above all scoring:
+`findWinNow` — seats + guaranteed takes ≥ 7 this round? Open seats only
+(no units, no controller, NO neutral garrison — every forced action stays
+engine-legal), reach by adjacency + chained warship transport (the
+engine's own landing rule), tiny backtracking assignment across armies.
+**The Caersws rule is priced, not dodged**: emptying a bare-unit seat
+either PAYS the leave-control marker (1 authority, Rules p.24) or holds a
+unit home — and the debugging surfaced a poetic truth: the L30 mate
+REQUIRED the marker. The blindness and the Caersws own-goal were the same
+missing skill all along.
+
+**The forcing**: in decide(), a resolveOrder query at a plan origin with a
+standing march returns the compiled split-march — not scored, not
+sampled, not tunable. Mate-in-one is played because it is mate-in-one.
+
+**Phase one = guaranteed closes only.** Contested closes, the two-round
+setup, and the bell-mode standings closer are phase two, pending the
+owner's six-question interview (asked, superseded by this step-back,
+still owed for phase two).
+
+Goldens: THE TAPE (replay to r5 → the scan finds the L30 double-landing
+with the marker, forever), SAFETY (neutral doors closed, no phantom
+mates, honest takes), THE FORCING (the agent plays the mate through a
+full decide on the round-5 board). Known phase-one gap, on the record:
+placement-stage forcing is NOT yet wired — if no march order lands at the
+origin, the scan has nothing to force; the resolution path plus ordinary
+march placement covers the common case, and placement forcing is the
+first phase-two item.
+
+*Verify:* `npm test` → three WIN-SCAN goldens. Gate = G11, seed 101000,
+standard pair (below).
+
+Suite: **305**.
+
+---
+
+---
+
 ## THE SHADOW CROWN RISES (m3e55) — BOTH RULINGS IN
 
 **OWNER RULINGS, Aug 25 2026: the NEMESIS model and THE SHADOW CROWN are

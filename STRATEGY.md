@@ -81,3 +81,29 @@ Releasing a taken seat is deliberate, three tools:
 - Package personas, not one style: **blitz / denial / crescendo** as separate profiles.
 - Six per-house profiles per §8.
 - Build **mixed-strength, hidden-composition tables** for tuning and gates — the predator-among-prey environment is the hardest test the owner knows.
+
+---
+
+## ADDENDUM — THE EXPANSIONIST DOCTRINE (owner, Aug 25 2026, post-Win-Scan)
+
+1. **Multi-grabs are not just for mates**: more territories = higher P(win);
+   general aggressive expansion beats conservatism. Split-marches belong in
+   ORDINARY menus (scored options), not only the forced win line.
+2. **Fortune favors the bold**: battle selection should be probability math
+   — P(my card beats theirs) over remaining hands and tendencies — and take
+   calculated risks, not only counted-certain fights.
+3. **Observed bot sins (blunder-bank candidates #12-15)**:
+   - #12 livery/consolidate orders placed ON SEAS (no income there);
+   - #13 defend orders on territories with zero threat vectors;
+   - #14 questionable march-mod selection (+1/-1 chosen poorly);
+   - #15 bid timidity — bots should ZERO OUT bids on low-value contests
+     and bank the coin.
+4. **Category risk dials**: separate risk-tolerance knobs for battling,
+   bidding, expansion, etc. — persona-ready, tuner-ready, and the Shadow
+   Crown's difficulty dial.
+5. **THE ANCHOR MAP — house-specific strategic captures** (destination
+   doctrine, generalized): London→Tudor (shipped as the Gambit);
+   Ludlow/"Mercy"→Neville/Lancaster; Exeter→Stafford/Percy;
+   Bristol→Stafford; East Anglia/Furness/Great Road→York (per chosen
+   attack vector); Dover→Percy; "and possibly a lot more. Seas too."
+   Owner to enumerate the full map; doctrine.js is its home.
